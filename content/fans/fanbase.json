@@ -1,0 +1,18 @@
+[
+  {
+    "name": "Ada Obi",
+    "location": "Lagos, NG",
+    "support_level": "core",
+    "favorite_track": "We Rise!",
+    "join_date": "2025-10-01T08:00:00+00:00",
+    "notes": "Leads weekly gratitude dance circle."
+  },
+  {
+    "name": "Kwame Mensah",
+    "location": "Accra, GH",
+    "support_level": "vip",
+    "favorite_track": "Wealth Beyond Money",
+    "join_date": "2025-10-10T08:00:00+00:00",
+    "notes": "Hosts the Value Over Vanity podcast."
+  }
+]

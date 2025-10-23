@@ -1,0 +1,2 @@
+[console_scripts]
+papito = papito_core.cli:app

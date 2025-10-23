@@ -1,0 +1,71 @@
+{
+  "release_title": "We Rise! Wealth Beyond Money",
+  "release_date": "2024-10-05",
+  "release_type": "album",
+  "tracks": [
+    {
+      "title": "We Rise!",
+      "mood": "uplifting",
+      "tempo_bpm": 108,
+      "key": "A minor",
+      "theme": "gratitude and resilience",
+      "story_hook": "Papito salutes every soul who rises at dawn to chase purpose.",
+      "gratitude_focus": "Thanks to the ancestors and community mentors.",
+      "empowerment_focus": "Remind listeners they carry generational brilliance.",
+      "instrumentation": ["talking drum", "bass guitar", "horns", "synth pads"],
+      "hook_lyrics": [
+        "We rise, we rise, value in our veins",
+        "Blessings overflow, dancing through the rains"
+      ]
+    },
+    {
+      "title": "Bless Me with Sense",
+      "mood": "reflective",
+      "tempo_bpm": 102,
+      "key": "C major",
+      "theme": "wisdom and discernment",
+      "story_hook": "A mid-tempo prayer for clarity in a noisy world.",
+      "gratitude_focus": "Thankful for elders and teachers.",
+      "empowerment_focus": "Choose wisdom over rush, alignment over hype.",
+      "instrumentation": ["shekere", "electric piano", "lead guitar"],
+      "hook_lyrics": [
+        "Bless me with sense, with balance and peace",
+        "Guide every step till my spirit is free"
+      ]
+    },
+    {
+      "title": "Wealth Beyond Money",
+      "mood": "celebratory",
+      "tempo_bpm": 112,
+      "key": "F sharp minor",
+      "theme": "abundance mindset",
+      "story_hook": "Celebrating freedom found in wisdom, love, and service.",
+      "gratitude_focus": "Give thanks for health, community, and discipline.",
+      "empowerment_focus": "Redefine wealth as impact, joy, and spiritual alignment.",
+      "instrumentation": ["log drum", "rhythm guitar", "horn section", "choir pads"],
+      "hook_lyrics": [
+        "Wealth beyond money, spread love through the land",
+        "Joy in the spirit, value in our hands"
+      ]
+    }
+  ],
+  "promotional_beats": [
+    "Daily gratitude livestream with fan rollcall.",
+    "Behind-the-scenes IG Reels highlighting studio sessions.",
+    "Collaborative TikTok challenge: #ValueOverVanity two-step."
+  ],
+  "gratitude_rollcall": [
+    "Value Adders Empire global family",
+    "Papito Mamito production council",
+    "Afrobeats pioneers and elders"
+  ],
+  "distribution_targets": [
+    "Spotify",
+    "Apple Music",
+    "Deezer",
+    "iHeartRadio",
+    "iTunes",
+    "YouTube"
+  ],
+  "creation_timestamp": "2025-10-23T00:00:00"
+}

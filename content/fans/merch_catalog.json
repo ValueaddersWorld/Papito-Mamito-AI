@@ -1,0 +1,20 @@
+[
+  {
+    "sku": "PAP-LAGOS-TEE",
+    "name": "Lagos Sunrise Tee",
+    "description": "Gold gradient tee celebrating Papito's debut album artwork.",
+    "price": 38.0,
+    "currency": "USD",
+    "url": "https://valueadders.world/merch/lagos-tee",
+    "inventory": 120
+  },
+  {
+    "sku": "PAP-UNITY-VINYL",
+    "name": "We Rise! Limited Vinyl",
+    "description": "Signed 12\" vinyl pressing with gratitude liner notes.",
+    "price": 65.0,
+    "currency": "USD",
+    "url": "https://valueadders.world/merch/we-rise-vinyl",
+    "inventory": 40
+  }
+]

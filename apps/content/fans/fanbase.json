@@ -1,0 +1,18 @@
+[
+  {
+    "name": "Test Supporter",
+    "location": "Berlin",
+    "support_level": "core",
+    "favorite_track": "We Rise!",
+    "join_date": "2025-10-23T13:38:45.174540Z",
+    "notes": null
+  },
+  {
+    "name": "Test Fan",
+    "location": "Nairobi",
+    "support_level": "core",
+    "favorite_track": "We Rise!",
+    "join_date": "2025-10-23T13:38:45.646967Z",
+    "notes": null
+  }
+]

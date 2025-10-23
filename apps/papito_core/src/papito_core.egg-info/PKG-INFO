@@ -1,0 +1,45 @@
+Metadata-Version: 2.4
+Name: papito-core
+Version: 0.1.0
+Summary: Autonomous creative engine for Papito Mamito AI.
+Author-email: Value Adders World <team@valueadders.world>
+License: MIT
+Keywords: afrobeat,ai-music,autonomous-agents,papito-mamito
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: pydantic<3.0,>=2.5
+Requires-Dist: typer<1.0,>=0.12
+Requires-Dist: rich<14.0,>=13.7
+Requires-Dist: httpx<0.28,>=0.27
+Requires-Dist: pydantic-settings<3.0,>=2.3
+Provides-Extra: dev
+Requires-Dist: pytest<9.0,>=8.2; extra == "dev"
+Requires-Dist: pytest-mock<4.0,>=3.12; extra == "dev"
+Requires-Dist: typer<1.0,>=0.12; extra == "dev"
+Requires-Dist: ruff>=0.6.0; extra == "dev"
+Requires-Dist: fastapi<1.0,>=0.110; extra == "dev"
+Requires-Dist: uvicorn[standard]<0.25,>=0.23; extra == "dev"
+Provides-Extra: api
+Requires-Dist: fastapi<1.0,>=0.110; extra == "api"
+Requires-Dist: uvicorn[standard]<0.25,>=0.23; extra == "api"
+
+# Papito Core
+
+`papito_core` contains the autonomous creative toolkit that powers Papito Mamito AI.  
+Install it in editable mode to experiment with workflows that generate music concepts, daily blogs, and release plans.
+
+```bash
+pip install -e apps/papito_core[dev]
+```
+
+## Modules
+- `papito_core.prompts` - Persona-aware prompt builders for blogs and music.
+- `papito_core.workflows` - High-level orchestration around text generation engines.
+- `papito_core.engines` - Interfaces and stubs for plugging in your preferred LLM provider.
+- `papito_core.storage` - Release catalog persistence.
+
+Replace the stub generator with an actual LLM client to unleash Papito's full creative range.

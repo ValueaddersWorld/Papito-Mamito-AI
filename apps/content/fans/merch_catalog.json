@@ -1,0 +1,11 @@
+[
+  {
+    "sku": "SKU1",
+    "name": "Papito Tee",
+    "description": "Limited edition tee",
+    "price": 25.0,
+    "currency": "USD",
+    "url": null,
+    "inventory": null
+  }
+]

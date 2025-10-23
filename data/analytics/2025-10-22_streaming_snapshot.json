@@ -1,0 +1,51 @@
+{
+  "snapshots": [
+    {
+      "platform": "Spotify",
+      "streams": 152430,
+      "listeners": 52840,
+      "saves": 6432,
+      "followers": 18120,
+      "timestamp": "2025-10-22T08:30:00Z",
+      "territory_breakdown": {
+        "NG": 0.36,
+        "US": 0.24,
+        "UK": 0.18,
+        "CA": 0.06,
+        "DE": 0.04
+      }
+    },
+    {
+      "platform": "Apple Music",
+      "streams": 104212,
+      "listeners": 34119,
+      "saves": 4120,
+      "followers": 9725,
+      "timestamp": "2025-10-22T08:30:00Z",
+      "territory_breakdown": {
+        "NG": 0.28,
+        "US": 0.22,
+        "UK": 0.19,
+        "ZA": 0.09,
+        "FR": 0.05
+      }
+    },
+    {
+      "platform": "YouTube Music",
+      "streams": 88410,
+      "listeners": 62110,
+      "saves": 3980,
+      "followers": 15020,
+      "timestamp": "2025-10-22T08:30:00Z",
+      "watch_time_minutes": 128934
+    },
+    {
+      "platform": "Deezer",
+      "streams": 21450,
+      "listeners": 9821,
+      "saves": 1640,
+      "followers": 4410,
+      "timestamp": "2025-10-22T08:30:00Z"
+    }
+  ]
+}
