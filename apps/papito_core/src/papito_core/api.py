@@ -81,9 +81,9 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=429, detail="Rate limit exceeded.")
         return identity
 
-    @app.get("/health", summary="Health check", dependencies=[Depends(authorize)])
+    @app.get("/health", summary="Health check")
     def health() -> dict[str, str]:
-        return {"status": "ok"}
+        return {"status": "ok", "service": "papito-mamito-ai"}
 
     @app.post(
         "/blogs",
