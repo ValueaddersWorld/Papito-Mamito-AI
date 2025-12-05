@@ -30,5 +30,5 @@ RUN mkdir -p content/blogs content/releases content/analytics content/schedules
 # Use PORT environment variable (Railway sets this)
 EXPOSE 8000
 
-# Start the FastAPI server with Railway's PORT
-CMD python -c "import uvicorn; uvicorn.run('papito_core.api:app', host='0.0.0.0', port=int(__import__('os').environ.get('PORT', 8000)))"
+# Start the FastAPI server with proper shell expansion for PORT
+CMD ["sh", "-c", "python -m uvicorn papito_core.api:app --host 0.0.0.0 --port ${PORT:-8000}"]
