@@ -17,16 +17,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy pyproject.toml first for caching
-COPY apps/papito_core/pyproject.toml /app/apps/papito_core/pyproject.toml
-COPY apps/papito_core/README.md /app/apps/papito_core/README.md
+# Copy the entire papito_core package (required for editable install)
+COPY apps/papito_core /app/apps/papito_core
+COPY docs /app/docs
 
 # Install Python dependencies
 RUN pip install --upgrade pip && pip install "/app/apps/papito_core[api]"
-
-# Copy the rest of the application
-COPY apps/papito_core/src /app/apps/papito_core/src
-COPY docs /app/docs
 
 # Create content directories
 RUN mkdir -p content/blogs content/releases content/analytics content/schedules
@@ -38,7 +34,6 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
 EXPOSE 8000
 
 # Default: Run API server
-# Override with docker run ... agent (for autonomous mode)
 CMD ["uvicorn", "papito_core.api:app", "--host", "0.0.0.0", "--port", "8000"]
 
 # ==============================================
