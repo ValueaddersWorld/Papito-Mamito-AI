@@ -6,11 +6,8 @@ builder = "DOCKERFILE"
 dockerfilePath = "./Dockerfile"
 
 [deploy]
-# Run the API server (not the CLI agent)
-# The Dockerfile CMD will start uvicorn on the PORT
-
-# NO health check - let Railway auto-detect
-# The app will respond to requests on PORT
+# Explicitly set start command to avoid caching issues
+startCommand = "python -m uvicorn papito_core.api:app --host 0.0.0.0 --port $PORT"
 
 # Restart on failure
 restartPolicyType = "ON_FAILURE"
