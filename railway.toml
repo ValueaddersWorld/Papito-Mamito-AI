@@ -6,28 +6,16 @@ builder = "DOCKERFILE"
 dockerfilePath = "./Dockerfile"
 
 [deploy]
-# Autonomous Agent mode
-startCommand = "python -m papito_core.cli agent start --interval 60"
+# Run the API server (not the CLI agent)
+# The Dockerfile CMD will start uvicorn on the PORT
+
+# NO health check - let Railway auto-detect
+# The app will respond to requests on PORT
 
 # Restart on failure
 restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 10
-
-# Health check
-healthcheckPath = "/"
-healthcheckTimeout = 30
+restartPolicyMaxRetries = 5
 
 [service]
-# Internal port (not exposed for agent mode)
-# Uncomment for API mode: internalPort = 8000
-
-# Environment variables (set in Railway dashboard)
-# Required:
-# - FIREBASE_PROJECT_ID
-# - FIREBASE_CREDENTIALS_JSON (base64 encoded)
-# - INSTAGRAM_ACCESS_TOKEN
-# - INSTAGRAM_BUSINESS_ID  
-# - X_BEARER_TOKEN
-# - OPENAI_API_KEY
-# - TELEGRAM_BOT_TOKEN (optional, for notifications)
-# - TELEGRAM_CHAT_ID (optional)
+# Use Railway's PORT environment variable
+internalPort = 8000
