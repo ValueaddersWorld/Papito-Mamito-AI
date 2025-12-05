@@ -1,7 +1,7 @@
 # Procfile for Heroku / Railway / Render deployment
 
-# Web server (API)
-web: uvicorn papito_core.api:app --host 0.0.0.0 --port ${PORT:-8000}
+# Web server (API) - Railway sets PORT as an integer, so just use $PORT directly
+web: python -m uvicorn papito_core.api:app --host 0.0.0.0 --port $PORT
 
 # Background worker (Autonomous Agent)
 worker: python -m papito_core.cli agent start --interval 60
