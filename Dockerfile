@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1
 # Papito Mamito AI - Docker Image
 # Supports both API server and autonomous agent modes
+# Cache bust: 2024-12-05-v3
 
 FROM python:3.11-slim
 
