@@ -206,13 +206,18 @@ class FirebaseClient:
         "affirmation",
     }
     
-    def __init__(self, service_account_path: Optional[str] = None, project_id: Optional[str] = None):
+    def __init__(
+        self, 
+        service_account_path: Optional[str] = None, 
+        project_id: Optional[str] = None,
+        credentials_json: Optional[str] = None
+    ):
         """Initialize Firebase client.
         
         Args:
             service_account_path: Path to service account JSON file.
-                                 If None, uses GOOGLE_APPLICATION_CREDENTIALS env var.
             project_id: Firebase project ID. If None, inferred from credentials.
+            credentials_json: Raw JSON string of service account credentials.
         """
         _ensure_firebase()
         
@@ -220,6 +225,7 @@ class FirebaseClient:
         self._db = None
         self._service_account_path = service_account_path
         self._project_id = project_id
+        self._credentials_json = credentials_json
         
     def _initialize(self):
         """Lazily initialize Firebase app."""
@@ -231,13 +237,37 @@ class FirebaseClient:
             _firebase_admin.get_app()
         except ValueError:
             # Not initialized, do it now
-            if self._service_account_path:
+            cred = None
+            
+            # Priority 1: Use credentials JSON string (for cloud deployment)
+            if self._credentials_json:
+                try:
+                    import base64
+                    # Try to decode as base64 first
+                    try:
+                        decoded = base64.b64decode(self._credentials_json).decode('utf-8')
+                        cred_dict = json.loads(decoded)
+                    except Exception:
+                        # Not base64, try as raw JSON
+                        cred_dict = json.loads(self._credentials_json)
+                    
+                    cred = _firebase_admin.credentials.Certificate(cred_dict)
+                except Exception as e:
+                    print(f"Warning: Failed to parse Firebase credentials JSON: {e}")
+            
+            # Priority 2: Use service account file path
+            elif self._service_account_path:
                 cred = _firebase_admin.credentials.Certificate(self._service_account_path)
+            
+            # Priority 3: Use default credentials (GOOGLE_APPLICATION_CREDENTIALS)
+            # If no credentials provided, Firebase will use default
+            
+            if cred:
                 _firebase_admin.initialize_app(cred, {
                     'projectId': self._project_id
                 } if self._project_id else None)
             else:
-                # Use default credentials (GOOGLE_APPLICATION_CREDENTIALS)
+                # Use application default credentials
                 _firebase_admin.initialize_app()
         
         self._db = _firestore.client()
@@ -552,13 +582,16 @@ def get_firebase_client() -> FirebaseClient:
         from ..settings import get_settings
         settings = get_settings()
         
-        # Try to get service account path from settings
+        # Get Firebase configuration from settings
         service_account_path = getattr(settings, 'firebase_service_account_path', None)
         project_id = getattr(settings, 'firebase_project_id', None)
+        credentials_json = getattr(settings, 'firebase_credentials_json', None)
         
         _client_instance = FirebaseClient(
             service_account_path=service_account_path,
-            project_id=project_id
+            project_id=project_id,
+            credentials_json=credentials_json,
         )
     
     return _client_instance
+
