@@ -30,6 +30,5 @@ RUN mkdir -p content/blogs content/releases content/analytics content/schedules
 # Use PORT environment variable (Railway sets this, default 8000 from ENV above)
 EXPOSE 8000
 
-# Start uvicorn directly with exec form - PORT substitution happens at runtime via shell
-ENTRYPOINT ["sh", "-c"]
-CMD ["exec python -m uvicorn papito_core.api:app --host 0.0.0.0 --port $PORT"]
+# Start uvicorn - shell form for proper variable substitution
+CMD python -m uvicorn papito_core.api:app --host 0.0.0.0 --port $PORT
