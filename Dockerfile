@@ -21,14 +21,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY apps/papito_core /app/apps/papito_core
 COPY docs /app/docs
 
+# Create startup script for reliable PORT handling
+RUN echo '#!/bin/sh\npython -m uvicorn papito_core.api:app --host 0.0.0.0 --port $PORT' > /app/start.sh && \
+    chmod +x /app/start.sh
+
 # Install Python dependencies
 RUN pip install --upgrade pip && pip install "/app/apps/papito_core[api]"
 
 # Create content directories
 RUN mkdir -p content/blogs content/releases content/analytics content/schedules
 
-# Use PORT environment variable (Railway sets this)
+# Use PORT environment variable (Railway sets this, default 8000 from ENV above)
 EXPOSE 8000
 
-# Start the FastAPI server with proper shell expansion for PORT
-CMD ["sh", "-c", "python -m uvicorn papito_core.api:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Start using the shell script
+CMD ["/app/start.sh"]
