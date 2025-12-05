@@ -52,8 +52,14 @@ def create_app() -> FastAPI:
     """Instantiate the Papito Mamito API application."""
 
     settings = get_settings()
-    paths = PapitoPaths()
-    paths.ensure()
+    
+    # Initialize paths (gracefully handle errors)
+    try:
+        paths = PapitoPaths()
+        paths.ensure()
+    except Exception as e:
+        print(f"Warning: Failed to initialize paths: {e}")
+        paths = None
 
     app = FastAPI(
         title="Papito Mamito API",
@@ -64,11 +70,39 @@ def create_app() -> FastAPI:
     api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
     rate_limiter = RateLimiter(limit=max(settings.api_rate_limit_per_min, 1))
 
-    blog_workflow = BlogWorkflow()
-    music_workflow = MusicWorkflow()
-    analytics_service = StreamingAnalyticsService()
-    fanbase_registry = FanbaseRegistry(paths=paths)
-    catalog = ReleaseCatalog(paths=paths)
+    # Initialize services with graceful error handling
+    blog_workflow = None
+    music_workflow = None
+    analytics_service = None
+    fanbase_registry = None
+    catalog = None
+    
+    try:
+        blog_workflow = BlogWorkflow()
+    except Exception as e:
+        print(f"Warning: Failed to initialize BlogWorkflow: {e}")
+    
+    try:
+        music_workflow = MusicWorkflow()
+    except Exception as e:
+        print(f"Warning: Failed to initialize MusicWorkflow: {e}")
+    
+    try:
+        analytics_service = StreamingAnalyticsService()
+    except Exception as e:
+        print(f"Warning: Failed to initialize StreamingAnalyticsService: {e}")
+    
+    try:
+        if paths:
+            fanbase_registry = FanbaseRegistry(paths=paths)
+    except Exception as e:
+        print(f"Warning: Failed to initialize FanbaseRegistry: {e}")
+    
+    try:
+        if paths:
+            catalog = ReleaseCatalog(paths=paths)
+    except Exception as e:
+        print(f"Warning: Failed to initialize ReleaseCatalog: {e}")
 
     def authorize(request: Request, api_key: str | None = Depends(api_key_header)) -> str:
         keys = settings.api_keys_set
