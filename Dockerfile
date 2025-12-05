@@ -1,19 +1,57 @@
 # syntax=docker/dockerfile:1
+# Papito Mamito AI - Docker Image
+# Supports both API server and autonomous agent modes
 
 FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
-    UVICORN_PORT=8000
+    UVICORN_PORT=8000 \
+    PAPITO_ENV=production
 
 WORKDIR /app
 
-COPY apps/papito_core/pyproject.toml /app/apps/papito_core/pyproject.toml
-RUN pip install --upgrade pip && pip install "apps/papito_core[api] @ file:///app/apps/papito_core"
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
-COPY . /app
+# Copy pyproject.toml first for caching
+COPY apps/papito_core/pyproject.toml /app/apps/papito_core/pyproject.toml
+COPY apps/papito_core/README.md /app/apps/papito_core/README.md
+
+# Install Python dependencies
+RUN pip install --upgrade pip && pip install "/app/apps/papito_core[api]"
+
+# Copy the rest of the application
+COPY apps/papito_core/src /app/apps/papito_core/src
+COPY docs /app/docs
+
+# Create content directories
+RUN mkdir -p content/blogs content/releases content/analytics content/schedules
+
+# Health check for API mode
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:${UVICORN_PORT}/health || exit 1
 
 EXPOSE 8000
 
+# Default: Run API server
+# Override with docker run ... agent (for autonomous mode)
 CMD ["uvicorn", "papito_core.api:app", "--host", "0.0.0.0", "--port", "8000"]
+
+# ==============================================
+# USAGE:
+# ==============================================
+# API Server (default):
+#   docker run -p 8000:8000 --env-file .env papito-ai
+#
+# Autonomous Agent:
+#   docker run --env-file .env papito-ai python -m papito_core.cli agent start
+#
+# Single Agent Iteration:
+#   docker run --env-file .env papito-ai python -m papito_core.cli agent once
+#
+# Interactive CLI:
+#   docker run -it --env-file .env papito-ai python -m papito_core.cli

@@ -1,12 +1,69 @@
 version: "3.9"
 
+# Docker Compose for Papito Mamito AI
+# Supports both API server and autonomous agent
+
 services:
+  # API Server - REST API for web/mobile clients
   papito-api:
     build: .
+    container_name: papito-api
     ports:
       - "8000:8000"
     env_file:
       - .env
     environment:
       UVICORN_PORT: 8000
+      PAPITO_ENV: production
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    volumes:
+      - ./content:/app/content
+    networks:
+      - papito-network
+
+  # Autonomous Agent - Background worker for social media
+  papito-agent:
+    build: .
+    container_name: papito-agent
+    command: python -m papito_core.cli agent start --interval 60
+    env_file:
+      - .env
+    environment:
+      PAPITO_ENV: production
+    restart: unless-stopped
+    depends_on:
+      papito-api:
+        condition: service_healthy
+    volumes:
+      - ./content:/app/content
+    networks:
+      - papito-network
+
+networks:
+  papito-network:
+    driver: bridge
+
+# ==============================================
+# USAGE:
+# ==============================================
+# Start all services:
+#   docker-compose up -d
+#
+# Start only API:
+#   docker-compose up -d papito-api
+#
+# Start only Agent:
+#   docker-compose up -d papito-agent
+#
+# View logs:
+#   docker-compose logs -f
+#
+# Stop all:
+#   docker-compose down
+# ==============================================

@@ -1,10 +1,10 @@
 Metadata-Version: 2.4
 Name: papito-core
-Version: 0.1.0
+Version: 0.2.0
 Summary: Autonomous creative engine for Papito Mamito AI.
 Author-email: Value Adders World <team@valueadders.world>
 License: MIT
-Keywords: afrobeat,ai-music,autonomous-agents,papito-mamito
+Keywords: afrobeat,ai-music,autonomous-agents,papito-mamito,social-media
 Classifier: Programming Language :: Python :: 3.10
 Classifier: Programming Language :: Python :: 3.11
 Classifier: License :: OSI Approved :: MIT License
@@ -16,6 +16,10 @@ Requires-Dist: typer<1.0,>=0.12
 Requires-Dist: rich<14.0,>=13.7
 Requires-Dist: httpx<0.28,>=0.27
 Requires-Dist: pydantic-settings<3.0,>=2.3
+Requires-Dist: firebase-admin<7.0,>=6.0
+Requires-Dist: openai<2.0,>=1.0
+Requires-Dist: anthropic<1.0,>=0.18
+Requires-Dist: apscheduler<4.0,>=3.10
 Provides-Extra: dev
 Requires-Dist: pytest<9.0,>=8.2; extra == "dev"
 Requires-Dist: pytest-mock<4.0,>=3.12; extra == "dev"

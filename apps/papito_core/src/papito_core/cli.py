@@ -693,3 +693,350 @@ def _maybe_poll_audio(
             break
 
     return current
+
+
+# ============================================================
+# Autonomous Agent Commands
+# ============================================================
+
+agent_app = typer.Typer(help="Manage the autonomous Papito agent.")
+queue_app = typer.Typer(help="Manage the content approval queue.")
+app.add_typer(agent_app, name="agent")
+app.add_typer(queue_app, name="queue")
+
+
+@agent_app.command("start")
+def agent_start(
+    interval: int = typer.Option(60, help="Seconds between agent iterations."),
+    debug: bool = typer.Option(False, help="Enable debug logging."),
+) -> None:
+    """Start the autonomous Papito agent.
+    
+    The agent will continuously:
+    - Generate scheduled content (morning blessing, afternoon engagement, evening spotlight)
+    - Publish approved content from the queue
+    - Respond to fan interactions
+    - Collect platform analytics
+    
+    Press Ctrl+C to stop the agent.
+    """
+    try:
+        from .automation import AutonomousAgent
+    except ImportError as e:
+        console.print(f"[red]Missing dependencies:[/red] {e}")
+        console.print("Run: pip install firebase-admin openai anthropic apscheduler")
+        raise typer.Exit(1)
+    
+    console.print(Panel(
+        "[bold green]🎵 Starting Papito Autonomous Agent 🎵[/bold green]\n\n"
+        "The agent will manage social media presence automatically.\n"
+        f"Check interval: {interval} seconds\n\n"
+        "Press Ctrl+C to stop.",
+        title="Papito Agent"
+    ))
+    
+    try:
+        agent = AutonomousAgent(debug=debug)
+        
+        # Connect to platforms
+        connections = agent.connect_platforms()
+        
+        conn_table = Table(title="Platform Connections")
+        conn_table.add_column("Platform")
+        conn_table.add_column("Status")
+        
+        for platform, connected in connections.items():
+            status = "[green]✓ Connected[/green]" if connected else "[yellow]✗ Not configured[/yellow]"
+            conn_table.add_row(platform.title(), status)
+        
+        console.print(conn_table)
+        
+        if not any(connections.values()):
+            console.print("[yellow]Warning: No platforms connected. Agent will queue content but cannot publish.[/yellow]")
+            console.print("Configure credentials in .env file. See env.example for details.")
+        
+        console.print("\n[bold]Agent running...[/bold]\n")
+        agent.start(interval_seconds=interval)
+        
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Agent stopped by user.[/yellow]")
+    except Exception as e:
+        console.print(f"[red]Agent error:[/red] {e}")
+        raise typer.Exit(1)
+
+
+@agent_app.command("status")
+def agent_status() -> None:
+    """Show current agent and platform status."""
+    try:
+        from .automation import AutonomousAgent
+        from .queue import ReviewQueue
+    except ImportError as e:
+        console.print(f"[red]Missing dependencies:[/red] {e}")
+        raise typer.Exit(1)
+    
+    settings = get_settings()
+    
+    # Check credentials
+    creds_table = Table(title="Configured Credentials")
+    creds_table.add_column("Service")
+    creds_table.add_column("Status")
+    
+    checks = [
+        ("Firebase", settings.has_firebase_credentials()),
+        ("Instagram", settings.has_instagram_credentials()),
+        ("X / Twitter", settings.has_x_credentials()),
+        ("Buffer", bool(settings.buffer_access_token)),
+        ("OpenAI", bool(settings.openai_api_key)),
+        ("Anthropic", bool(settings.anthropic_api_key)),
+        ("Telegram", bool(settings.telegram_bot_token)),
+        ("Discord", bool(settings.discord_webhook_url)),
+    ]
+    
+    for name, configured in checks:
+        status = "[green]✓ Configured[/green]" if configured else "[dim]✗ Not set[/dim]"
+        creds_table.add_row(name, status)
+    
+    console.print(creds_table)
+    
+    # Queue stats
+    try:
+        queue = ReviewQueue()
+        stats = queue.get_stats()
+        
+        stats_table = Table(title="Content Queue")
+        stats_table.add_column("Status")
+        stats_table.add_column("Count", justify="right")
+        
+        stats_table.add_row("Pending Review", str(stats.pending_review))
+        stats_table.add_row("Approved", str(stats.approved))
+        stats_table.add_row("Published", str(stats.published))
+        stats_table.add_row("Rejected", str(stats.rejected))
+        stats_table.add_row("Failed", str(stats.failed))
+        
+        console.print(stats_table)
+    except Exception as e:
+        console.print(f"[yellow]Could not fetch queue stats:[/yellow] {e}")
+
+
+@agent_app.command("once")
+def agent_once(
+    debug: bool = typer.Option(False, help="Enable debug logging."),
+) -> None:
+    """Run a single iteration of the agent.
+    
+    Useful for testing or cron-based execution.
+    """
+    try:
+        from .automation import AutonomousAgent
+    except ImportError as e:
+        console.print(f"[red]Missing dependencies:[/red] {e}")
+        raise typer.Exit(1)
+    
+    console.print("[bold]Running single agent iteration...[/bold]")
+    
+    agent = AutonomousAgent(debug=debug)
+    agent.connect_platforms()
+    summary = agent.run_once()
+    
+    console.print(f"\n[green]Iteration complete.[/green]")
+    if summary.get("errors"):
+        for error in summary["errors"]:
+            console.print(f"[red]Error:[/red] {error}")
+
+
+@queue_app.command("list")
+def queue_list(
+    status: str = typer.Option("pending", help="Filter by status: pending, approved, all"),
+    limit: int = typer.Option(20, help="Maximum items to show"),
+) -> None:
+    """List content in the review queue."""
+    try:
+        from .queue import ReviewQueue
+        from .database import get_firebase_client
+    except ImportError as e:
+        console.print(f"[red]Missing dependencies:[/red] {e}")
+        raise typer.Exit(1)
+    
+    db = get_firebase_client()
+    
+    if status == "pending":
+        items = db.get_pending_queue_items(limit=limit)
+    elif status == "approved":
+        items = db.get_approved_ready_to_publish(limit=limit)
+    else:
+        # Get all recent items
+        items = db.get_pending_queue_items(limit=limit)
+    
+    if not items:
+        console.print(f"[yellow]No {status} items in queue.[/yellow]")
+        return
+    
+    table = Table(title=f"Content Queue ({status})")
+    table.add_column("ID", style="dim", max_width=12)
+    table.add_column("Type")
+    table.add_column("Platform")
+    table.add_column("Title", max_width=30)
+    table.add_column("Status")
+    table.add_column("Scheduled")
+    
+    for item in items:
+        scheduled = item.scheduled_at.strftime("%Y-%m-%d %H:%M") if item.scheduled_at else "ASAP"
+        status_color = {
+            "pending_review": "yellow",
+            "approved": "green",
+            "rejected": "red",
+            "published": "blue",
+        }.get(item.status, "white")
+        
+        table.add_row(
+            item.id[:12] if item.id else "—",
+            item.content_type,
+            item.platform,
+            item.title[:30] if item.title else "—",
+            f"[{status_color}]{item.status}[/{status_color}]",
+            scheduled
+        )
+    
+    console.print(table)
+
+
+@queue_app.command("approve")
+def queue_approve(
+    item_id: str = typer.Argument(..., help="Queue item ID to approve"),
+) -> None:
+    """Approve a content item for publishing."""
+    try:
+        from .queue import ReviewQueue
+    except ImportError as e:
+        console.print(f"[red]Missing dependencies:[/red] {e}")
+        raise typer.Exit(1)
+    
+    queue = ReviewQueue()
+    if queue.approve(item_id, reviewer="cli"):
+        console.print(f"[green]✓ Approved item {item_id}[/green]")
+    else:
+        console.print(f"[red]Failed to approve item {item_id}[/red]")
+
+
+@queue_app.command("reject")
+def queue_reject(
+    item_id: str = typer.Argument(..., help="Queue item ID to reject"),
+    reason: str = typer.Option(..., prompt=True, help="Reason for rejection"),
+) -> None:
+    """Reject a content item."""
+    try:
+        from .queue import ReviewQueue
+    except ImportError as e:
+        console.print(f"[red]Missing dependencies:[/red] {e}")
+        raise typer.Exit(1)
+    
+    queue = ReviewQueue()
+    if queue.reject(item_id, reason=reason, reviewer="cli"):
+        console.print(f"[green]✓ Rejected item {item_id}[/green]")
+    else:
+        console.print(f"[red]Failed to reject item {item_id}[/red]")
+
+
+@queue_app.command("add")
+def queue_add(
+    content_type: str = typer.Option(..., prompt=True, help="Content type (morning_blessing, gratitude, etc)"),
+    platform: str = typer.Option("instagram", help="Target platform"),
+    title: str = typer.Option(..., prompt=True, help="Content title"),
+    body: str = typer.Option(..., prompt=True, help="Content body/caption"),
+    auto_approve: bool = typer.Option(True, help="Auto-approve (skip manual review)"),
+) -> None:
+    """Add content to the publishing queue."""
+    try:
+        from .queue import ReviewQueue
+        from .queue.review_queue import ContentCategory
+    except ImportError as e:
+        console.print(f"[red]Missing dependencies:[/red] {e}")
+        raise typer.Exit(1)
+    
+    # Map content type to category
+    category_map = {
+        "morning_blessing": ContentCategory.DAILY_BLESSING,
+        "daily_blessing": ContentCategory.DAILY_BLESSING,
+        "gratitude": ContentCategory.GRATITUDE,
+        "fan_shoutout": ContentCategory.FAN_SHOUTOUT,
+        "music_quote": ContentCategory.MUSIC_QUOTE,
+        "affirmation": ContentCategory.AFFIRMATION,
+        "new_release": ContentCategory.NEW_RELEASE,
+        "announcement": ContentCategory.ANNOUNCEMENT,
+    }
+    
+    category = category_map.get(content_type.lower())
+    
+    queue = ReviewQueue()
+    item_id = queue.add_to_queue(
+        content_type=content_type,
+        platform=platform,
+        title=title,
+        body=body,
+        category=category
+    )
+    
+    console.print(f"[green]✓ Added to queue: {item_id}[/green]")
+    if category and category in queue.AUTO_APPROVE_CATEGORIES:
+        console.print("[dim]This content type auto-approves and will be published on schedule.[/dim]")
+    else:
+        console.print("[yellow]This content requires manual review before publishing.[/yellow]")
+
+
+@app.command("setup-firebase")
+def setup_firebase(
+    service_account_path: Path = typer.Option(
+        ..., 
+        prompt=True,
+        exists=True,
+        help="Path to Firebase service account JSON file"
+    ),
+) -> None:
+    """Configure Firebase for the autonomous agent.
+    
+    This command helps set up Firebase by validating the service account
+    and testing the Firestore connection.
+    """
+    import json as json_module
+    
+    try:
+        # Validate the JSON file
+        with open(service_account_path) as f:
+            creds = json_module.load(f)
+        
+        project_id = creds.get("project_id")
+        if not project_id:
+            console.print("[red]Invalid service account file: missing project_id[/red]")
+            raise typer.Exit(1)
+        
+        console.print(f"[green]✓ Valid service account for project:[/green] {project_id}")
+        
+        # Show .env configuration
+        console.print("\n[bold]Add these to your .env file:[/bold]\n")
+        console.print(f"FIREBASE_PROJECT_ID={project_id}")
+        console.print(f"FIREBASE_SERVICE_ACCOUNT_PATH={service_account_path.absolute()}")
+        
+        # Try to initialize Firebase
+        try:
+            from .database import get_firebase_client
+            import os
+            
+            os.environ["FIREBASE_PROJECT_ID"] = project_id
+            os.environ["FIREBASE_SERVICE_ACCOUNT_PATH"] = str(service_account_path.absolute())
+            
+            # Clear cached settings
+            from .settings import get_settings
+            get_settings.cache_clear()
+            
+            db = get_firebase_client()
+            console.print("\n[green]✓ Successfully connected to Firestore![/green]")
+            
+        except Exception as e:
+            console.print(f"\n[yellow]Could not test Firestore connection:[/yellow] {e}")
+            console.print("Make sure to add the environment variables to your .env file.")
+        
+    except json_module.JSONDecodeError:
+        console.print("[red]Invalid JSON in service account file[/red]")
+        raise typer.Exit(1)
+

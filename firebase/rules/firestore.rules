@@ -1,0 +1,59 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Content Queue - Posts awaiting approval or publishing
+    match /content_queue/{contentId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.token.admin == true;
+    }
+    
+    // Published Content - Archive of all posted content
+    match /published_content/{contentId} {
+      allow read: if true;  // Public read for analytics
+      allow write: if request.auth != null && request.auth.token.admin == true;
+    }
+    
+    // Scheduled Posts - Content calendar
+    match /scheduled_posts/{postId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.token.admin == true;
+    }
+    
+    // Fan Interactions - Comments, mentions, DMs
+    match /fan_interactions/{interactionId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.token.admin == true;
+    }
+    
+    // Engagement Actions - Likes, follows, replies to execute
+    match /engagement_actions/{actionId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.token.admin == true;
+    }
+    
+    // Analytics Snapshots - Performance metrics
+    match /analytics_snapshots/{snapshotId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.token.admin == true;
+    }
+    
+    // Fans - Fan profiles (migrated from JSON)
+    match /fans/{fanId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.token.admin == true;
+    }
+    
+    // Platform Connections - OAuth tokens for social platforms
+    match /platform_connections/{platformId} {
+      allow read: if request.auth != null && request.auth.token.admin == true;
+      allow write: if request.auth != null && request.auth.token.admin == true;
+    }
+    
+    // Agent Logs - Autonomous agent activity logs
+    match /agent_logs/{logId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.token.admin == true;
+    }
+  }
+}

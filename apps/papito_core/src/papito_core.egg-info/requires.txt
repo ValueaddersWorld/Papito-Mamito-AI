@@ -3,6 +3,10 @@ typer<1.0,>=0.12
 rich<14.0,>=13.7
 httpx<0.28,>=0.27
 pydantic-settings<3.0,>=2.3
+firebase-admin<7.0,>=6.0
+openai<2.0,>=1.0
+anthropic<1.0,>=0.18
+apscheduler<4.0,>=3.10
 
 [api]
 fastapi<1.0,>=0.110

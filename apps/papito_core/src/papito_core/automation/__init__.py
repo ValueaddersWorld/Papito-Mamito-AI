@@ -6,6 +6,7 @@ from .analytics import (
     StreamingAnalyticsService,
 )
 from .scheduler import ReleaseAction, ReleaseSchedule, ReleaseScheduler
+from .autonomous_agent import AutonomousAgent
 
 __all__ = [
     "PlatformSnapshot",
@@ -14,4 +15,6 @@ __all__ = [
     "ReleaseAction",
     "ReleaseSchedule",
     "ReleaseScheduler",
+    "AutonomousAgent",
 ]
+
