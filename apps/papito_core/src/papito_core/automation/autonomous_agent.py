@@ -13,6 +13,7 @@ with APScheduler for more sophisticated scheduling.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import random
 import time
@@ -23,11 +24,13 @@ from typing import Any, Dict, List, Optional
 from ..content import ContentAdapter, AIResponder
 from ..content.ai_responder import ResponseContext
 from ..database import get_firebase_client, AgentLog, ContentQueueItem
+from ..engines.ai_personality import AIPersonalityEngine, ResponseContext as PersonalityContext
 from ..queue import ReviewQueue
 from ..queue.review_queue import ContentCategory
 from ..settings import get_settings
-from ..social import InstagramPublisher, XPublisher, BufferPublisher
+from ..social import InstagramPublisher, XPublisher, BufferPublisher, TrendingDetector
 from ..social.base import Platform, PublishResult
+from .content_scheduler import ContentScheduler, ContentType
 
 
 # Set up logging
@@ -42,11 +45,11 @@ class AutonomousAgent:
     """The autonomous Papito Mamito agent.
     
     Runs in a continuous loop performing scheduled tasks:
-    - Morning blessing (8am WAT)
-    - Afternoon engagement (2pm WAT)
-    - Evening spotlight (8pm WAT)
-    - Hourly comment checking
-    - Content publishing from queue
+    - Uses ContentScheduler for optimal posting times (6 daily slots)
+    - Uses AIPersonalityEngine for consistent Papito voice
+    - Uses TrendingDetector for hashtag optimization
+    - Hourly comment checking with AI-powered responses
+    - Content publishing from review queue
     
     All actions are logged to Firebase for monitoring.
     """
@@ -71,7 +74,15 @@ class AutonomousAgent:
         self.settings = get_settings()
         self.db = get_firebase_client()
         
-        # Initialize components
+        # Initialize Phase 1 components
+        self.scheduler = ContentScheduler()
+        self.personality = AIPersonalityEngine(
+            openai_api_key=self.settings.openai_api_key,
+            anthropic_api_key=self.settings.anthropic_api_key
+        )
+        self.trending = TrendingDetector()
+        
+        # Initialize content components
         self.content_adapter = ContentAdapter()
         self.ai_responder = AIResponder()
         self.review_queue = ReviewQueue()
@@ -88,6 +99,7 @@ class AutonomousAgent:
         self._running = False
         
         logger.info(f"Agent initialized with session ID: {self.session_id}")
+        logger.info(f"ContentScheduler: {len(self.scheduler.config.posting_slots)} daily slots configured")
     
     def log_action(
         self,
@@ -164,13 +176,13 @@ class AutonomousAgent:
     
     def _run_iteration(self) -> None:
         """Run one iteration of the agent loop."""
-        now = datetime.utcnow()
+        # Check if it's time to post based on scheduler
+        posting_slot = self.scheduler.should_post_now(tolerance_minutes=10)
         
-        # Adjust for WAT (West Africa Time = UTC+1)
-        wat_hour = (now.hour + 1) % 24
-        
-        # Check for scheduled content generation
-        self._check_scheduled_content_generation(wat_hour)
+        if posting_slot and self._should_run(f"slot_{posting_slot.hour}", minutes=90):
+            # Generate content for this slot
+            content_type = self.scheduler.select_content_type(posting_slot)
+            self._generate_scheduled_content(content_type, posting_slot.platforms)
         
         # Publish approved content
         self._publish_ready_content()
@@ -202,6 +214,83 @@ class AutonomousAgent:
         
         return False
     
+    def _generate_scheduled_content(
+        self, 
+        content_type: ContentType, 
+        platforms: List[str]
+    ) -> None:
+        """Generate and queue content based on scheduler's content type.
+        
+        Uses AIPersonalityEngine for consistent voice and TrendingDetector
+        for optimized hashtags.
+        
+        Args:
+            content_type: Type of content from ContentScheduler
+            platforms: List of platforms to target
+        """
+        self.log_action(
+            "generating_content", 
+            f"Generating {content_type.value} content",
+            details={"platforms": platforms, "content_type": content_type.value}
+        )
+        
+        # Get AI-generated content from personality engine
+        content_data = self.personality.generate_content_post(
+            content_type=content_type.value,
+            platform=platforms[0] if platforms else "x",
+        )
+        
+        # Get relevant hashtags from trending detector
+        hashtags = self.trending.get_relevant_hashtags_for_content(
+            content_type=content_type.value,
+            max_hashtags=5,
+            include_core=True
+        )
+        
+        # Map content types to categories
+        category_map = {
+            ContentType.MORNING_BLESSING: ContentCategory.DAILY_BLESSING,
+            ContentType.MUSIC_WISDOM: ContentCategory.AFFIRMATION,
+            ContentType.TRACK_SNIPPET: ContentCategory.MUSIC_PROMOTION,
+            ContentType.BEHIND_THE_SCENES: ContentCategory.ENGAGEMENT,
+            ContentType.LYRICS_QUOTE: ContentCategory.MUSIC_PROMOTION,
+            ContentType.FAN_APPRECIATION: ContentCategory.GRATITUDE,
+            ContentType.EDUCATIONAL: ContentCategory.ENGAGEMENT,
+            ContentType.AFROBEAT_HISTORY: ContentCategory.ENGAGEMENT,
+            ContentType.TRENDING_TOPIC: ContentCategory.ENGAGEMENT,
+            ContentType.STUDIO_UPDATE: ContentCategory.MUSIC_PROMOTION,
+        }
+        
+        category = category_map.get(content_type, ContentCategory.DAILY_BLESSING)
+        
+        # Queue content for each platform
+        for platform in platforms:
+            text = content_data["text"]
+            
+            # Add CTA if present
+            if content_data.get("cta"):
+                text += f"\n\n{content_data['cta']}"
+            
+            # Combine hashtags
+            all_hashtags = list(set(hashtags + content_data.get("hashtags", [])))
+            
+            self.review_queue.add_to_queue(
+                content_type=content_type.value,
+                platform=platform,
+                title=f"{content_type.value.replace('_', ' ').title()}",
+                body=text,
+                category=category,
+                hashtags=all_hashtags[:7],  # Limit hashtags
+                scheduled_at=datetime.utcnow() + timedelta(minutes=5)
+            )
+        
+        self.log_action(
+            "content_queued",
+            f"{content_type.value} queued for {', '.join(platforms)}",
+            details={"hashtags": hashtags, "content_type": content_type.value}
+        )
+    
+    # Legacy methods kept for backward compatibility
     def _check_scheduled_content_generation(self, current_hour: int) -> None:
         """Check if scheduled content should be generated.
         
