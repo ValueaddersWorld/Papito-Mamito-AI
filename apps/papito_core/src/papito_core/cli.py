@@ -1040,3 +1040,165 @@ def setup_firebase(
         console.print("[red]Invalid JSON in service account file[/red]")
         raise typer.Exit(1)
 
+
+# ============================================================
+# Content Calendar Commands
+# ============================================================
+
+calendar_app = typer.Typer(help="Manage the content calendar and scheduling.")
+app.add_typer(calendar_app, name="calendar")
+
+
+@calendar_app.command("generate")
+def calendar_generate(
+    days: int = typer.Option(7, help="Number of days to generate calendar for."),
+    output: Optional[Path] = typer.Option(
+        None,
+        "--output",
+        help="Optional path to save the calendar JSON.",
+    ),
+    preview: bool = typer.Option(True, help="Display calendar preview in terminal."),
+) -> None:
+    """Generate a content calendar for the next N days.
+    
+    Uses ContentScheduler to create optimized posting schedule with:
+    - 6 daily time slots in WAT timezone
+    - Content type variety (blessings, snippets, wisdom, etc.)
+    - Platform-specific content (X, Instagram)
+    
+    Example:
+        papito calendar generate --days 30 --output content_calendar.json
+    """
+    try:
+        from .automation import ContentScheduler, ContentType
+    except ImportError as e:
+        console.print(f"[red]Missing dependencies:[/red] {e}")
+        raise typer.Exit(1)
+    
+    scheduler = ContentScheduler()
+    schedule = scheduler.generate_schedule(days=days)
+    
+    if not schedule:
+        console.print("[yellow]No posts scheduled. This may happen if all slots for today have passed.[/yellow]")
+        return
+    
+    console.print(f"\n[bold green]📅 Generated Content Calendar for {days} Days[/bold green]\n")
+    console.print(f"Timezone: {scheduler.config.timezone}")
+    console.print(f"Posts per day: {scheduler.config.min_posts_per_day}-{scheduler.config.max_posts_per_day}")
+    console.print(f"Total posts scheduled: {len(schedule)}\n")
+    
+    if preview:
+        # Group by date
+        from collections import defaultdict
+        by_date = defaultdict(list)
+        
+        for post in schedule:
+            date_str = post.scheduled_at.strftime("%Y-%m-%d")
+            by_date[date_str].append(post)
+        
+        for date_str in sorted(by_date.keys())[:7]:  # Show first 7 days
+            posts = by_date[date_str]
+            
+            table = Table(title=f"📆 {date_str}")
+            table.add_column("Time (WAT)", style="cyan")
+            table.add_column("Content Type", style="green")
+            table.add_column("Platform", style="magenta")
+            
+            for post in sorted(posts, key=lambda p: p.scheduled_at):
+                time_str = post.scheduled_at.strftime("%H:%M")
+                content_type = post.post_type.replace("_", " ").title()
+                platform = post.generation_params.get("platform", "multi")
+                table.add_row(time_str, content_type, platform)
+            
+            console.print(table)
+            console.print()
+        
+        if len(by_date) > 7:
+            console.print(f"[dim]... and {len(by_date) - 7} more days[/dim]\n")
+    
+    # Save to file if requested
+    if output:
+        import json as json_module
+        
+        calendar_data = {
+            "generated_at": datetime.now().isoformat(),
+            "timezone": scheduler.config.timezone,
+            "days": days,
+            "total_posts": len(schedule),
+            "posts": [
+                {
+                    "scheduled_at": post.scheduled_at.isoformat(),
+                    "post_type": post.post_type,
+                    "platform": post.generation_params.get("platform"),
+                    "status": post.status,
+                }
+                for post in schedule
+            ]
+        }
+        
+        write_text(output, json_module.dumps(calendar_data, indent=2))
+        console.print(f"[green]✓ Calendar saved to[/green] {output}")
+
+
+@calendar_app.command("slots")
+def calendar_slots() -> None:
+    """Display the configured daily posting slots.
+    
+    Shows the 6 optimized time slots for Papito's Afrobeat audience.
+    """
+    try:
+        from .automation import ContentScheduler
+    except ImportError as e:
+        console.print(f"[red]Missing dependencies:[/red] {e}")
+        raise typer.Exit(1)
+    
+    scheduler = ContentScheduler()
+    
+    console.print(f"\n[bold green]⏰ Daily Posting Slots ({scheduler.config.timezone})[/bold green]\n")
+    
+    table = Table(title="Optimized Posting Times")
+    table.add_column("Time (WAT)", style="cyan")
+    table.add_column("Priority", style="magenta")
+    table.add_column("Content Types", style="green")
+    table.add_column("Platforms", style="yellow")
+    
+    for slot in sorted(scheduler.config.posting_slots, key=lambda s: s.hour * 60 + s.minute):
+        time_str = f"{slot.hour:02d}:{slot.minute:02d}"
+        priority = "⭐" * min(slot.priority, 5)
+        content_types = ", ".join([ct.value.replace("_", " ").title() for ct in slot.content_types])
+        platforms = ", ".join(slot.platforms)
+        
+        table.add_row(time_str, priority, content_types, platforms)
+    
+    console.print(table)
+    console.print(f"\n[dim]Priority indicates engagement potential (more ⭐ = higher)[/dim]")
+
+
+@calendar_app.command("next")
+def calendar_next() -> None:
+    """Show the next scheduled posting slot.
+    
+    Useful for checking when the next automatic post will be generated.
+    """
+    try:
+        from .automation import ContentScheduler
+    except ImportError as e:
+        console.print(f"[red]Missing dependencies:[/red] {e}")
+        raise typer.Exit(1)
+    
+    scheduler = ContentScheduler()
+    now = scheduler.get_current_time_wat()
+    next_slot = scheduler.get_next_posting_slot()
+    
+    console.print(f"\n[bold]Current time (WAT):[/bold] {now.strftime('%Y-%m-%d %H:%M')}\n")
+    
+    if next_slot:
+        next_time = f"{next_slot.hour:02d}:{next_slot.minute:02d}"
+        content_types = ", ".join([ct.value.replace("_", " ").title() for ct in next_slot.content_types])
+        
+        console.print(f"[green]📍 Next posting slot:[/green] {next_time} WAT")
+        console.print(f"[cyan]Content options:[/cyan] {content_types}")
+        console.print(f"[magenta]Platforms:[/magenta] {', '.join(next_slot.platforms)}")
+        console.print(f"[yellow]Priority:[/yellow] {'⭐' * next_slot.priority}")
+    else:
+        console.print("[yellow]No more slots today. First slot tomorrow is at 07:00 WAT.[/yellow]")
