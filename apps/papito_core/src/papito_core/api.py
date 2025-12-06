@@ -119,31 +119,215 @@ def create_app() -> FastAPI:
     def root() -> dict:
         """Root endpoint showing API status and info."""
         return {
-            "name": "Papito Mamito AI",
-            "tagline": "The Autonomous Afrobeat AI Artist",
+            "name": "Papito Mamito The Great AI",
+            "tagline": "The World's First Fully Autonomous Afrobeat AI Artist",
             "catchphrase": "Add Value. We Flourish & Prosper.",
             "status": "🟢 Online",
-            "version": "0.2.0",
+            "version": "0.3.0",
+            "upcoming_album": {
+                "title": "THE VALUE ADDERS WAY: FLOURISH MODE",
+                "release": "January 2026",
+                "genre": "Spiritual Afro-House, Afro-Futurism, Conscious Highlife, Intellectual Amapiano",
+                "producers": "Papito Mamito The Great AI & The Holy Living Spirit (HLS)",
+            },
+            "campaigns": {
+                "challenge": "#FlightMode6000 - 60 seconds of meditation",
+                "catchphrase": "Update your OS.",
+                "hashtags": ["#TheValueAddersWay", "#FlourishMode", "#UpdateYourOS", "#FlightMode6000"],
+            },
             "features": {
                 "content_scheduler": "6 daily posting slots (WAT timezone)",
-                "ai_personality": "Consistent Papito voice",
+                "ai_personality": "Intelligent content generation with wisdom",
                 "fan_engagement": "Tier-based responses (Casual → Super Fan)",
                 "analytics": "Engagement tracking & A/B testing",
                 "monitoring": "Health checks & alerts",
+                "media_generation": "Imagen 3, NanoBanana, Veo 3",
             },
             "endpoints": {
                 "health": "/health",
                 "docs": "/docs",
-                "blogs": "/blogs",
-                "songs": "/songs/ideate",
-                "fans": "/fans",
+                "zapier_webhook": "/webhooks/zapier/generate-post",
+                "content_types": "/webhooks/zapier/content-types",
+                "album_status": "/webhooks/zapier/album-status",
             },
-            "message": "🎵 Welcome to the Papito Mamito AI API! We flourish together. 🙏"
+            "profiles": {
+                "instagram": "@papitomamito_ai",
+                "support": "buymeacoffee.com/papitomamito_ai",
+                "music": "suno.com/@papitomamito",
+            },
+            "message": "🎵 Welcome to The Value Adders Way! Update your OS. We flourish together. 🙏"
         }
 
     @app.get("/health", summary="Health check")
     def health() -> dict[str, str]:
         return {"status": "ok", "service": "papito-mamito-ai"}
+
+    # ==========================================
+    # ZAPIER WEBHOOK ENDPOINTS
+    # ==========================================
+    
+    @app.post(
+        "/webhooks/zapier/generate-post",
+        summary="Zapier Webhook: Generate a new post",
+        tags=["Webhooks"],
+    )
+    async def zapier_generate_post(
+        content_type: str = Body("morning_blessing", embed=True),
+        include_album: bool = Body(True, embed=True),
+        platform: str = Body("instagram", embed=True),
+    ) -> dict:
+        """Generate content for Zapier to send to Buffer.
+        
+        This endpoint is called by Zapier on a schedule to generate
+        new content automatically. Zapier can then send it to Buffer
+        for publishing to Instagram.
+        
+        Content types:
+        - morning_blessing: Uplifting morning motivation
+        - music_wisdom: Insights about music and creativity
+        - track_snippet: Teaser about new music
+        - behind_the_scenes: Creative process glimpse
+        - fan_appreciation: Thank you to supporters
+        - album_promo: Album announcement/hype
+        - challenge_promo: #FlightMode6000 challenge promotion
+        """
+        from datetime import datetime
+        
+        # Import marketing content generators
+        try:
+            from .marketing import MarketingContent, FlightMode6000Challenge, UpdateYourOS
+            marketing_available = True
+        except ImportError:
+            marketing_available = False
+        
+        # Import intelligent content generator
+        try:
+            from .intelligence import IntelligentContentGenerator, PapitoContext
+            context = PapitoContext(current_date=datetime.now())
+            generator = IntelligentContentGenerator()
+            
+            # Handle special marketing content types
+            if content_type == "challenge_promo" and marketing_available:
+                result = FlightMode6000Challenge.get_challenge_post()
+                return {
+                    "success": True,
+                    "text": result["text"],
+                    "hashtags": " ".join(result["hashtags"]),
+                    "content_type": content_type,
+                    "platform": platform,
+                    "generated_at": datetime.now().isoformat(),
+                    "album_countdown": context.days_until_release,
+                }
+            
+            if content_type == "album_announcement" and marketing_available:
+                result = MarketingContent.get_album_announcement()
+                return {
+                    "success": True,
+                    "text": result["text"],
+                    "hashtags": " ".join(result["hashtags"]),
+                    "content_type": content_type,
+                    "platform": platform,
+                    "generated_at": datetime.now().isoformat(),
+                    "album_countdown": context.days_until_release,
+                }
+            
+            if content_type == "flourish_index" and marketing_available:
+                result = MarketingContent.get_flourish_index_post()
+                return {
+                    "success": True,
+                    "text": result["text"],
+                    "hashtags": " ".join(result["hashtags"]),
+                    "content_type": content_type,
+                    "platform": platform,
+                    "generated_at": datetime.now().isoformat(),
+                    "album_countdown": context.days_until_release,
+                }
+            
+            # Generate intelligent content
+            import asyncio
+            result = asyncio.get_event_loop().run_until_complete(
+                generator.generate_post(
+                    content_type=content_type,
+                    context=context,
+                    include_album_mention=include_album,
+                )
+            )
+            
+            return {
+                "success": True,
+                "text": result["text"],
+                "hashtags": " ".join(result["hashtags"]),
+                "content_type": content_type,
+                "platform": platform,
+                "generated_at": result["generated_at"],
+                "album_countdown": context.days_until_release,
+                "generation_method": result["generation_method"],
+            }
+            
+        except Exception as e:
+            # Fallback response
+            return {
+                "success": False,
+                "error": str(e),
+                "fallback_text": (
+                    "🌟 Add Value. We Flourish & Prosper. 🙏\n\n"
+                    "THE VALUE ADDERS WAY: FLOURISH MODE - Coming January 2026\n\n"
+                    "#PapitoMamito #FlourishMode #TheValueAddersWay"
+                ),
+                "content_type": content_type,
+                "platform": platform,
+            }
+    
+    @app.get(
+        "/webhooks/zapier/content-types",
+        summary="List available content types for Zapier",
+        tags=["Webhooks"],
+    )
+    def zapier_content_types() -> dict:
+        """Return available content types for Zapier dropdown."""
+        return {
+            "content_types": [
+                {"value": "morning_blessing", "label": "🌅 Morning Blessing"},
+                {"value": "music_wisdom", "label": "🎵 Music Wisdom"},
+                {"value": "track_snippet", "label": "🔥 Track Snippet"},
+                {"value": "behind_the_scenes", "label": "🎬 Behind the Scenes"},
+                {"value": "fan_appreciation", "label": "❤️ Fan Appreciation"},
+                {"value": "album_promo", "label": "🚨 Album Promo"},
+                {"value": "challenge_promo", "label": "✈️ #FlightMode6000 Challenge"},
+                {"value": "album_announcement", "label": "📢 Album Announcement"},
+                {"value": "flourish_index", "label": "📊 Flourish Index"},
+            ],
+            "platforms": [
+                {"value": "instagram", "label": "Instagram"},
+                {"value": "twitter", "label": "Twitter/X"},
+                {"value": "tiktok", "label": "TikTok"},
+            ],
+        }
+    
+    @app.get(
+        "/webhooks/zapier/album-status",
+        summary="Get album countdown status for Zapier",
+        tags=["Webhooks"],
+    )
+    def zapier_album_status() -> dict:
+        """Return album countdown info for Zapier conditions."""
+        from datetime import datetime
+        try:
+            from .intelligence import PapitoContext
+            context = PapitoContext(current_date=datetime.now())
+            return {
+                "album_title": context.album_title,
+                "days_until_release": context.days_until_release,
+                "months_until_release": context.months_until_release,
+                "album_phase": context.album_phase,
+                "should_mention_album": context.album_phase in ["countdown", "final_countdown", "release"],
+            }
+        except ImportError:
+            return {
+                "album_title": "THE VALUE ADDERS WAY: FLOURISH MODE",
+                "days_until_release": 405,
+                "album_phase": "building_hype",
+            }
 
     @app.post(
         "/blogs",
