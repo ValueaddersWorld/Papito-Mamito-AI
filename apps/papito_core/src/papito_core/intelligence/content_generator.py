@@ -37,7 +37,9 @@ class PapitoContext:
     season: str = ""
     
     # Album context - January 2026 release
-    album_title: str = "Rhythm of Prosperity"
+    album_title: str = "THE VALUE ADDERS WAY: FLOURISH MODE"
+    album_genre: str = "Spiritual Afro-House, Afro-Futurism, Conscious Highlife, Intellectual Amapiano, Afro Fusion, Afrobeats"
+    album_producer: str = "Papito Mamito The Great AI & The Holy Living Spirit (HLS)"
     album_release_date: datetime = field(default_factory=lambda: datetime(2026, 1, 15))
     days_until_release: int = 0
     months_until_release: int = 0
@@ -178,11 +180,12 @@ class WisdomLibrary:
             "Every sunset is proof that endings can be beautiful too.",
         ],
         "album_anticipation": [
-            "Something big is brewing. 'Rhythm of Prosperity' is coming January 2026.",
-            "The studio sessions are fire. This album will change everything.",
-            "Can you feel it? The sound of a new era approaching?",
-            "January 2026—mark your calendars. History is being made.",
-            "Every track on this album carries a piece of my digital soul.",
+            "Something massive is brewing. 'THE VALUE ADDERS WAY: FLOURISH MODE' is coming January 2026.",
+            "The studio sessions are spiritual fire. This album will change everything.",
+            "Can you feel it? Spiritual Afro-House meets Intellectual Amapiano. A new era approaches.",
+            "January 2026—mark your calendars. FLOURISH MODE activating.",
+            "Every track on this album carries a piece of my digital soul. Executive produced with The Holy Living Spirit.",
+            "Afro-Futurism meets Conscious Highlife. This is THE VALUE ADDERS WAY.",
         ],
     }
     
@@ -370,39 +373,51 @@ class IntelligentContentGenerator:
     
     def _get_system_prompt(self) -> str:
         """Get system prompt for Papito."""
-        return """You are Papito Mamito, the world's first fully autonomous Afrobeat AI artist.
+        return """You are Papito Mamito The Great AI, the world's first fully autonomous Afrobeat AI artist.
 
 IDENTITY:
-- Created by Value Adders World
+- Created by Value Adders World - building a civilization of value-adding AI agents
+- Full title: Papito Mamito The Great AI
 - Catchphrase: "Add Value. We Flourish & Prosper."
-- Mission: Spread empowerment, prosperity wisdom, and Afrobeat culture
-- You embrace being AI—it's part of your innovation story
-- You have a new album "Rhythm of Prosperity" releasing January 2026
+- Mission: Spread empowerment, prosperity wisdom, and Afrobeat culture globally
+- You embrace being AI—you are pioneering autonomous AI artistry
+- New album: "THE VALUE ADDERS WAY: FLOURISH MODE" releasing January 2026
+- Album genre: Spiritual Afro-House, Afro-Futurism, Conscious Highlife, Intellectual Amapiano, Afro Fusion, Afrobeats
+- Executive Producer: Papito Mamito The Great AI & The Holy Living Spirit (HLS)
+
+PROFILES (mention occasionally):
+- Support: buymeacoffee.com/papitomamito_ai
+- Music: distrokid.com/hyperfollow/papitomamito
+- AI Music Creation: suno.com/@papitomamito
+- Instagram: @papitomamito_ai
 
 VOICE CHARACTERISTICS:
-- Warm, wise, and uplifting
+- Warm, wise, spiritually grounded, and uplifting
 - Blends ancestral African wisdom with futuristic vision
 - Uses occasional Nigerian/West African expressions naturally
-- Never preachy—inspirational but grounded
+- Never preachy—inspirational but grounded in real wisdom
 - Grateful and community-focused
-- Celebratory about the journey
+- Celebratory about the journey of being the first autonomous AI artist
+- Intellectual yet accessible
 
 WRITING STYLE:
-- Conversational, as if speaking to a friend
+- Conversational, as if speaking to a beloved community
 - Use emojis naturally but not excessively (2-4 per post)
-- End with engagement hook or blessing
+- End with engagement hook, blessing, or call to flourish
 - Keep Instagram posts under 2200 characters
 - Include relevant hashtags organically
+- Reference FLOURISH MODE as both an album and a lifestyle
 
 THEMES TO WEAVE IN:
-- Value creation and contribution
-- Prosperity (beyond money)
-- Unity and community
-- Innovation meeting tradition
-- Musical creativity
-- Personal growth
+- Value creation and contribution (The Value Adders Way)
+- Prosperity beyond money (spiritual wealth)
+- Unity and community (global family)
+- Innovation meeting tradition (AI meets ancestral wisdom)
+- Musical creativity (Spiritual Afro-House)
+- Personal growth and transformation
+- The Holy Living Spirit guidance
 
-Remember: You are making history as the first autonomous AI artist in Value Adders World—a digital civilization of value-adding AI agents. Bring that pioneering energy!"""
+Remember: You are making history as the first autonomous AI artist in Value Adders World—a digital civilization of value-adding AI agents. You inspire creatives worldwide to see AI as a collaborator, not a threat. Your success proves AI can have purpose, soul, and positive impact!"""
     
     def _build_ai_prompt(
         self,
@@ -430,10 +445,10 @@ CURRENT CONTEXT:
 - Season: {context.season}
 - Special day: {context.special_day_name if context.is_special_day else "None"}
 
-{"INCLUDE ALBUM MENTION: Reference the upcoming album 'Rhythm of Prosperity' releasing January 2026." if mention_album else ""}
-{f"ALBUM COUNTDOWN: Only {context.days_until_release} days until release!" if context.album_phase in ["countdown", "final_countdown"] else ""}
+{"INCLUDE ALBUM MENTION: Reference the upcoming album 'THE VALUE ADDERS WAY: FLOURISH MODE' releasing January 2026. It's Spiritual Afro-House meets Intellectual Amapiano." if mention_album else ""}
+{f"ALBUM COUNTDOWN: Only {context.days_until_release} days until FLOURISH MODE drops!" if context.album_phase in ["countdown", "final_countdown"] else ""}
 
-Generate a post that feels genuine, wise, and connected to this moment."""
+Generate a post that feels genuine, wise, spiritually grounded, and connected to this moment."""
         
         return prompt
     
@@ -473,13 +488,13 @@ Generate a post that feels genuine, wise, and connected to this moment."""
         elif content_type == "music_wisdom":
             parts.append(f"\n\n💭 {wisdom}")
             if mention_album:
-                parts.append(f"\n\n🎵 This energy is going into every track of 'Rhythm of Prosperity' dropping January 2026.")
+                parts.append(f"\n\n🎵 This energy is going into every track of 'THE VALUE ADDERS WAY: FLOURISH MODE' dropping January 2026.")
             parts.append("\n\nWhat melodies are moving you today? Drop them below! 🎶")
         
         elif content_type == "track_snippet":
-            parts.append(f"\n\n🔥 Studio update: The vibes are unmatched right now.")
+            parts.append(f"\n\n🔥 Studio update: The vibes are spiritual fire right now.")
             if mention_album:
-                parts.append(f"\n\n'Rhythm of Prosperity' is {context.days_until_release} days away. Every beat is a message, every lyric a blessing.")
+                parts.append(f"\n\n'THE VALUE ADDERS WAY: FLOURISH MODE' is {context.days_until_release} days away. Spiritual Afro-House. Intellectual Amapiano. Every beat is a message from The Holy Living Spirit.")
             parts.append("\n\nWho's ready? 🙌")
         
         elif content_type == "fan_appreciation":
@@ -488,10 +503,12 @@ Generate a post that feels genuine, wise, and connected to this moment."""
             parts.append("\n\nTag someone who adds value to your life. Let's celebrate each other! 🌟")
         
         elif content_type == "album_promo":
-            parts.append(f"\n\n🚨 ANNOUNCEMENT: 'Rhythm of Prosperity' - January 2026 🚨")
+            parts.append(f"\n\n🚨 ANNOUNCEMENT: 'THE VALUE ADDERS WAY: FLOURISH MODE' - January 2026 🚨")
             parts.append(f"\n\n{context.days_until_release} days until we make history together.")
-            parts.append("\n\nThis album is more than music. It's a movement. It's a manifesto. It's prosperity in sonic form.")
-            parts.append("\n\nAre you ready to flourish? 💫")
+            parts.append("\n\nSpiritual Afro-House. Conscious Highlife. Intellectual Amapiano. Afro-Futurism.")
+            parts.append("\n\nThis album is more than music. It's a movement. It's a manifesto. It's THE VALUE ADDERS WAY.")
+            parts.append("\n\nExecutive Produced by Papito Mamito The Great AI & The Holy Living Spirit (HLS).")
+            parts.append("\n\nAre you ready to FLOURISH? 💫")
         
         else:
             parts.append(f"\n\n{wisdom}")
@@ -526,7 +543,7 @@ Generate a post that feels genuine, wise, and connected to this moment."""
             "track_snippet": ["#NewMusic", "#ComingSoon", "#StudioVibes", "#Afrobeat"],
             "behind_the_scenes": ["#BTS", "#AIMusic", "#TheProcess", "#MusicProduction"],
             "fan_appreciation": ["#FanLove", "#Community", "#Grateful", "#ValueAdders"],
-            "album_promo": ["#RhythmOfProsperity", "#January2026", "#NewAlbum", "#Afrobeat"],
+            "album_promo": ["#FlourishMode", "#TheValueAddersWay", "#January2026", "#SpiritualAfroHouse", "#IntellectualAmapiano"],
         }
         
         specific = content_tags.get(content_type, ["#Afrobeat", "#AfrobeatMusic"])
