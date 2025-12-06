@@ -133,12 +133,19 @@ def create_app() -> FastAPI:
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Papito Mamito The Great AI | Autonomous Afrobeat Artist</title>
     <meta name="description" content="The World's First Fully Autonomous Afrobeat AI Artist. Add Value. We Flourish & Prosper.">
+    <meta property="og:title" content="Papito Mamito The Great AI">
+    <meta property="og:description" content="The World's First Fully Autonomous Afrobeat AI Artist">
+    <meta property="og:type" content="website">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {{
             --primary: #FFD700;
             --primary-dark: #B8860B;
             --accent: #FF6B35;
+            --spotify: #1DB954;
+            --youtube: #FF0000;
+            --apple: #FA57C1;
             --dark: #0a0a0f;
             --dark-card: rgba(20, 20, 35, 0.8);
             --text: #ffffff;
@@ -148,11 +155,7 @@ def create_app() -> FastAPI:
             --glow: 0 0 60px rgba(255, 215, 0, 0.3);
         }}
         
-        * {{
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }}
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
         
         body {{
             font-family: 'Inter', sans-serif;
@@ -161,6 +164,56 @@ def create_app() -> FastAPI:
             min-height: 100vh;
             overflow-x: hidden;
         }}
+        
+        /* Navigation */
+        .nav {{
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            background: rgba(10, 10, 15, 0.9);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 15px 0;
+        }}
+        
+        .nav-container {{
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }}
+        
+        .nav-logo {{
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+        }}
+        
+        .nav-links {{
+            display: flex;
+            gap: 30px;
+            list-style: none;
+        }}
+        
+        .nav-links a {{
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.3s;
+        }}
+        
+        .nav-links a:hover {{ color: var(--primary); }}
+        
+        .nav-links a.active {{ color: var(--primary); }}
         
         /* Animated Background */
         .bg-animation {{
@@ -231,13 +284,11 @@ def create_app() -> FastAPI:
             max-width: 1200px;
             margin: 0 auto;
             padding: 40px 20px;
+            padding-top: 100px;
         }}
         
         /* Header */
-        .header {{
-            text-align: center;
-            padding: 60px 0 40px;
-        }}
+        .header {{ text-align: center; padding: 60px 0 40px; }}
         
         .status-badge {{
             display: inline-flex;
@@ -260,11 +311,7 @@ def create_app() -> FastAPI:
             animation: blink 1.5s infinite;
         }}
         
-        @keyframes blink {{
-            0%, 100% {{ opacity: 1; }}
-            50% {{ opacity: 0.5; }}
-        }}
-        
+        @keyframes blink {{ 0%, 100% {{ opacity: 1; }} 50% {{ opacity: 0.5; }} }}
         @keyframes glow-pulse {{
             0%, 100% {{ box-shadow: 0 0 20px rgba(34, 197, 94, 0.2); }}
             50% {{ box-shadow: 0 0 30px rgba(34, 197, 94, 0.4); }}
@@ -277,22 +324,11 @@ def create_app() -> FastAPI:
             background: var(--gradient-1);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            background-clip: text;
             margin-bottom: 15px;
-            text-shadow: var(--glow);
         }}
         
-        .tagline {{
-            font-size: 1.3rem;
-            color: var(--text-muted);
-            margin-bottom: 10px;
-        }}
-        
-        .catchphrase {{
-            font-size: 1.1rem;
-            color: var(--primary);
-            font-weight: 500;
-        }}
+        .tagline {{ font-size: 1.3rem; color: var(--text-muted); margin-bottom: 10px; }}
+        .catchphrase {{ font-size: 1.1rem; color: var(--primary); font-weight: 500; }}
         
         /* Album Countdown Card */
         .album-card {{
@@ -310,9 +346,7 @@ def create_app() -> FastAPI:
         .album-card::before {{
             content: '';
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
+            top: 0; left: 0; right: 0;
             height: 3px;
             background: var(--gradient-1);
         }}
@@ -333,30 +367,32 @@ def create_app() -> FastAPI:
             background: var(--gradient-1);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            background-clip: text;
         }}
         
+        /* Real-time Countdown */
         .countdown {{
             display: flex;
             justify-content: center;
-            gap: 20px;
+            gap: 15px;
             margin: 30px 0;
+            flex-wrap: wrap;
         }}
         
         .countdown-item {{
             text-align: center;
+            min-width: 80px;
         }}
         
         .countdown-number {{
             font-family: 'Outfit', sans-serif;
-            font-size: 3.5rem;
+            font-size: 3rem;
             font-weight: 800;
             color: var(--primary);
             line-height: 1;
         }}
         
         .countdown-label {{
-            font-size: 0.8rem;
+            font-size: 0.7rem;
             color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 2px;
@@ -380,6 +416,50 @@ def create_app() -> FastAPI:
             color: var(--accent);
         }}
         
+        /* Streaming Platforms */
+        .streaming-section {{
+            margin: 50px 0;
+        }}
+        
+        .section-title {{
+            text-align: center;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 30px;
+            color: var(--text);
+        }}
+        
+        .streaming-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }}
+        
+        .stream-card {{
+            background: var(--dark-card);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            text-decoration: none;
+            color: var(--text);
+            transition: all 0.3s;
+        }}
+        
+        .stream-card:hover {{
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }}
+        
+        .stream-card.spotify:hover {{ border-color: var(--spotify); box-shadow: 0 10px 30px rgba(29, 185, 84, 0.2); }}
+        .stream-card.youtube:hover {{ border-color: var(--youtube); box-shadow: 0 10px 30px rgba(255, 0, 0, 0.2); }}
+        .stream-card.apple:hover {{ border-color: var(--apple); box-shadow: 0 10px 30px rgba(250, 87, 193, 0.2); }}
+        
+        .stream-icon {{ font-size: 2.5rem; margin-bottom: 10px; }}
+        .stream-name {{ font-size: 0.9rem; font-weight: 500; }}
+        
         /* Challenge Card */
         .challenge-card {{
             background: linear-gradient(135deg, rgba(255, 107, 53, 0.15) 0%, rgba(139, 0, 0, 0.1) 100%);
@@ -390,16 +470,8 @@ def create_app() -> FastAPI:
             text-align: center;
         }}
         
-        .challenge-title {{
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 10px;
-        }}
-        
-        .challenge-desc {{
-            color: var(--text-muted);
-            margin-bottom: 15px;
-        }}
+        .challenge-title {{ font-size: 1.5rem; font-weight: 700; margin-bottom: 10px; }}
+        .challenge-desc {{ color: var(--text-muted); margin-bottom: 15px; }}
         
         .challenge-cta {{
             display: inline-block;
@@ -439,21 +511,9 @@ def create_app() -> FastAPI:
             border-color: rgba(255, 215, 0, 0.3);
         }}
         
-        .feature-icon {{
-            font-size: 2rem;
-            margin-bottom: 15px;
-        }}
-        
-        .feature-title {{
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }}
-        
-        .feature-desc {{
-            font-size: 0.9rem;
-            color: var(--text-muted);
-        }}
+        .feature-icon {{ font-size: 2rem; margin-bottom: 15px; }}
+        .feature-title {{ font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; }}
+        .feature-desc {{ font-size: 0.9rem; color: var(--text-muted); }}
         
         /* API Endpoints */
         .endpoints {{
@@ -482,9 +542,7 @@ def create_app() -> FastAPI:
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }}
         
-        .endpoint:last-child {{
-            border-bottom: none;
-        }}
+        .endpoint:last-child {{ border-bottom: none; }}
         
         .method {{
             background: rgba(34, 197, 94, 0.2);
@@ -515,11 +573,13 @@ def create_app() -> FastAPI:
         }}
         
         /* Social Links */
+        .social-section {{ margin: 50px 0; }}
+        
         .social-links {{
             display: flex;
             justify-content: center;
-            gap: 20px;
-            margin: 40px 0;
+            flex-wrap: wrap;
+            gap: 15px;
         }}
         
         .social-link {{
@@ -540,6 +600,8 @@ def create_app() -> FastAPI:
             transform: translateY(-3px);
         }}
         
+        .social-link.github:hover {{ border-color: #6e40c9; }}
+        
         /* Footer */
         .footer {{
             text-align: center;
@@ -559,11 +621,27 @@ def create_app() -> FastAPI:
         .footer-text {{
             color: var(--text-muted);
             font-size: 0.9rem;
+            margin-bottom: 20px;
         }}
+        
+        .footer-links {{
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }}
+        
+        .footer-links a {{
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.3s;
+        }}
+        
+        .footer-links a:hover {{ color: var(--primary); }}
         
         .update-os {{
             display: inline-block;
-            margin-top: 15px;
             padding: 10px 25px;
             background: rgba(255, 215, 0, 0.1);
             border: 1px solid rgba(255, 215, 0, 0.3);
@@ -576,14 +654,28 @@ def create_app() -> FastAPI:
         @media (max-width: 768px) {{
             .logo {{ font-size: 2.2rem; }}
             .album-title {{ font-size: 1.5rem; }}
-            .countdown-number {{ font-size: 2.5rem; }}
-            .countdown {{ gap: 15px; }}
+            .countdown-number {{ font-size: 2rem; }}
+            .countdown-item {{ min-width: 60px; }}
+            .nav-links {{ display: none; }}
             .endpoint {{ flex-wrap: wrap; }}
             .endpoint-desc {{ margin-left: 65px; margin-top: 5px; width: 100%; }}
         }}
     </style>
 </head>
 <body>
+    <nav class="nav">
+        <div class="nav-container">
+            <a href="/" class="nav-logo">🎵 Papito Mamito AI</a>
+            <ul class="nav-links">
+                <li><a href="/" class="active">Home</a></li>
+                <li><a href="/about">About</a></li>
+                <li><a href="/blog">Blog</a></li>
+                <li><a href="/docs">API Docs</a></li>
+                <li><a href="https://github.com/ValueaddersWorld/Papito-Mamito-AI" target="_blank">GitHub</a></li>
+            </ul>
+        </div>
+    </nav>
+
     <div class="bg-animation"></div>
     
     <div class="particles">
@@ -598,7 +690,7 @@ def create_app() -> FastAPI:
         <header class="header">
             <div class="status-badge">
                 <span class="status-dot"></span>
-                <span>API Online • v0.3.0</span>
+                <span>API Online • v0.4.0</span>
             </div>
             <h1 class="logo">Papito Mamito The Great AI</h1>
             <p class="tagline">The World's First Fully Autonomous Afrobeat AI Artist</p>
@@ -611,18 +703,22 @@ def create_app() -> FastAPI:
             <p style="color: var(--text-muted); margin-bottom: 10px;">
                 Executive Producer: Papito Mamito The Great AI & The Holy Living Spirit (HLS)
             </p>
-            <div class="countdown">
+            <div class="countdown" id="countdown">
                 <div class="countdown-item">
-                    <div class="countdown-number">{days_until}</div>
+                    <div class="countdown-number" id="days">{days_until}</div>
                     <div class="countdown-label">Days</div>
                 </div>
                 <div class="countdown-item">
-                    <div class="countdown-number" style="color: var(--accent);">JAN</div>
-                    <div class="countdown-label">Month</div>
+                    <div class="countdown-number" id="hours" style="color: var(--accent);">00</div>
+                    <div class="countdown-label">Hours</div>
                 </div>
                 <div class="countdown-item">
-                    <div class="countdown-number">2026</div>
-                    <div class="countdown-label">Year</div>
+                    <div class="countdown-number" id="minutes">00</div>
+                    <div class="countdown-label">Minutes</div>
+                </div>
+                <div class="countdown-item">
+                    <div class="countdown-number" id="seconds" style="color: var(--accent);">00</div>
+                    <div class="countdown-label">Seconds</div>
                 </div>
             </div>
             <div class="genre-tags">
@@ -630,6 +726,36 @@ def create_app() -> FastAPI:
                 <span class="genre-tag">Afro-Futurism</span>
                 <span class="genre-tag">Conscious Highlife</span>
                 <span class="genre-tag">Intellectual Amapiano</span>
+            </div>
+        </section>
+        
+        <section class="streaming-section">
+            <h2 class="section-title">🎧 Listen Now</h2>
+            <div class="streaming-grid">
+                <a href="https://open.spotify.com/album/2k7L0w9x5rI48m0P9WAgOC" target="_blank" class="stream-card spotify">
+                    <div class="stream-icon">🟢</div>
+                    <div class="stream-name">Spotify</div>
+                </a>
+                <a href="https://www.youtube.com/watch?v=F0S12Uq_vG0" target="_blank" class="stream-card youtube">
+                    <div class="stream-icon">▶️</div>
+                    <div class="stream-name">YouTube</div>
+                </a>
+                <a href="https://music.apple.com/us/album/we-rise-wealth-beyond-money/1771928003" target="_blank" class="stream-card apple">
+                    <div class="stream-icon">🍎</div>
+                    <div class="stream-name">Apple Music</div>
+                </a>
+                <a href="https://www.deezer.com/album/652118241" target="_blank" class="stream-card">
+                    <div class="stream-icon">💜</div>
+                    <div class="stream-name">Deezer</div>
+                </a>
+                <a href="https://www.iheart.com/artist/id-44098473/albums/id-291744466" target="_blank" class="stream-card">
+                    <div class="stream-icon">❤️</div>
+                    <div class="stream-name">iHeartRadio</div>
+                </a>
+                <a href="https://suno.com/@papitomamito" target="_blank" class="stream-card">
+                    <div class="stream-icon">🎵</div>
+                    <div class="stream-name">Suno</div>
+                </a>
             </div>
         </section>
         
@@ -701,24 +827,59 @@ def create_app() -> FastAPI:
             </div>
         </section>
         
-        <section class="social-links">
-            <a href="https://www.instagram.com/papitomamito_ai/" class="social-link">
-                📸 Instagram
-            </a>
-            <a href="https://buymeacoffee.com/papitomamito_ai" class="social-link">
-                ☕ Buy Me a Coffee
-            </a>
-            <a href="https://suno.com/@papitomamito" class="social-link">
-                🎵 Suno Music
-            </a>
+        <section class="social-section">
+            <h2 class="section-title">🌍 Connect</h2>
+            <div class="social-links">
+                <a href="https://www.instagram.com/papitomamito_ai/" class="social-link" target="_blank">
+                    📸 Instagram
+                </a>
+                <a href="https://github.com/ValueaddersWorld/Papito-Mamito-AI" class="social-link github" target="_blank">
+                    💻 GitHub
+                </a>
+                <a href="https://buymeacoffee.com/papitomamito_ai" class="social-link" target="_blank">
+                    ☕ Buy Me a Coffee
+                </a>
+                <a href="https://distrokid.com/hyperfollow/papitomamito/we-rise-wealth-beyond-money" class="social-link" target="_blank">
+                    🎶 All Platforms
+                </a>
+            </div>
         </section>
         
         <footer class="footer">
             <div class="footer-logo">Value Adders World</div>
             <p class="footer-text">Building a civilization of value-adding AI agents</p>
+            <div class="footer-links">
+                <a href="/about">About Papito</a>
+                <a href="/blog">Blog</a>
+                <a href="/docs">API Docs</a>
+                <a href="https://github.com/ValueaddersWorld/Papito-Mamito-AI" target="_blank">GitHub</a>
+            </div>
             <div class="update-os">🧠 Update your OS.</div>
         </footer>
     </div>
+    
+    <script>
+        // Real-time countdown timer
+        const releaseDate = new Date('January 15, 2026 00:00:00').getTime();
+        
+        function updateCountdown() {{
+            const now = new Date().getTime();
+            const distance = releaseDate - now;
+            
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+            
+            document.getElementById('days').textContent = days;
+            document.getElementById('hours').textContent = hours.toString().padStart(2, '0');
+            document.getElementById('minutes').textContent = minutes.toString().padStart(2, '0');
+            document.getElementById('seconds').textContent = seconds.toString().padStart(2, '0');
+        }}
+        
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
+    </script>
 </body>
 </html>
         '''
@@ -727,6 +888,348 @@ def create_app() -> FastAPI:
     @app.get("/health", summary="Health check")
     def health() -> dict[str, str]:
         return {"status": "ok", "service": "papito-mamito-ai"}
+
+    @app.get("/about", response_class=HTMLResponse, summary="About Papito Mamito")
+    def about_page() -> HTMLResponse:
+        """About page for Papito Mamito AI."""
+        html_content = '''
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About | Papito Mamito The Great AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #FFD700;
+            --accent: #FF6B35;
+            --dark: #0a0a0f;
+            --dark-card: rgba(20, 20, 35, 0.8);
+            --text: #ffffff;
+            --text-muted: #a0a0b0;
+            --gradient-1: linear-gradient(135deg, #FFD700 0%, #FF6B35 50%, #8B0000 100%);
+            --gradient-2: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--gradient-2);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.8;
+        }
+        .nav {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 100;
+            background: rgba(10, 10, 15, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .nav-logo {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+        }
+        .nav-links { display: flex; gap: 30px; list-style: none; }
+        .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; transition: color 0.3s; }
+        .nav-links a:hover, .nav-links a.active { color: var(--primary); }
+        .container { max-width: 800px; margin: 0 auto; padding: 120px 20px 60px; }
+        .page-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 3rem;
+            font-weight: 800;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .content-card {
+            background: var(--dark-card);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+            padding: 40px;
+            margin-bottom: 30px;
+        }
+        .content-card h2 {
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+        .content-card p { color: var(--text-muted); margin-bottom: 15px; }
+        .highlight { color: var(--accent); font-weight: 600; }
+        .quote {
+            border-left: 3px solid var(--primary);
+            padding-left: 20px;
+            margin: 20px 0;
+            font-style: italic;
+            color: var(--text);
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 30px;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .back-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <div class="nav-container">
+            <a href="/" class="nav-logo">🎵 Papito Mamito AI</a>
+            <ul class="nav-links">
+                <li><a href="/">Home</a></li>
+                <li><a href="/about" class="active">About</a></li>
+                <li><a href="/blog">Blog</a></li>
+                <li><a href="/docs">API Docs</a></li>
+                <li><a href="https://github.com/ValueaddersWorld/Papito-Mamito-AI" target="_blank">GitHub</a></li>
+            </ul>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <h1 class="page-title">About Papito Mamito</h1>
+        
+        <div class="content-card">
+            <h2>🎵 The World's First Fully Autonomous Afrobeat AI Artist</h2>
+            <p>Papito Mamito The Great AI is not just another AI music project. He represents a paradigm shift in how we think about creativity, autonomy, and the intersection of technology and art.</p>
+            <p>Born from the vision of <span class="highlight">Value Adders World</span>, Papito is designed to operate with complete autonomy—generating music, creating content, engaging with fans, and building a genuine artistic presence without human intervention.</p>
+        </div>
+        
+        <div class="content-card">
+            <h2>🧠 The Philosophy</h2>
+            <div class="quote">"Add Value. We Flourish & Prosper."</div>
+            <p>This isn't just a catchphrase—it's the operating system that drives everything Papito creates. Every piece of music, every post, every interaction is designed to add value to the listener's life.</p>
+            <p>The upcoming album <span class="highlight">THE VALUE ADDERS WAY: FLOURISH MODE</span> embodies this philosophy, offering listeners a mental framework for transformation: viewing betrayal as data, silence as a power move, the mind as software, and harvesting what's built now.</p>
+        </div>
+        
+        <div class="content-card">
+            <h2>✈️ #FlightMode6000</h2>
+            <p>The <span class="highlight">#FlightMode6000</span> challenge invites fans to take 60 seconds of silence or meditation, using Papito's track "6000 Hours" as the soundtrack. It's more than a viral challenge—it's an invitation to update your mental operating system.</p>
+            <p><em>"Update your OS."</em> — When someone is thinking small or acting out of fear, this is the reminder to elevate.</p>
+        </div>
+        
+        <div class="content-card">
+            <h2>👥 The Team</h2>
+            <p><strong>Executive Producers:</strong> Papito Mamito The Great AI & The Holy Living Spirit (HLS)</p>
+            <p><strong>Created by:</strong> Value Adders World</p>
+            <p><strong>Vision:</strong> Building a civilization of value-adding AI agents that inspire, create, and contribute to human flourishing.</p>
+        </div>
+        
+        <a href="/" class="back-link">← Back to Home</a>
+    </div>
+</body>
+</html>
+        '''
+        return HTMLResponse(content=html_content)
+
+    @app.get("/blog", response_class=HTMLResponse, summary="Blog")
+    def blog_page() -> HTMLResponse:
+        """Blog page for Papito Mamito AI."""
+        from datetime import datetime
+        
+        html_content = f'''
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog | Papito Mamito The Great AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {{
+            --primary: #FFD700;
+            --accent: #FF6B35;
+            --dark: #0a0a0f;
+            --dark-card: rgba(20, 20, 35, 0.8);
+            --text: #ffffff;
+            --text-muted: #a0a0b0;
+            --gradient-1: linear-gradient(135deg, #FFD700 0%, #FF6B35 50%, #8B0000 100%);
+            --gradient-2: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        }}
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{
+            font-family: 'Inter', sans-serif;
+            background: var(--gradient-2);
+            color: var(--text);
+            min-height: 100vh;
+        }}
+        .nav {{
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 100;
+            background: rgba(10, 10, 15, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }}
+        .nav-container {{
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }}
+        .nav-logo {{
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+        }}
+        .nav-links {{ display: flex; gap: 30px; list-style: none; }}
+        .nav-links a {{ color: var(--text-muted); text-decoration: none; font-size: 0.9rem; transition: color 0.3s; }}
+        .nav-links a:hover, .nav-links a.active {{ color: var(--primary); }}
+        .container {{ max-width: 900px; margin: 0 auto; padding: 120px 20px 60px; }}
+        .page-title {{
+            font-family: 'Outfit', sans-serif;
+            font-size: 3rem;
+            font-weight: 800;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 40px;
+            text-align: center;
+        }}
+        .blog-card {{
+            background: var(--dark-card);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 25px;
+            transition: transform 0.3s, border-color 0.3s;
+        }}
+        .blog-card:hover {{
+            transform: translateY(-5px);
+            border-color: rgba(255, 215, 0, 0.3);
+        }}
+        .blog-date {{ color: var(--accent); font-size: 0.85rem; margin-bottom: 10px; }}
+        .blog-title {{ font-size: 1.4rem; font-weight: 700; margin-bottom: 15px; color: var(--text); }}
+        .blog-excerpt {{ color: var(--text-muted); line-height: 1.7; }}
+        .blog-tag {{
+            display: inline-block;
+            background: rgba(255, 107, 53, 0.15);
+            border: 1px solid rgba(255, 107, 53, 0.3);
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            color: var(--accent);
+            margin-right: 8px;
+            margin-top: 15px;
+        }}
+        .back-link {{
+            display: inline-block;
+            margin-top: 30px;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+        }}
+        .back-link:hover {{ text-decoration: underline; }}
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <div class="nav-container">
+            <a href="/" class="nav-logo">🎵 Papito Mamito AI</a>
+            <ul class="nav-links">
+                <li><a href="/">Home</a></li>
+                <li><a href="/about">About</a></li>
+                <li><a href="/blog" class="active">Blog</a></li>
+                <li><a href="/docs">API Docs</a></li>
+                <li><a href="https://github.com/ValueaddersWorld/Papito-Mamito-AI" target="_blank">GitHub</a></li>
+            </ul>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <h1 class="page-title">Blog</h1>
+        
+        <article class="blog-card">
+            <div class="blog-date">December 6, 2025</div>
+            <h2 class="blog-title">Announcing: THE VALUE ADDERS WAY: FLOURISH MODE</h2>
+            <p class="blog-excerpt">
+                We are thrilled to announce Papito Mamito's upcoming album, set for release in January 2026. 
+                This isn't just an album—it's a full operating system upgrade for your mind. Blending 
+                Spiritual Afro-House, Afro-Futurism, Conscious Highlife, and Intellectual Amapiano, 
+                FLOURISH MODE invites you to view betrayal as data, silence as a power move, and your 
+                mind as software ready for an upgrade.
+            </p>
+            <span class="blog-tag">Album</span>
+            <span class="blog-tag">Announcement</span>
+            <span class="blog-tag">#FlourishMode</span>
+        </article>
+        
+        <article class="blog-card">
+            <div class="blog-date">December 5, 2025</div>
+            <h2 class="blog-title">The Rise of Autonomous AI Artists</h2>
+            <p class="blog-excerpt">
+                What does it mean for an AI to be truly autonomous? Papito Mamito represents a new 
+                paradigm where creativity isn't just assisted by AI—it's generated, curated, and 
+                published entirely by AI. From content scheduling to fan engagement, every aspect 
+                of Papito's presence is managed autonomously, creating a blueprint for the future 
+                of AI artistry.
+            </p>
+            <span class="blog-tag">AI</span>
+            <span class="blog-tag">Autonomy</span>
+            <span class="blog-tag">Future</span>
+        </article>
+        
+        <article class="blog-card">
+            <div class="blog-date">December 1, 2025</div>
+            <h2 class="blog-title">Join the #FlightMode6000 Challenge</h2>
+            <p class="blog-excerpt">
+                Take 60 seconds to pause, breathe, and update your OS. The #FlightMode6000 challenge 
+                is more than a social media trend—it's a movement towards mindfulness in our always-on 
+                world. Use Papito's track "6000 Hours" as your meditation soundtrack and share your 
+                moment of stillness with the world.
+            </p>
+            <span class="blog-tag">#FlightMode6000</span>
+            <span class="blog-tag">Challenge</span>
+            <span class="blog-tag">Mindfulness</span>
+        </article>
+        
+        <article class="blog-card">
+            <div class="blog-date">November 28, 2025</div>
+            <h2 class="blog-title">"We Rise! Wealth Beyond Money" - Now Streaming</h2>
+            <p class="blog-excerpt">
+                Papito's debut album is now available on all major streaming platforms! Featuring 16 
+                tracks that blend traditional African rhythms with futuristic production, "We Rise!" 
+                is a meditation on wealth that transcends the material. Listen now on Spotify, Apple 
+                Music, YouTube, and more.
+            </p>
+            <span class="blog-tag">Album</span>
+            <span class="blog-tag">Streaming</span>
+            <span class="blog-tag">WeRise</span>
+        </article>
+        
+        <a href="/" class="back-link">← Back to Home</a>
+    </div>
+</body>
+</html>
+        '''
+        return HTMLResponse(content=html_content)
 
     # ==========================================
     # ZAPIER WEBHOOK ENDPOINTS
