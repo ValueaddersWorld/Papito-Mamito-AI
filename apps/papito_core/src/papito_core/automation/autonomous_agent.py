@@ -25,6 +25,7 @@ from ..content import ContentAdapter, AIResponder
 from ..content.ai_responder import ResponseContext
 from ..database import get_firebase_client, AgentLog, ContentQueueItem
 from ..engines.ai_personality import AIPersonalityEngine, ResponseContext as PersonalityContext
+from ..engagement import FanEngagementManager, EngagementTier, Sentiment
 from ..queue import ReviewQueue
 from ..queue.review_queue import ContentCategory
 from ..settings import get_settings
@@ -81,6 +82,12 @@ class AutonomousAgent:
             anthropic_api_key=self.settings.anthropic_api_key
         )
         self.trending = TrendingDetector()
+        
+        # Initialize Phase 2 components
+        self.fan_engagement = FanEngagementManager(
+            openai_api_key=self.settings.openai_api_key,
+            db_client=self.db
+        )
         
         # Initialize content components
         self.content_adapter = ContentAdapter()
@@ -485,7 +492,13 @@ class AutonomousAgent:
         )
     
     def _check_and_respond_to_interactions(self) -> None:
-        """Check for new fan interactions and generate responses."""
+        """Check for new fan interactions and generate responses.
+        
+        Enhanced with Phase 2 fan engagement:
+        - Tracks fan tier (Casual → Super Fan)
+        - Analyzes sentiment for response priority
+        - Uses personalized greetings based on tier
+        """
         self.log_action("checking_interactions", "Checking for fan interactions")
         
         # Get pending interactions from database
@@ -500,25 +513,43 @@ class AutonomousAgent:
             details={"count": len(pending)}
         )
         
+        # Sort by urgency (negative sentiment and VIP fans first)
+        prioritized = []
         for interaction in pending:
+            fan, sentiment = self.fan_engagement.record_interaction(
+                username=interaction.fan_username,
+                platform=interaction.platform,
+                message=interaction.message,
+                interaction_type=interaction.interaction_type,
+                display_name=interaction.fan_display_name,
+                profile_url=interaction.fan_profile_url,
+            )
+            urgency = self.fan_engagement.get_response_urgency(fan, sentiment)
+            prioritized.append((urgency, interaction, fan, sentiment))
+        
+        # Sort by urgency (highest first)
+        prioritized.sort(key=lambda x: x[0], reverse=True)
+        
+        for urgency, interaction, fan, sentiment in prioritized:
             try:
-                # Generate response
-                context = ResponseContext(
-                    original_message=interaction.message,
-                    sender_name=interaction.fan_username,
+                # Get personalized greeting based on fan tier
+                greeting = self.fan_engagement.get_personalized_greeting(fan)
+                
+                # Generate response using AI personality with fan context
+                response_text = self.personality.generate_response(
+                    context=PersonalityContext.FAN_COMMENT,
+                    message=interaction.message,
+                    fan_name=interaction.fan_username,
                     platform=interaction.platform,
-                    interaction_type=interaction.interaction_type
                 )
                 
-                response = self.ai_responder.generate_response(context)
-                
-                # Check if needs human review
-                if response.requires_human_review:
+                # For very negative sentiment, flag for human review
+                if sentiment == Sentiment.VERY_NEGATIVE:
                     self.log_action(
                         "response_needs_review",
-                        f"Response needs review: {response.review_reason}",
+                        f"Negative sentiment from {interaction.fan_username} - flagging for review",
                         interaction_id=interaction.id,
-                        details={"reason": response.review_reason}
+                        details={"sentiment": sentiment.value, "tier": fan.tier}
                     )
                     continue
                 
@@ -526,21 +557,26 @@ class AutonomousAgent:
                 result = self._send_response(
                     interaction.platform,
                     interaction.platform_interaction_id,
-                    response.text
+                    response_text
                 )
                 
                 if result.success:
                     self.db.mark_interaction_responded(
                         interaction.id,
-                        response.text,
+                        response_text,
                         result.post_id
                     )
                     
                     self.log_action(
                         "response_sent",
-                        f"Responded to {interaction.fan_username}",
+                        f"Responded to {interaction.fan_username} (tier: {fan.tier}, urgency: {urgency})",
                         interaction_id=interaction.id,
-                        platform=interaction.platform
+                        platform=interaction.platform,
+                        details={
+                            "tier": fan.tier,
+                            "sentiment": sentiment.value,
+                            "urgency": urgency
+                        }
                     )
                     
             except Exception as e:
