@@ -7,6 +7,7 @@ from .analytics import (
 )
 from .scheduler import ReleaseAction, ReleaseSchedule, ReleaseScheduler
 from .autonomous_agent import AutonomousAgent
+from .content_scheduler import ContentScheduler, ContentType, PostingSlot, SchedulingConfig
 
 __all__ = [
     "PlatformSnapshot",
@@ -16,5 +17,9 @@ __all__ = [
     "ReleaseSchedule",
     "ReleaseScheduler",
     "AutonomousAgent",
+    "ContentScheduler",
+    "ContentType",
+    "PostingSlot",
+    "SchedulingConfig",
 ]
 

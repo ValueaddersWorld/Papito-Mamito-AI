@@ -3,6 +3,7 @@
 from .base import TextGenerator
 from .suno import SunoAudioEngine, SunoClient, SunoError, SunoTextGenerator
 from .stub import StubTextGenerator
+from .ai_personality import AIPersonalityEngine, PapitoPersonality, ResponseContext
 
 __all__ = [
     "TextGenerator",
@@ -11,4 +12,7 @@ __all__ = [
     "SunoAudioEngine",
     "SunoClient",
     "SunoError",
+    "AIPersonalityEngine",
+    "PapitoPersonality",
+    "ResponseContext",
 ]
