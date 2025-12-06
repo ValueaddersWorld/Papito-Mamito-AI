@@ -115,6 +115,32 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=429, detail="Rate limit exceeded.")
         return identity
 
+    @app.get("/", summary="Welcome - Papito Mamito API")
+    def root() -> dict:
+        """Root endpoint showing API status and info."""
+        return {
+            "name": "Papito Mamito AI",
+            "tagline": "The Autonomous Afrobeat AI Artist",
+            "catchphrase": "Add Value. We Flourish & Prosper.",
+            "status": "🟢 Online",
+            "version": "0.2.0",
+            "features": {
+                "content_scheduler": "6 daily posting slots (WAT timezone)",
+                "ai_personality": "Consistent Papito voice",
+                "fan_engagement": "Tier-based responses (Casual → Super Fan)",
+                "analytics": "Engagement tracking & A/B testing",
+                "monitoring": "Health checks & alerts",
+            },
+            "endpoints": {
+                "health": "/health",
+                "docs": "/docs",
+                "blogs": "/blogs",
+                "songs": "/songs/ideate",
+                "fans": "/fans",
+            },
+            "message": "🎵 Welcome to the Papito Mamito AI API! We flourish together. 🙏"
+        }
+
     @app.get("/health", summary="Health check")
     def health() -> dict[str, str]:
         return {"status": "ok", "service": "papito-mamito-ai"}
