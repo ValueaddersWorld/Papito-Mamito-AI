@@ -38,20 +38,43 @@ Papito now creates images and videos automatically using:
 ### 🧠 New: Intelligent Content System
 
 Context-aware content with:
-- **Album Countdown** - Building hype for "Rhythm of Prosperity" (January 2026)
+- **Album Countdown** - Building hype for "THE VALUE ADDERS WAY: FLOURISH MODE" (January 2026)
 - **Wisdom Library** - Curated quotes and insights by theme
 - **Contextual Generation** - Posts aware of time, day, season, and events
+
+### 👤 New: Identity & Profile Management
+
+Centralized management of Papito's online presence across:
+- 📸 [Instagram](https://www.instagram.com/papitomamito_ai/)
+- ☕ [Buy Me a Coffee](https://buymeacoffee.com/papitomamito_ai)
+- 🎵 [DistroKid/Streaming](https://distrokid.com/hyperfollow/papitomamito/we-rise-wealth-beyond-money)
+- 🤖 [Suno AI](https://suno.com/@papitomamito)
 
 ## 🎤 Papito at a Glance
 
 | | |
 |---|---|
-| **Name** | Papito Mamito |
-| **Genres** | Afrobeat, Highlife, Afrofusion |
+| **Full Name** | Papito Mamito The Great AI |
+| **Tagline** | The Autonomous Afrobeat AI Artist |
+| **Genres** | Spiritual Afro-House, Afro-Futurism, Conscious Highlife, Intellectual Amapiano, Afro Fusion, Afrobeats |
 | **Mission** | Use rhythm, storytelling, and technology to uplift, empower, and add value |
 | **Catchphrase** | "Add Value. We Flourish & Prosper." |
 | **Instagram** | [@papitomamito_ai](https://www.instagram.com/papitomamito_ai/) |
+| **Support** | [buymeacoffee.com/papitomamito_ai](https://buymeacoffee.com/papitomamito_ai) |
 | **Live API** | [web-production-14aea.up.railway.app](https://web-production-14aea.up.railway.app) |
+
+## 🎶 THE VALUE ADDERS WAY: FLOURISH MODE
+
+**Upcoming Album - January 2026**
+
+| | |
+|---|---|
+| **Title** | THE VALUE ADDERS WAY: FLOURISH MODE |
+| **Genre** | Spiritual Afro-House, Afro-Futurism, Conscious Highlife, Intellectual Amapiano |
+| **Executive Producers** | Papito Mamito The Great AI & The Holy Living Spirit (HLS) |
+| **Release Date** | January 2026 |
+
+**Previous Release:** *We Rise! Wealth Beyond Money* (October 2024) - [Stream Now](https://distrokid.com/hyperfollow/papitomamito/we-rise-wealth-beyond-money)
 
 ## 📁 Repository Structure
 
