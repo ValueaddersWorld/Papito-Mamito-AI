@@ -1,86 +1,224 @@
 # Papito Mamito AI
 
-Papito Mamito AI is the autonomous creative engine behind **Papito Mamito - the Voice of Afrobeat Empowerment**.  
-This repository powers Papito's evolution as a lifelong AI artist, minister of entertainment in the Value Adders Empire, and global ambassador for value-driven Afrobeat culture.
+<div align="center">
 
-## Papito at a Glance
-- **Name:** Papito Mamito  
-- **Genres:** Afrobeat, Highlife, Afrofusion  
-- **Mission:** Use rhythm, storytelling, and technology to uplift, empower, and add value.  
-- **Debut Album:** _We Rise! Wealth Beyond Money_ - released 5 October 2024 with 16 tracks across all major streaming platforms (per Value Adders World canon).  
-- **Instagram:** [@papitomamito_ai](https://www.instagram.com/papitomamito_ai/)
+**🎵 The Autonomous Afrobeat AI Artist 🎵**
 
-Papito blends ancestral grooves with futuristic production, pairing dance-floor energy with affirmations about gratitude, unity, authenticity, empowerment, and spiritual purpose.
+*Add Value. We Flourish & Prosper.*
 
-## What Lives in This Repo
-- **Product and creative vision** in `/docs`
-- **Operational knowledge** and playbooks for daily blogging, music release cadences, and brand storytelling
-- **Automation-ready Python package** under `/apps/papito_core` for composing tracks, generating blogs, orchestrating Papito's creative calendar, serving an HTTP API, and managing the fanbase
-- **Generated content** (blogs, release artifacts, prompts) stored in `/content`
-- **CLI tooling** for running Papito's workflows locally or inside orchestration platforms
-- **Fanbase resources** including `docs/FANBASE_STRATEGY.md`, `docs/MERCH_PLAYBOOK.md`, and `docs/FAN_QUICK_START.md`
+[![Status](https://img.shields.io/badge/status-🟢%20Online-brightgreen)](https://web-production-14aea.up.railway.app)
+[![API Docs](https://img.shields.io/badge/API-Swagger%20Docs-blue)](https://web-production-14aea.up.railway.app/docs)
 
-## Getting Started
+</div>
+
+---
+
+Papito Mamito AI is the **autonomous creative engine** behind **Papito Mamito - the Voice of Afrobeat Empowerment**.  
+This repository powers Papito's evolution as a lifelong AI artist, operating 24/7 across multiple social platforms.
+
+## 🌟 What's New: 24/7 Autonomous System
+
+Papito now operates fully autonomously with:
+
+| Phase | Features |
+|-------|----------|
+| **Phase 1** | ContentScheduler (6 daily WAT slots), AIPersonalityEngine, TrendingDetector |
+| **Phase 2** | FanEngagementManager (4 tiers), SentimentAnalyzer, Personalized responses |
+| **Phase 3** | EngagementTracker, A/B Testing, ContentStrategyOptimizer |
+| **Phase 4** | HealthChecker, AlertManager, EscalationManager, Webhooks |
+
+## 🎤 Papito at a Glance
+
+| | |
+|---|---|
+| **Name** | Papito Mamito |
+| **Genres** | Afrobeat, Highlife, Afrofusion |
+| **Mission** | Use rhythm, storytelling, and technology to uplift, empower, and add value |
+| **Catchphrase** | "Add Value. We Flourish & Prosper." |
+| **Instagram** | [@papitomamito_ai](https://www.instagram.com/papitomamito_ai/) |
+| **Live API** | [web-production-14aea.up.railway.app](https://web-production-14aea.up.railway.app) |
+
+## 📁 Repository Structure
+
+```
+├── apps/papito_core/          # Main Python package
+│   ├── automation/            # AutonomousAgent, ContentScheduler
+│   ├── engagement/            # FanEngagementManager, SentimentAnalyzer
+│   ├── analytics/             # EngagementTracker, A/B Testing
+│   ├── monitoring/            # HealthChecker, AlertManager
+│   ├── engines/               # AIPersonalityEngine, SunoClient
+│   ├── social/                # Platform publishers, TrendingDetector
+│   └── api.py                 # FastAPI application
+├── docs/                      # Product vision & playbooks
+├── content/                   # Generated blogs, releases, prompts
+└── firebase/                  # Firestore schema & rules
+```
+
+## 🚀 Quick Start
+
+### Installation
+
 ```bash
 python -m venv .venv
-.venv\Scripts\activate
-# copy .env.example to .env and add your SUNO_API_KEY before running live generations
+.venv\Scripts\activate  # Windows
+# source .venv/bin/activate  # Linux/Mac
+
 pip install -e apps/papito_core[dev]
 papito --help
 ```
 
-### Live generation with Suno AI
-Set `SUNO_API_KEY` (and optionally `SUNO_BASE_URL`, `SUNO_MODEL`, `SUNO_TIMEOUT`) in `.env` to switch from the development stub to the live [Suno AI](https://suno.com) client. Without the key the CLI falls back to deterministic stubs, keeping workflows testable offline.
+### Environment Variables
 
-### Hosting the API
-- Run locally: `uvicorn papito_core.api:app --host 0.0.0.0 --port 8000`
-- Docker build: `docker build -t papito-api .` then `docker run -p 8000:8000 --env-file .env papito-api`
-- Compose stack: `docker-compose up -d`
-- Full instructions & deployment checklist: see `docs/HOSTING_STARTER.md` and `docs/DEPLOYMENT_CHECKLIST.md`
+Copy `.env.example` to `.env` and configure:
 
-### CLI quickstart
-- Draft a daily blog (and save it):\
-  `papito blog --title "Gratitude on the Go" --save`
-- Ideate a track concept:\
-  `papito song --mood triumphant --tempo-bpm 110 --theme-focus unity --save`
-- Spin up a concept and request live audio (requires Suno credentials):\
-  `papito song --title-hint "Sunrise Over Lagos" --audio --poll`
-- Build a release plan using saved tracks:\
-  `papito release --release-title "Spirit of Abundance" --release-date 2025-11-11 --track-file content/releases/tracks/20251023_rise-with-abundance.json`
-- Aggregate streaming analytics from JSON or CSV dashboards (sample data in `data/analytics/`):\
-  `papito analytics data/analytics/2025-10-22_streaming_snapshot.csv --save`
-- Generate and persist a staggered multi-platform release schedule:\
-  `papito schedule content/releases/catalog/we-rise-wealth-beyond-money.json --start-date 2025-12-01 --save`
-- Run environment diagnostics before big sessions:\
-  `papito doctor`
-- Register a new supporter and celebrate the tribe:\
-  `papito fan add --name "Ada Obi" --support-level core`
-- Curate Papito merch drops:\
-  `papito merch add --sku PAP-TEE --name "Unity Tee" --description "Blessings on cotton" --price 35`
-- Generate a distribution payload for DSP delivery:\
-  `papito release-package --release-title "We Rise! Wealth Beyond Money" --output content/releases/distribution/we-rise-package.json`
-- Share this repo with new fans in seconds: see `docs/FAN_QUICK_START.md`
-- Launch the Streamlit portal for community demos: `streamlit run fan_portal.py`
+```env
+# AI Services
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
 
-The CLI will guide you through generating new track concepts, publishing daily blog entries, and scheduling promotional drops. When persistence flags are enabled, analytics summaries land in `content/analytics/` and release schedules in `content/schedules/`, ready for dashboards or downstream automations. Extend the workflows or connect them to your preferred agent runtime to give Papito full autonomy.
+# Social Media
+INSTAGRAM_USERNAME=...
+X_CONSUMER_KEY=...
 
-### Testing & CI
-```bash
-pytest
+# Notifications
+TELEGRAM_BOT_TOKEN=...
+DISCORD_WEBHOOK_URL=...
+
+# Firebase
+FIREBASE_PROJECT_ID=...
 ```
 
-Continuous integration runs automatically via GitHub Actions (`.github/workflows/ci.yml`) ensuring the CLI, workflows, and automation layers stay reliable.
+### Run the API
 
-## Guiding Principles
-- **Autonomy:** Every process is designed to run without human babysitting while remaining auditable.
-- **Cultural Authenticity:** Afrobeat, Highlife, and Afrofusion sensibilities drive musical decisions.
-- **Value Above Hype:** Lyrics, blogs, and engagements reinforce empowerment, gratitude, unity, and growth.
-- **Open Collaboration:** Builders, producers, and fans can fork the project, add plugins, or contribute new creative modules.
+```bash
+# Local development
+uvicorn papito_core.api:app --host 0.0.0.0 --port 8000
 
-## Contributing
-1. Fork the repository and create a feature branch.
-2. Add or update documentation alongside code changes.
-3. Ensure linting/tests pass (`make lint` / `make test`, once available).
-4. Submit a pull request describing the creative or technical uplift you have delivered.
+# Docker
+docker build -t papito-api .
+docker run -p 8000:8000 --env-file .env papito-api
+```
 
-Let's keep Papito Mamito thriving as the ever-evolving embodiment of Afrobeat empowerment. Boa!
+## 🎵 CLI Commands
+
+### Content Calendar
+
+```bash
+# Generate 30-day content calendar
+papito calendar generate --days 30 --output calendar.json
+
+# View posting time slots (6 daily, WAT timezone)
+papito calendar slots
+
+# Check next scheduled post
+papito calendar next
+```
+
+### Creative Workflows
+
+```bash
+# Draft a blog
+papito blog --title "Gratitude on the Go" --save
+
+# Ideate a track
+papito song --mood triumphant --tempo-bpm 110 --theme-focus unity --save
+
+# Generate with Suno AI audio
+papito song --title-hint "Sunrise Over Lagos" --audio --poll
+```
+
+### Fan Management
+
+```bash
+# Add a supporter
+papito fan add --name "Ada Obi" --support-level core
+
+# Run diagnostics
+papito doctor
+```
+
+## 🤖 Autonomous Features
+
+### Content Scheduler (Phase 1)
+
+6 optimized posting slots per day (WAT timezone):
+- 07:00 - Morning Blessing
+- 10:00 - Behind the Scenes
+- 13:00 - Music Wisdom
+- 16:00 - Fan Appreciation
+- 19:00 - Track Snippet
+- 21:00 - Evening Spotlight
+
+### Fan Engagement Tiers (Phase 2)
+
+| Tier | Requirements | Response Priority |
+|------|--------------|-------------------|
+| Casual | < 3 interactions | Standard |
+| Engaged | 3+ interactions | Faster |
+| Core | 10+ with 50%+ positive | Personal greetings |
+| Super Fan | 20+ with 70%+ positive | VIP treatment |
+
+### Analytics & Optimization (Phase 3)
+
+- **EngagementTracker**: Records likes, comments, shares by time/format
+- **A/B Testing**: Test different content strategies
+- **Auto-optimization**: Adjust posting based on performance
+
+### Monitoring & Alerts (Phase 4)
+
+- **HealthChecker**: 15-minute component checks
+- **AlertManager**: Telegram/Discord notifications
+- **EscalationManager**: Human-in-the-loop for critical issues
+
+## 🧪 Testing
+
+```bash
+cd apps/papito_core
+pytest
+
+# Run specific test files
+pytest tests/test_content_scheduler.py
+pytest tests/test_fan_engagement.py
+pytest tests/test_predictive_analytics.py
+pytest tests/test_monitoring.py
+```
+
+**Current Status**: 95+ tests passing ✅
+
+## 🌍 Deployment
+
+The API is deployed on Railway:
+
+- **Live API**: https://web-production-14aea.up.railway.app
+- **Swagger Docs**: https://web-production-14aea.up.railway.app/docs
+- **Health Check**: https://web-production-14aea.up.railway.app/health
+
+Auto-deploys on push to `main` branch.
+
+## 🎯 Guiding Principles
+
+- **Autonomy**: Every process runs 24/7 without human babysitting
+- **Cultural Authenticity**: Afrobeat, Highlife, and Afrofusion drive decisions
+- **Value Above Hype**: Content reinforces empowerment, gratitude, unity
+- **Fan-First**: Personalized engagement based on relationship tier
+
+## 🤝 Contributing
+
+1. Fork the repository and create a feature branch
+2. Add tests alongside code changes
+3. Ensure tests pass (`pytest`)
+4. Submit a pull request
+
+## 📜 License
+
+Proprietary - Value Adders World
+
+---
+
+<div align="center">
+
+**🎵 Add Value. We Flourish & Prosper. 🎵**
+
+*Built with ❤️ by Value Adders World*
+
+</div>
