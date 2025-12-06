@@ -243,14 +243,11 @@ def create_app() -> FastAPI:
                     "album_countdown": context.days_until_release,
                 }
             
-            # Generate intelligent content
-            import asyncio
-            result = asyncio.get_event_loop().run_until_complete(
-                generator.generate_post(
-                    content_type=content_type,
-                    context=context,
-                    include_album_mention=include_album,
-                )
+            # Generate intelligent content (already in async context)
+            result = await generator.generate_post(
+                content_type=content_type,
+                context=context,
+                include_album_mention=include_album,
             )
             
             return {
