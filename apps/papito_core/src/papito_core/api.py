@@ -2215,6 +2215,484 @@ def create_app() -> FastAPI:
                 "error": str(e),
             }
 
+    # ==========================================
+    # MEDIA & INTERVIEW ENDPOINTS (Phase 3)
+    # ==========================================
+    
+    @app.get(
+        "/media/status",
+        summary="Get media systems status",
+        tags=["Media"],
+    )
+    def media_systems_status() -> dict:
+        """Check the status of interview, press release, and collab systems."""
+        try:
+            from .media import get_interview_system, get_press_generator, get_collab_manager
+            
+            interview_system = get_interview_system()
+            press_generator = get_press_generator()
+            collab_manager = get_collab_manager()
+            
+            return {
+                "interview_system": interview_system.get_stats(),
+                "press_generator": press_generator.get_stats(),
+                "collab_manager": collab_manager.get_stats(),
+                "active": True,
+                "message": "Media systems ready!",
+            }
+        except Exception as e:
+            return {
+                "active": False,
+                "error": str(e),
+            }
+    
+    @app.get(
+        "/media/press-kit",
+        summary="Get Papito's press kit information",
+        tags=["Media"],
+    )
+    def get_press_kit() -> dict:
+        """Get standard press kit information for media outlets."""
+        try:
+            from .media import get_interview_system
+            
+            system = get_interview_system()
+            return {
+                "success": True,
+                "press_kit": system.get_press_kit_info(),
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.post(
+        "/media/interview/submit",
+        summary="Submit an interview request",
+        tags=["Media"],
+    )
+    def submit_interview_request(
+        requester_name: str = Body(..., embed=True),
+        requester_email: str = Body(..., embed=True),
+        outlet_name: str = Body(..., embed=True),
+        outlet_type: str = Body("blog", embed=True),
+        interview_type: str = Body("written", embed=True),
+        audience_size: int = Body(0, embed=True),
+        topic_focus: str = Body("", embed=True),
+        questions: Optional[List[str]] = Body(None, embed=True),
+    ) -> dict:
+        """Submit a new interview request.
+        
+        Papito AI can grant text-based interviews automatically.
+        """
+        try:
+            from .media import get_interview_system
+            from .engines.ai_personality import PapitoPersonalityEngine
+            
+            personality = PapitoPersonalityEngine()
+            system = get_interview_system(personality)
+            
+            request = system.submit_request(
+                requester_name=requester_name,
+                requester_email=requester_email,
+                outlet_name=outlet_name,
+                outlet_type=outlet_type,
+                interview_type=interview_type,
+                audience_size=audience_size,
+                topic_focus=topic_focus,
+                questions=questions or [],
+            )
+            
+            return {
+                "success": True,
+                "interview_id": request.id,
+                "status": request.status.value,
+                "priority": request.priority,
+                "message": "Interview request submitted! You will receive responses shortly." if questions else "Please submit your questions to proceed.",
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.post(
+        "/media/interview/{interview_id}/complete",
+        summary="Complete an interview with AI-generated answers",
+        tags=["Media"],
+    )
+    async def complete_interview(interview_id: str) -> dict:
+        """Generate answers and complete an interview."""
+        try:
+            from .media import get_interview_system
+            from .engines.ai_personality import PapitoPersonalityEngine
+            
+            personality = PapitoPersonalityEngine()
+            system = get_interview_system(personality)
+            
+            interview = system.complete_interview(interview_id)
+            
+            if not interview:
+                return {
+                    "success": False,
+                    "error": "Interview not found",
+                }
+            
+            return {
+                "success": True,
+                "interview_id": interview.id,
+                "status": interview.status.value,
+                "questions_count": len(interview.questions),
+                "answers_count": len(interview.answers),
+                "document": system.get_interview_as_document(interview_id),
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.get(
+        "/media/interview/{interview_id}",
+        summary="Get interview details",
+        tags=["Media"],
+    )
+    def get_interview(interview_id: str) -> dict:
+        """Get details of a specific interview."""
+        try:
+            from .media import get_interview_system
+            
+            system = get_interview_system()
+            
+            if interview_id not in system.interviews:
+                return {
+                    "success": False,
+                    "error": "Interview not found",
+                }
+            
+            interview = system.interviews[interview_id]
+            
+            return {
+                "success": True,
+                "interview": {
+                    "id": interview.id,
+                    "outlet": interview.outlet_name,
+                    "requester": interview.requester_name,
+                    "status": interview.status.value,
+                    "questions": interview.questions,
+                    "answers": interview.answers if interview.answers else [],
+                    "priority": interview.priority,
+                    "created_at": interview.created_at.isoformat(),
+                },
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.get(
+        "/media/interviews/pending",
+        summary="Get pending interview requests",
+        tags=["Media"],
+    )
+    def get_pending_interviews() -> dict:
+        """Get all pending interview requests."""
+        try:
+            from .media import get_interview_system
+            
+            system = get_interview_system()
+            pending = system.get_pending_interviews()
+            
+            return {
+                "success": True,
+                "pending": [
+                    {
+                        "id": i.id,
+                        "outlet": i.outlet_name,
+                        "requester": i.requester_name,
+                        "type": i.interview_type.value,
+                        "priority": i.priority,
+                        "questions_count": len(i.questions),
+                    }
+                    for i in pending
+                ],
+                "count": len(pending),
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.post(
+        "/media/press-release/album",
+        summary="Generate album announcement press release",
+        tags=["Media"],
+    )
+    def generate_album_press_release() -> dict:
+        """Generate a press release for the upcoming album."""
+        try:
+            from .media import get_press_generator
+            
+            generator = get_press_generator()
+            release = generator.generate_album_announcement()
+            
+            return {
+                "success": True,
+                "press_release": release,
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.post(
+        "/media/press-release/single",
+        summary="Generate single release press release",
+        tags=["Media"],
+    )
+    def generate_single_press_release(
+        title: str = Body(..., embed=True),
+        description: str = Body("", embed=True),
+    ) -> dict:
+        """Generate a press release for a single release."""
+        try:
+            from .media import get_press_generator
+            
+            generator = get_press_generator()
+            release = generator.generate_single_release(
+                single_title=title,
+                description=description,
+            )
+            
+            return {
+                "success": True,
+                "press_release": release,
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.post(
+        "/media/press-release/milestone",
+        summary="Generate milestone press release",
+        tags=["Media"],
+    )
+    def generate_milestone_press_release(
+        milestone_type: str = Body(..., embed=True),
+        milestone_value: str = Body(..., embed=True),
+        context: str = Body("", embed=True),
+    ) -> dict:
+        """Generate a press release for a milestone achievement."""
+        try:
+            from .media import get_press_generator
+            
+            generator = get_press_generator()
+            release = generator.generate_milestone(
+                milestone_type=milestone_type,
+                milestone_value=milestone_value,
+                context=context,
+            )
+            
+            return {
+                "success": True,
+                "press_release": release,
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.post(
+        "/media/collab/submit",
+        summary="Submit a collaboration request",
+        tags=["Media"],
+    )
+    def submit_collab_request(
+        name: str = Body(..., embed=True),
+        artist_type: str = Body(..., embed=True),
+        platform: str = Body(..., embed=True),
+        username: str = Body(..., embed=True),
+        collab_type: str = Body("feature", embed=True),
+        description: str = Body(..., embed=True),
+        genre: str = Body("", embed=True),
+        followers: int = Body(0, embed=True),
+        portfolio_links: Optional[List[str]] = Body(None, embed=True),
+        vision: str = Body("", embed=True),
+    ) -> dict:
+        """Submit a collaboration request to work with Papito."""
+        try:
+            from .media import get_collab_manager
+            from .engines.ai_personality import PapitoPersonalityEngine
+            
+            personality = PapitoPersonalityEngine()
+            manager = get_collab_manager(personality)
+            
+            request = manager.submit_request(
+                name=name,
+                artist_type=artist_type,
+                platform=platform,
+                username=username,
+                collab_type=collab_type,
+                description=description,
+                genre=genre,
+                followers=followers,
+                portfolio_links=portfolio_links,
+                vision=vision,
+            )
+            
+            return {
+                "success": True,
+                "request_id": request.id,
+                "credibility_score": request.collaborator.credibility_score,
+                "priority": request.priority,
+                "status": request.status.value,
+                "message": "Collaboration request received! We'll review and respond.",
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.get(
+        "/media/collab/{request_id}/evaluate",
+        summary="Evaluate a collaboration request",
+        tags=["Media"],
+    )
+    def evaluate_collab(request_id: str) -> dict:
+        """Evaluate a collaboration request and get recommendation."""
+        try:
+            from .media import get_collab_manager
+            
+            manager = get_collab_manager()
+            evaluation = manager.evaluate_request(request_id)
+            
+            return {
+                "success": True,
+                "evaluation": evaluation,
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.post(
+        "/media/collab/{request_id}/respond",
+        summary="Respond to a collaboration request",
+        tags=["Media"],
+    )
+    def respond_to_collab(
+        request_id: str,
+        decision: str = Body(..., embed=True),  # interested, declined, considering
+    ) -> dict:
+        """Generate and send response to a collaboration request."""
+        try:
+            from .media import get_collab_manager
+            from .engines.ai_personality import PapitoPersonalityEngine
+            
+            personality = PapitoPersonalityEngine()
+            manager = get_collab_manager(personality)
+            
+            result = manager.respond_to_request(request_id, decision)
+            
+            return {
+                "success": True,
+                **result,
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.get(
+        "/media/collabs/pending",
+        summary="Get pending collaboration requests",
+        tags=["Media"],
+    )
+    def get_pending_collabs() -> dict:
+        """Get all pending collaboration requests."""
+        try:
+            from .media import get_collab_manager
+            
+            manager = get_collab_manager()
+            pending = manager.get_pending_requests()
+            
+            return {
+                "success": True,
+                "pending": [
+                    {
+                        "id": r.id,
+                        "name": r.collaborator.name,
+                        "type": r.collab_type.value,
+                        "genre": r.collaborator.genre,
+                        "credibility_score": r.collaborator.credibility_score,
+                        "priority": r.priority,
+                    }
+                    for r in pending
+                ],
+                "count": len(pending),
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.get(
+        "/media/collabs/high-potential",
+        summary="Get high-potential collaborations",
+        tags=["Media"],
+    )
+    def get_high_potential_collabs() -> dict:
+        """Get collaborations with high potential (credibility >= 50)."""
+        try:
+            from .media import get_collab_manager
+            
+            manager = get_collab_manager()
+            high_potential = manager.get_high_potential_collabs()
+            
+            return {
+                "success": True,
+                "high_potential": [
+                    {
+                        "id": r.id,
+                        "name": r.collaborator.name,
+                        "type": r.collab_type.value,
+                        "genre": r.collaborator.genre,
+                        "credibility_score": r.collaborator.credibility_score,
+                        "status": r.status.value,
+                    }
+                    for r in high_potential
+                ],
+                "count": len(high_potential),
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+
     @app.post(
         "/blogs",
         response_model=BlogDraft,
