@@ -90,6 +90,14 @@ class TwitterPublisher:
         if not TWEEPY_AVAILABLE:
             logger.error("Tweepy is not installed. Run: pip install tweepy")
             return False
+        
+        # Log credential status (without revealing values)
+        logger.info(f"Twitter credentials check:")
+        logger.info(f"  API Key: {'SET' if self.api_key else 'MISSING'}")
+        logger.info(f"  API Secret: {'SET' if self.api_secret else 'MISSING'}")
+        logger.info(f"  Access Token: {'SET' if self.access_token else 'MISSING'}")
+        logger.info(f"  Access Token Secret: {'SET' if self.access_token_secret else 'MISSING'}")
+        logger.info(f"  Bearer Token: {'SET' if self.bearer_token else 'MISSING'}")
             
         if not all([self.api_key, self.api_secret, self.access_token, self.access_token_secret]):
             logger.warning("Twitter credentials not fully configured")
@@ -113,11 +121,11 @@ class TwitterPublisher:
                 logger.info(f"✅ Connected to Twitter as @{self._username}")
                 return True
             else:
-                logger.error("Failed to verify Twitter credentials")
+                logger.error("Failed to verify Twitter credentials - no user data returned")
                 return False
                 
         except Exception as e:
-            logger.error(f"Twitter connection failed: {e}")
+            logger.error(f"Twitter connection failed: {type(e).__name__}: {e}")
             return False
     
     @property

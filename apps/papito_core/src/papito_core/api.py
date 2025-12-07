@@ -1509,6 +1509,32 @@ def create_app() -> FastAPI:
         """Check if Twitter API is connected and ready for posting."""
         try:
             from .social.twitter import TwitterPublisher
+            from .settings import get_settings
+            
+            settings = get_settings()
+            
+            # Check if credentials are present
+            credentials_status = {
+                "api_key": bool(settings.x_api_key),
+                "api_secret": bool(settings.x_api_secret),
+                "access_token": bool(settings.x_access_token),
+                "access_token_secret": bool(settings.x_access_token_secret),
+                "bearer_token": bool(settings.x_bearer_token),
+            }
+            
+            all_required = all([
+                credentials_status["api_key"],
+                credentials_status["api_secret"],
+                credentials_status["access_token"],
+                credentials_status["access_token_secret"],
+            ])
+            
+            if not all_required:
+                return {
+                    "connected": False,
+                    "message": "Missing required credentials",
+                    "credentials_status": credentials_status,
+                }
             
             publisher = TwitterPublisher.from_settings()
             connected = publisher.connect()
@@ -1516,12 +1542,15 @@ def create_app() -> FastAPI:
             return {
                 "connected": connected,
                 "username": publisher.username if connected else None,
-                "message": f"Connected as @{publisher.username}" if connected else "Not connected",
+                "message": f"Connected as @{publisher.username}" if connected else "Connection failed - check credentials",
+                "credentials_status": credentials_status,
             }
         except Exception as e:
+            import traceback
             return {
                 "connected": False,
                 "error": str(e),
+                "traceback": traceback.format_exc(),
             }
     
     @app.post(
