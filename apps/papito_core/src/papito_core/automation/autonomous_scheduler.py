@@ -237,7 +237,7 @@ def get_scheduler() -> AutonomousScheduler:
     """Get the global scheduler instance."""
     global _scheduler
     if _scheduler is None:
-        from .settings import get_settings
+        from ..settings import get_settings
         settings = get_settings()
         webhook_url = getattr(settings, 'buffer_webhook_url', None)
         _scheduler = AutonomousScheduler(buffer_webhook_url=webhook_url)
