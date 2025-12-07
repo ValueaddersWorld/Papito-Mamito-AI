@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import asyncio
+import logging
 import time
 from collections import deque
+from contextlib import asynccontextmanager
+from datetime import datetime
 from typing import Optional
 
 from fastapi import (
@@ -25,6 +29,10 @@ from .models import BlogBrief, BlogDraft, FanProfile, MerchItem, ReleaseTrack, S
 from .settings import get_settings
 from .storage import ReleaseCatalog
 from .workflows import BlogWorkflow, MusicWorkflow
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("papito.api")
 
 
 class RateLimitExceeded(Exception):
@@ -49,6 +57,30 @@ class RateLimiter:
         history.append(now)
 
 
+# Lifespan context manager for startup/shutdown
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Handle startup and shutdown events."""
+    # Startup
+    logger.info("🚀 Starting Papito Mamito API...")
+    try:
+        from .automation.autonomous_scheduler import start_scheduler
+        start_scheduler()
+        logger.info("✅ Autonomous scheduler started!")
+    except Exception as e:
+        logger.warning(f"Could not start scheduler: {e}")
+    
+    yield
+    
+    # Shutdown
+    logger.info("🛑 Shutting down Papito Mamito API...")
+    try:
+        from .automation.autonomous_scheduler import stop_scheduler
+        stop_scheduler()
+    except Exception:
+        pass
+
+
 def create_app() -> FastAPI:
     """Instantiate the Papito Mamito API application."""
 
@@ -65,7 +97,8 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="Papito Mamito API",
         description="Autonomous creative workflows for Papito Mamito AI.",
-        version="0.2.0",
+        version="0.4.0",
+        lifespan=lifespan,
     )
 
     api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
@@ -1394,6 +1427,75 @@ def create_app() -> FastAPI:
                 "days_until_release": 405,
                 "album_phase": "building_hype",
             }
+
+    # ==========================================
+    # AUTONOMOUS SCHEDULER ENDPOINTS
+    # ==========================================
+    
+    @app.get(
+        "/scheduler/status",
+        summary="Get autonomous scheduler status",
+        tags=["Scheduler"],
+    )
+    def scheduler_status() -> dict:
+        """Return the current status of the autonomous posting scheduler."""
+        try:
+            from .automation.autonomous_scheduler import get_scheduler
+            scheduler = get_scheduler()
+            return scheduler.get_status()
+        except Exception as e:
+            return {
+                "is_running": False,
+                "error": str(e),
+                "message": "Scheduler not available",
+            }
+    
+    @app.post(
+        "/scheduler/trigger",
+        summary="Manually trigger a post",
+        tags=["Scheduler"],
+    )
+    async def scheduler_trigger(
+        content_type: str = Body("morning_blessing", embed=True),
+    ) -> dict:
+        """Manually trigger an autonomous post immediately.
+        
+        Useful for testing the autonomous posting flow.
+        """
+        try:
+            from .automation.autonomous_scheduler import get_scheduler
+            scheduler = get_scheduler()
+            result = await scheduler.trigger_post_now(content_type)
+            return {
+                "success": True,
+                "result": result,
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.get(
+        "/scheduler/next",
+        summary="Get next scheduled posts",
+        tags=["Scheduler"],
+    )
+    def scheduler_next() -> dict:
+        """Return the next scheduled posts."""
+        try:
+            from .automation.autonomous_scheduler import get_scheduler
+            scheduler = get_scheduler()
+            status = scheduler.get_status()
+            return {
+                "current_time_wat": status.get("current_time_wat"),
+                "next_posts": status.get("next_scheduled_posts", []),
+            }
+        except Exception as e:
+            return {
+                "error": str(e),
+            }
+
 
     @app.post(
         "/blogs",

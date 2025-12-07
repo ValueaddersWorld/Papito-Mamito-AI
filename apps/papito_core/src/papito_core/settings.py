@@ -56,6 +56,11 @@ class PapitoSettings(BaseSettings):
         alias="BUFFER_PROFILE_IDS",
         description="Comma-separated Buffer profile IDs"
     )
+    buffer_webhook_url: str | None = Field(
+        default=None,
+        alias="BUFFER_WEBHOOK_URL",
+        description="Zapier webhook URL for auto-posting to Buffer"
+    )
 
     # ============== OpenAI (AI Responses) ==============
     openai_api_key: str | None = Field(default=None, alias="OPENAI_API_KEY")
