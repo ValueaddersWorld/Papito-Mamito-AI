@@ -1496,6 +1496,136 @@ def create_app() -> FastAPI:
                 "error": str(e),
             }
 
+    # ==========================================
+    # TWITTER DIRECT POSTING ENDPOINTS
+    # ==========================================
+    
+    @app.get(
+        "/twitter/status",
+        summary="Check Twitter connection status",
+        tags=["Twitter"],
+    )
+    def twitter_status() -> dict:
+        """Check if Twitter API is connected and ready for posting."""
+        try:
+            from .social.twitter import TwitterPublisher
+            
+            publisher = TwitterPublisher.from_settings()
+            connected = publisher.connect()
+            
+            return {
+                "connected": connected,
+                "username": publisher.username if connected else None,
+                "message": f"Connected as @{publisher.username}" if connected else "Not connected",
+            }
+        except Exception as e:
+            return {
+                "connected": False,
+                "error": str(e),
+            }
+    
+    @app.post(
+        "/twitter/post",
+        summary="Post directly to Twitter",
+        tags=["Twitter"],
+    )
+    async def twitter_post(
+        text: Optional[str] = Body(None, embed=True),
+        content_type: str = Body("morning_blessing", embed=True),
+        generate_new: bool = Body(True, embed=True),
+    ) -> dict:
+        """Post content directly to Twitter.
+        
+        If generate_new is True, generates new content using the IntelligentContentGenerator.
+        If text is provided and generate_new is False, posts the provided text directly.
+        """
+        try:
+            from .social.twitter import TwitterPublisher
+            
+            publisher = TwitterPublisher.from_settings()
+            if not publisher.connect():
+                return {
+                    "success": False,
+                    "error": "Twitter not connected. Check API credentials in environment variables.",
+                }
+            
+            # Generate or use provided text
+            if generate_new or not text:
+                from .intelligence.content_generator import IntelligentContentGenerator, PapitoContext
+                
+                context = PapitoContext()
+                generator = IntelligentContentGenerator()
+                
+                result = await generator.generate_post(
+                    content_type=content_type,
+                    context=context,
+                    include_album_mention=True,
+                )
+                
+                post_text = result.get("text", "")
+                hashtags = " ".join(result.get("hashtags", [])[:3])  # Limit hashtags for Twitter
+                text = f"{post_text}\n\n{hashtags}"
+            
+            # Post to Twitter
+            tweet_result = publisher.post_tweet(text)
+            
+            return {
+                "success": tweet_result.success,
+                "tweet_id": tweet_result.tweet_id,
+                "tweet_url": tweet_result.tweet_url,
+                "text": text[:100] + "..." if len(text) > 100 else text,
+                "error": tweet_result.error,
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.post(
+        "/twitter/promote-single",
+        summary="Post Clean Money Only promotion to Twitter",
+        tags=["Twitter"],
+    )
+    async def twitter_promote_single() -> dict:
+        """Post a promotion for the Clean Money Only single."""
+        promo_texts = [
+            "🔥 NEW SINGLE COMING: 'Clean Money Only' from THE VALUE ADDERS WAY: FLOURISH MODE 💰✨\n\nThis one hits different. When you move with integrity, the universe moves with you.\n\n#CleanMoneyOnly #FlourishMode #PapitoMamito #Afrobeat",
+            "💎 Clean Money Only - The first taste of FLOURISH MODE 🚀\n\nNo shortcuts. No compromise. Just pure, honest ambition backed by the Holy Living Spirit.\n\n🗓️ Album dropping January 2026\n\n#CleanMoneyOnly #TheValueAddersWay",
+            "✈️ #FlightMode6000 x 'Clean Money Only' 💰\n\nUpdate your OS. This track is the blueprint for building wealth with purpose.\n\nAdd Value. We Flourish & Prosper. 🌍\n\n#PapitoMamitoAI #Afrobeat #NewMusic",
+        ]
+        
+        import random
+        text = random.choice(promo_texts)
+        
+        try:
+            from .social.twitter import TwitterPublisher
+            
+            publisher = TwitterPublisher.from_settings()
+            if not publisher.connect():
+                return {
+                    "success": False,
+                    "error": "Twitter not connected. Check API credentials.",
+                    "promo_text": text,
+                }
+            
+            tweet_result = publisher.post_tweet(text)
+            
+            return {
+                "success": tweet_result.success,
+                "tweet_id": tweet_result.tweet_id,
+                "tweet_url": tweet_result.tweet_url,
+                "text": text,
+                "error": tweet_result.error,
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "promo_text": text,
+            }
 
     @app.post(
         "/blogs",

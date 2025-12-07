@@ -5,6 +5,7 @@ from .instagram_publisher import InstagramPublisher
 from .x_publisher import XPublisher
 from .buffer_publisher import BufferPublisher
 from .trending_detector import TrendingDetector, TrendingTopic, TopicRelevance
+from .twitter import TwitterPublisher, TweetResult, get_twitter_publisher
 
 __all__ = [
     "BasePublisher",
@@ -15,4 +16,7 @@ __all__ = [
     "TrendingDetector",
     "TrendingTopic",
     "TopicRelevance",
+    "TwitterPublisher",
+    "TweetResult",
+    "get_twitter_publisher",
 ]
