@@ -1915,6 +1915,306 @@ def create_app() -> FastAPI:
                 "error": str(e),
             }
 
+    # ==========================================
+    # FAN INTERACTION ENDPOINTS (Phase 2)
+    # ==========================================
+    
+    @app.get(
+        "/fans/status",
+        summary="Get fan interaction systems status",
+        tags=["Fans"],
+    )
+    def fan_systems_status() -> dict:
+        """Check the status of all fan interaction systems."""
+        try:
+            from .interactions import get_dm_manager, get_follower_manager, get_fan_recognition_manager
+            
+            dm_manager = get_dm_manager()
+            follower_manager = get_follower_manager()
+            recognition_manager = get_fan_recognition_manager()
+            
+            return {
+                "dm_manager": {
+                    "connected": dm_manager.client is not None,
+                    "stats": dm_manager.get_stats(),
+                },
+                "follower_manager": {
+                    "connected": follower_manager.client is not None,
+                    "stats": follower_manager.get_stats(),
+                },
+                "recognition_manager": {
+                    "connected": recognition_manager.client is not None,
+                    "stats": recognition_manager.get_stats(),
+                },
+                "active": True,
+                "message": "Fan interaction systems ready!",
+            }
+        except Exception as e:
+            return {
+                "active": False,
+                "error": str(e),
+            }
+    
+    @app.post(
+        "/fans/welcome-session",
+        summary="Run new follower welcome session",
+        tags=["Fans"],
+    )
+    async def welcome_followers(max_welcomes: int = 5) -> dict:
+        """Welcome new followers and optionally follow back notable accounts.
+        
+        This creates a warm, welcoming experience for new fans.
+        """
+        try:
+            from .interactions import get_follower_manager
+            from .engines.ai_personality import PapitoPersonalityEngine
+            
+            personality = PapitoPersonalityEngine()
+            manager = get_follower_manager(personality)
+            
+            if not manager.connect():
+                return {
+                    "success": False,
+                    "error": "Could not connect to Twitter",
+                }
+            
+            results = await manager.run_welcome_session(max_welcomes=max_welcomes)
+            
+            return {
+                "success": True,
+                "results": results,
+                "stats": manager.get_stats(),
+                "message": f"Welcomed {results['welcomes_sent']} new followers, found {results['notable_followers']} notable accounts",
+            }
+            
+        except Exception as e:
+            import traceback
+            return {
+                "success": False,
+                "error": str(e),
+                "traceback": traceback.format_exc(),
+            }
+    
+    @app.get(
+        "/fans/new-followers",
+        summary="Get recent new followers",
+        tags=["Fans"],
+    )
+    async def get_new_followers(limit: int = 20) -> dict:
+        """Fetch and list recent new followers."""
+        try:
+            from .interactions import get_follower_manager
+            
+            manager = get_follower_manager()
+            
+            if not manager.connect():
+                return {
+                    "success": False,
+                    "error": "Could not connect to Twitter",
+                }
+            
+            followers = await manager.fetch_recent_followers(max_results=limit)
+            
+            # Convert to serializable format
+            follower_data = []
+            for f in followers:
+                follower_data.append({
+                    "user_id": f.user_id,
+                    "username": f"@{f.username}",
+                    "name": f.name,
+                    "followers_count": f.followers_count,
+                    "verified": f.verified,
+                    "notable": f.notable,
+                    "bio_preview": f.bio[:100] + "..." if len(f.bio) > 100 else f.bio,
+                })
+            
+            return {
+                "success": True,
+                "followers": follower_data,
+                "count": len(follower_data),
+                "new_count": len(manager.new_followers),
+                "notable_count": len(manager.notable_followers),
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.post(
+        "/fans/recognition-session",
+        summary="Run fan recognition session",
+        tags=["Fans"],
+    )
+    async def run_recognition() -> dict:
+        """Run a fan recognition session.
+        
+        May give shoutouts to top fans or announce Fan of the Week.
+        """
+        try:
+            from .interactions import get_fan_recognition_manager
+            from .engines.ai_personality import PapitoPersonalityEngine
+            
+            personality = PapitoPersonalityEngine()
+            manager = get_fan_recognition_manager(personality)
+            
+            if not manager.connect():
+                return {
+                    "success": False,
+                    "error": "Could not connect to Twitter",
+                }
+            
+            results = await manager.run_recognition_session()
+            
+            return {
+                "success": True,
+                "results": results,
+                "stats": manager.get_stats(),
+                "message": f"Recognition complete: {results['shoutouts_given']} shoutouts, FOTW: {results['fotw_announced']}",
+            }
+            
+        except Exception as e:
+            import traceback
+            return {
+                "success": False,
+                "error": str(e),
+                "traceback": traceback.format_exc(),
+            }
+    
+    @app.get(
+        "/fans/top-fans",
+        summary="Get top engaged fans",
+        tags=["Fans"],
+    )
+    async def get_top_fans(limit: int = 10) -> dict:
+        """Get the most engaged fans by engagement score."""
+        try:
+            from .interactions import get_fan_recognition_manager
+            
+            manager = get_fan_recognition_manager()
+            
+            top_fans = manager.get_top_fans(limit)
+            
+            # Convert to serializable format
+            fan_data = []
+            for fan in top_fans:
+                fan_data.append({
+                    "username": f"@{fan.username}",
+                    "name": fan.name,
+                    "engagement_score": round(fan.engagement_score, 2),
+                    "loyalty_tier": fan.loyalty_tier,
+                    "total_engagement": fan.total_engagement,
+                    "days_active": fan.days_active,
+                    "acknowledged": fan.acknowledged,
+                    "fan_of_week": fan.fan_of_week,
+                })
+            
+            return {
+                "success": True,
+                "top_fans": fan_data,
+                "count": len(fan_data),
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.post(
+        "/fans/post-appreciation",
+        summary="Post a fan appreciation message",
+        tags=["Fans"],
+    )
+    async def post_appreciation() -> dict:
+        """Post a general fan appreciation message to Twitter."""
+        try:
+            from .interactions import get_fan_recognition_manager
+            from .engines.ai_personality import PapitoPersonalityEngine
+            
+            personality = PapitoPersonalityEngine()
+            manager = get_fan_recognition_manager(personality)
+            
+            if not manager.connect():
+                return {
+                    "success": False,
+                    "error": "Could not connect to Twitter",
+                }
+            
+            success = await manager.post_appreciation()
+            
+            return {
+                "success": success,
+                "message": "Appreciation posted!" if success else "Failed to post",
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.post(
+        "/fans/announce-fotw",
+        summary="Announce Fan of the Week",
+        tags=["Fans"],
+    )
+    async def announce_fan_of_week() -> dict:
+        """Announce the Fan of the Week on Twitter."""
+        try:
+            from .interactions import get_fan_recognition_manager
+            from .engines.ai_personality import PapitoPersonalityEngine
+            
+            personality = PapitoPersonalityEngine()
+            manager = get_fan_recognition_manager(personality)
+            
+            if not manager.connect():
+                return {
+                    "success": False,
+                    "error": "Could not connect to Twitter",
+                }
+            
+            success = await manager.announce_fan_of_week()
+            
+            return {
+                "success": success,
+                "message": "Fan of the Week announced!" if success else "No suitable candidate or failed to post",
+                "stats": manager.get_stats(),
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.get(
+        "/fans/dm-status",
+        summary="Get DM manager status",
+        tags=["Fans"],
+    )
+    def dm_status() -> dict:
+        """Get the status of the DM management system.
+        
+        Note: DM reading/sending may require elevated API access.
+        """
+        try:
+            from .interactions import get_dm_manager
+            
+            manager = get_dm_manager()
+            
+            return {
+                "connected": manager.client is not None,
+                "stats": manager.get_stats(),
+                "note": "DM sending requires Twitter API elevated access",
+            }
+            
+        except Exception as e:
+            return {
+                "error": str(e),
+            }
+
     @app.post(
         "/blogs",
         response_model=BlogDraft,
