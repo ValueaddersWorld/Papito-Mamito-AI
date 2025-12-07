@@ -3246,6 +3246,513 @@ def create_app() -> FastAPI:
                 "error": str(e),
             }
 
+    # ==========================================
+    # MEMORY & LEARNING ENDPOINTS (Phase 5)
+    # ==========================================
+    
+    @app.get(
+        "/memory/status",
+        summary="Get memory systems status",
+        tags=["Memory"],
+    )
+    def memory_systems_status() -> dict:
+        """Check the status of all memory and learning systems."""
+        try:
+            from .memory import (
+                get_interaction_memory,
+                get_content_learner,
+                get_personality_evolution,
+            )
+            
+            interaction = get_interaction_memory()
+            content = get_content_learner()
+            personality = get_personality_evolution()
+            
+            return {
+                "interaction_memory": interaction.get_stats(),
+                "content_learner": content.get_stats(),
+                "personality_evolution": personality.get_stats(),
+                "active": True,
+                "message": "Memory systems operational!",
+            }
+        except Exception as e:
+            return {
+                "active": False,
+                "error": str(e),
+            }
+    
+    # --- Interaction Memory Endpoints ---
+    
+    @app.post(
+        "/memory/interactions/record",
+        summary="Record an interaction with a user",
+        tags=["Memory"],
+    )
+    def record_interaction(
+        user_id: str = Body(..., embed=True),
+        username: str = Body(..., embed=True),
+        display_name: str = Body(..., embed=True),
+        interaction_type: str = Body(..., embed=True),
+        content: str = Body(..., embed=True),
+        responded: bool = Body(False, embed=True),
+        response: Optional[str] = Body(None, embed=True),
+        is_notable: bool = Body(False, embed=True),
+    ) -> dict:
+        """Record a new interaction for memory."""
+        try:
+            from .memory import get_interaction_memory
+            
+            memory = get_interaction_memory()
+            interaction = memory.record_interaction(
+                user_id=user_id,
+                username=username,
+                display_name=display_name,
+                interaction_type=interaction_type,
+                content=content,
+                responded=responded,
+                response=response,
+                is_notable=is_notable,
+            )
+            
+            return {
+                "success": True,
+                "interaction_id": interaction.id,
+                "sentiment": interaction.sentiment.value,
+                "topics": interaction.topics,
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.get(
+        "/memory/users/{user_id}/context",
+        summary="Get context about a user",
+        tags=["Memory"],
+    )
+    def get_user_context(user_id: str) -> dict:
+        """Get personalization context for a user."""
+        try:
+            from .memory import get_interaction_memory
+            
+            memory = get_interaction_memory()
+            context = memory.get_user_context(user_id)
+            
+            if not context:
+                return {
+                    "success": False,
+                    "error": "User not found",
+                    "is_new_user": True,
+                }
+            
+            return {
+                "success": True,
+                "context": context,
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.get(
+        "/memory/users/{user_id}/personalization",
+        summary="Get personalization prompt for AI",
+        tags=["Memory"],
+    )
+    def get_personalization_prompt(user_id: str) -> dict:
+        """Get a personalization prompt to use in AI responses."""
+        try:
+            from .memory import get_interaction_memory
+            
+            memory = get_interaction_memory()
+            prompt = memory.get_personalization_prompt(user_id)
+            
+            return {
+                "success": True,
+                "personalization_prompt": prompt,
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.post(
+        "/memory/users/{user_id}/mark-fan",
+        summary="Mark a user as a fan",
+        tags=["Memory"],
+    )
+    def mark_user_as_fan(user_id: str) -> dict:
+        """Mark a user as a loyal fan."""
+        try:
+            from .memory import get_interaction_memory
+            
+            memory = get_interaction_memory()
+            success = memory.mark_as_fan(user_id)
+            
+            return {
+                "success": success,
+                "message": "User marked as fan" if success else "User not found",
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.get(
+        "/memory/fans",
+        summary="Get all fans",
+        tags=["Memory"],
+    )
+    def get_fans(limit: int = 20) -> dict:
+        """Get users marked as fans."""
+        try:
+            from .memory import get_interaction_memory
+            
+            memory = get_interaction_memory()
+            fans = memory.get_fans(limit)
+            
+            return {
+                "success": True,
+                "fans": [
+                    {
+                        "user_id": f.user_id,
+                        "username": f.username,
+                        "interaction_count": f.interaction_count,
+                        "relationship_strength": f.relationship_strength,
+                        "top_topics": f.top_topics,
+                    }
+                    for f in fans
+                ],
+                "count": len(fans),
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    # --- Content Learning Endpoints ---
+    
+    @app.post(
+        "/memory/content/record",
+        summary="Record content for learning",
+        tags=["Memory"],
+    )
+    def record_content_for_learning(
+        content_type: str = Body(..., embed=True),
+        content_preview: str = Body(..., embed=True),
+        hashtags: Optional[List[str]] = Body(None, embed=True),
+        topics: Optional[List[str]] = Body(None, embed=True),
+    ) -> dict:
+        """Record a piece of content for performance tracking."""
+        try:
+            from .memory import get_content_learner
+            from datetime import datetime
+            
+            learner = get_content_learner()
+            content = learner.record_content(
+                content_type=content_type,
+                content_preview=content_preview,
+                posted_at=datetime.utcnow(),
+                hashtags=hashtags,
+                topics=topics,
+            )
+            
+            return {
+                "success": True,
+                "content_id": content.id,
+                "time_slot": content.time_slot.value,
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.post(
+        "/memory/content/{content_id}/metrics",
+        summary="Update content metrics",
+        tags=["Memory"],
+    )
+    def update_content_metrics(
+        content_id: str,
+        likes: int = Body(0, embed=True),
+        retweets: int = Body(0, embed=True),
+        replies: int = Body(0, embed=True),
+        quotes: int = Body(0, embed=True),
+        impressions: int = Body(0, embed=True),
+    ) -> dict:
+        """Update performance metrics for content."""
+        try:
+            from .memory import get_content_learner
+            
+            learner = get_content_learner()
+            content = learner.update_metrics(
+                content_id=content_id,
+                likes=likes,
+                retweets=retweets,
+                replies=replies,
+                quotes=quotes,
+                impressions=impressions,
+            )
+            
+            if not content:
+                return {
+                    "success": False,
+                    "error": "Content not found",
+                }
+            
+            return {
+                "success": True,
+                "content_id": content_id,
+                "engagement_score": content.engagement_score,
+                "engagement_rate": content.engagement_rate,
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.get(
+        "/memory/content/recommendations",
+        summary="Get content recommendations",
+        tags=["Memory"],
+    )
+    def get_content_recommendations() -> dict:
+        """Get AI-powered content recommendations based on learnings."""
+        try:
+            from .memory import get_content_learner
+            
+            learner = get_content_learner()
+            recommendations = learner.get_content_recommendations()
+            
+            return {
+                "success": True,
+                "recommendations": recommendations,
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.get(
+        "/memory/content/insights",
+        summary="Get content performance insights",
+        tags=["Memory"],
+    )
+    def get_content_insights() -> dict:
+        """Get insights from content performance analysis."""
+        try:
+            from .memory import get_content_learner
+            
+            learner = get_content_learner()
+            insights = learner.generate_insights()
+            
+            return {
+                "success": True,
+                "insights": [
+                    {
+                        "category": i.category,
+                        "insight": i.insight,
+                        "recommendation": i.recommendation,
+                        "confidence": i.confidence,
+                        "data_points": i.data_points,
+                    }
+                    for i in insights
+                ],
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    # --- Personality Evolution Endpoints ---
+    
+    @app.get(
+        "/memory/personality/summary",
+        summary="Get personality summary",
+        tags=["Memory"],
+    )
+    def get_personality_summary() -> dict:
+        """Get a summary of Papito's current personality state."""
+        try:
+            from .memory import get_personality_evolution
+            
+            evolution = get_personality_evolution()
+            summary = evolution.get_personality_summary()
+            
+            return {
+                "success": True,
+                "personality": summary,
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.post(
+        "/memory/milestones/record",
+        summary="Record a milestone",
+        tags=["Memory"],
+    )
+    def record_milestone(
+        title: str = Body(..., embed=True),
+        description: str = Body(..., embed=True),
+        milestone_type: str = Body(..., embed=True),
+        value: str = Body(..., embed=True),
+    ) -> dict:
+        """Record a new milestone achievement."""
+        try:
+            from .memory import get_personality_evolution
+            
+            evolution = get_personality_evolution()
+            milestone = evolution.record_milestone(
+                title=title,
+                description=description,
+                milestone_type=milestone_type,
+                value=value,
+            )
+            
+            return {
+                "success": True,
+                "milestone_id": milestone.id,
+                "evolution_phase": evolution.evolution_phase,
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.post(
+        "/memory/milestones/{milestone_id}/celebrate",
+        summary="Generate celebration post",
+        tags=["Memory"],
+    )
+    def celebrate_milestone(milestone_id: str) -> dict:
+        """Generate a celebration post for a milestone."""
+        try:
+            from .memory import get_personality_evolution
+            
+            evolution = get_personality_evolution()
+            post = evolution.generate_celebration_post(milestone_id)
+            
+            if not post:
+                return {
+                    "success": False,
+                    "error": "Milestone not found",
+                }
+            
+            return {
+                "success": True,
+                "celebration_post": post,
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.get(
+        "/memory/growth-report",
+        summary="Get growth report",
+        tags=["Memory"],
+    )
+    def get_growth_report() -> dict:
+        """Get a comprehensive growth report for Papito."""
+        try:
+            from .memory import get_personality_evolution
+            
+            evolution = get_personality_evolution()
+            report = evolution.get_growth_report()
+            
+            return {
+                "success": True,
+                "report": report,
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.get(
+        "/memory/journey",
+        summary="Get Papito's journey narrative",
+        tags=["Memory"],
+    )
+    def get_journey_narrative() -> dict:
+        """Get a narrative of Papito's journey as an artist."""
+        try:
+            from .memory import get_personality_evolution
+            
+            evolution = get_personality_evolution()
+            narrative = evolution.get_journey_narrative()
+            
+            return {
+                "success": True,
+                "narrative": narrative,
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.post(
+        "/memory/learnings/record",
+        summary="Record a learning moment",
+        tags=["Memory"],
+    )
+    def record_learning(
+        lesson: str = Body(..., embed=True),
+        context: str = Body(..., embed=True),
+        growth_area: str = Body(..., embed=True),
+    ) -> dict:
+        """Record a learning moment for Papito's evolution."""
+        try:
+            from .memory import get_personality_evolution
+            
+            evolution = get_personality_evolution()
+            learning = evolution.record_learning(
+                lesson=lesson,
+                context=context,
+                growth_area=growth_area,
+            )
+            
+            return {
+                "success": True,
+                "learning_id": learning.id,
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+
     @app.post(
         "/blogs",
         response_model=BlogDraft,
