@@ -2693,6 +2693,559 @@ def create_app() -> FastAPI:
                 "error": str(e),
             }
 
+    # ==========================================
+    # VIRTUAL EVENTS ENDPOINTS (Phase 4)
+    # ==========================================
+    
+    @app.get(
+        "/events/status",
+        summary="Get virtual events systems status",
+        tags=["Events"],
+    )
+    def events_systems_status() -> dict:
+        """Check the status of all virtual events systems."""
+        try:
+            from .events import get_spaces_manager, get_concert_manager, get_qa_manager
+            
+            spaces = get_spaces_manager()
+            concerts = get_concert_manager()
+            qa = get_qa_manager()
+            
+            return {
+                "spaces_manager": spaces.get_stats(),
+                "concert_manager": concerts.get_stats(),
+                "qa_manager": qa.get_stats(),
+                "active": True,
+                "message": "Virtual events systems ready!",
+            }
+        except Exception as e:
+            return {
+                "active": False,
+                "error": str(e),
+            }
+    
+    # --- Twitter Spaces Endpoints ---
+    
+    @app.post(
+        "/events/spaces/plan",
+        summary="Plan a Twitter Space",
+        tags=["Events"],
+    )
+    def plan_twitter_space(
+        space_type: str = Body(..., embed=True),
+        scheduled_time: str = Body(..., embed=True),  # ISO format
+        custom_title: Optional[str] = Body(None, embed=True),
+        custom_description: Optional[str] = Body(None, embed=True),
+        duration_minutes: int = Body(60, embed=True),
+        co_hosts: Optional[List[str]] = Body(None, embed=True),
+    ) -> dict:
+        """Plan a new Twitter Space."""
+        try:
+            from .events import get_spaces_manager
+            
+            manager = get_spaces_manager()
+            
+            # Parse scheduled time
+            from datetime import datetime
+            scheduled = datetime.fromisoformat(scheduled_time.replace('Z', '+00:00'))
+            
+            space = manager.plan_space(
+                space_type=space_type,
+                scheduled_time=scheduled,
+                custom_title=custom_title,
+                custom_description=custom_description,
+                duration_minutes=duration_minutes,
+                co_hosts=co_hosts,
+            )
+            
+            return {
+                "success": True,
+                "space_id": space.id,
+                "title": space.title,
+                "scheduled_time": space.scheduled_time.isoformat(),
+                "status": space.status.value,
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.post(
+        "/events/spaces/{space_id}/announce",
+        summary="Generate Space announcement tweet",
+        tags=["Events"],
+    )
+    def generate_space_announcement(space_id: str) -> dict:
+        """Generate an announcement tweet for a planned Space."""
+        try:
+            from .events import get_spaces_manager
+            
+            manager = get_spaces_manager()
+            announcement = manager.generate_announcement(space_id)
+            
+            if not announcement:
+                return {
+                    "success": False,
+                    "error": "Space not found",
+                }
+            
+            return {
+                "success": True,
+                "space_id": space_id,
+                "announcement": announcement,
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.post(
+        "/events/spaces/{space_id}/reminder",
+        summary="Generate Space reminder tweet",
+        tags=["Events"],
+    )
+    def generate_space_reminder(
+        space_id: str,
+        minutes_until: int = 30,
+    ) -> dict:
+        """Generate a reminder tweet for an upcoming Space."""
+        try:
+            from .events import get_spaces_manager
+            
+            manager = get_spaces_manager()
+            reminder = manager.generate_reminder(space_id, minutes_until)
+            
+            return {
+                "success": True,
+                "space_id": space_id,
+                "reminder": reminder,
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.get(
+        "/events/spaces/upcoming",
+        summary="Get upcoming Twitter Spaces",
+        tags=["Events"],
+    )
+    def get_upcoming_spaces() -> dict:
+        """Get all upcoming planned Spaces."""
+        try:
+            from .events import get_spaces_manager
+            
+            manager = get_spaces_manager()
+            upcoming = manager.get_upcoming_spaces()
+            
+            return {
+                "success": True,
+                "upcoming": [
+                    {
+                        "id": s.id,
+                        "title": s.title,
+                        "type": s.space_type.value,
+                        "scheduled_time": s.scheduled_time.isoformat(),
+                        "status": s.status.value,
+                    }
+                    for s in upcoming
+                ],
+                "count": len(upcoming),
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.get(
+        "/events/spaces/suggestions",
+        summary="Get Space ideas",
+        tags=["Events"],
+    )
+    def get_space_suggestions(count: int = 3) -> dict:
+        """Get suggestions for Twitter Space topics."""
+        try:
+            from .events import get_spaces_manager
+            
+            manager = get_spaces_manager()
+            suggestions = manager.suggest_space_ideas(count)
+            
+            return {
+                "success": True,
+                "suggestions": suggestions,
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    # --- Digital Concert Endpoints ---
+    
+    @app.post(
+        "/events/concerts/create",
+        summary="Create a digital concert/listening party",
+        tags=["Events"],
+    )
+    def create_digital_concert(
+        title: str = Body(..., embed=True),
+        event_type: str = Body("listening_party", embed=True),
+        scheduled_time: str = Body(..., embed=True),
+        description: Optional[str] = Body(None, embed=True),
+        duration_minutes: int = Body(60, embed=True),
+        featured_tracks: Optional[List[str]] = Body(None, embed=True),
+        special_guests: Optional[List[str]] = Body(None, embed=True),
+    ) -> dict:
+        """Create a new digital concert or listening party event."""
+        try:
+            from .events import get_concert_manager
+            from datetime import datetime
+            
+            manager = get_concert_manager()
+            scheduled = datetime.fromisoformat(scheduled_time.replace('Z', '+00:00'))
+            
+            event = manager.create_event(
+                title=title,
+                event_type=event_type,
+                scheduled_time=scheduled,
+                description=description,
+                duration_minutes=duration_minutes,
+                featured_tracks=featured_tracks,
+                special_guests=special_guests,
+            )
+            
+            return {
+                "success": True,
+                "event_id": event.id,
+                "title": event.title,
+                "type": event.event_type.value,
+                "hashtag": event.hashtag,
+                "scheduled_time": event.scheduled_time.isoformat(),
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.post(
+        "/events/concerts/{event_id}/promo-thread",
+        summary="Generate promotional tweet thread",
+        tags=["Events"],
+    )
+    def generate_promo_thread(event_id: str) -> dict:
+        """Generate a promotional tweet thread for an event."""
+        try:
+            from .events import get_concert_manager
+            
+            manager = get_concert_manager()
+            thread = manager.generate_promo_thread(event_id)
+            
+            if not thread:
+                return {
+                    "success": False,
+                    "error": "Event not found",
+                }
+            
+            return {
+                "success": True,
+                "event_id": event_id,
+                "thread": thread,
+                "tweet_count": len(thread),
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.get(
+        "/events/concerts/{event_id}/countdown",
+        summary="Get countdown posts for event",
+        tags=["Events"],
+    )
+    def get_countdown_posts(event_id: str) -> dict:
+        """Get countdown posts for different timeframes before event."""
+        try:
+            from .events import get_concert_manager
+            
+            manager = get_concert_manager()
+            posts = manager.generate_countdown_posts(event_id)
+            
+            return {
+                "success": True,
+                "event_id": event_id,
+                "countdown_posts": posts,
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.get(
+        "/events/concerts/upcoming",
+        summary="Get upcoming digital events",
+        tags=["Events"],
+    )
+    def get_upcoming_concerts() -> dict:
+        """Get all upcoming digital events."""
+        try:
+            from .events import get_concert_manager
+            
+            manager = get_concert_manager()
+            upcoming = manager.get_upcoming_events()
+            
+            return {
+                "success": True,
+                "upcoming": [
+                    {
+                        "id": e.id,
+                        "title": e.title,
+                        "type": e.event_type.value,
+                        "hashtag": e.hashtag,
+                        "scheduled_time": e.scheduled_time.isoformat(),
+                        "status": e.status.value,
+                    }
+                    for e in upcoming
+                ],
+                "count": len(upcoming),
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    # --- Q&A Session Endpoints ---
+    
+    @app.post(
+        "/events/qa/create",
+        summary="Create a Q&A session",
+        tags=["Events"],
+    )
+    def create_qa_session(
+        title: str = Body(..., embed=True),
+        scheduled_time: str = Body(..., embed=True),
+        description: Optional[str] = Body(None, embed=True),
+        duration_minutes: int = Body(45, embed=True),
+        custom_hashtag: Optional[str] = Body(None, embed=True),
+    ) -> dict:
+        """Create a new Q&A session."""
+        try:
+            from .events import get_qa_manager
+            from .engines.ai_personality import PapitoPersonalityEngine
+            from datetime import datetime
+            
+            personality = PapitoPersonalityEngine()
+            manager = get_qa_manager(personality)
+            scheduled = datetime.fromisoformat(scheduled_time.replace('Z', '+00:00'))
+            
+            session = manager.create_session(
+                title=title,
+                scheduled_time=scheduled,
+                description=description,
+                duration_minutes=duration_minutes,
+                custom_hashtag=custom_hashtag,
+            )
+            
+            return {
+                "success": True,
+                "session_id": session.id,
+                "title": session.title,
+                "hashtag": session.hashtag,
+                "scheduled_time": session.scheduled_time.isoformat(),
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.post(
+        "/events/qa/{session_id}/submit-question",
+        summary="Submit a question to Q&A session",
+        tags=["Events"],
+    )
+    def submit_qa_question(
+        session_id: str,
+        text: str = Body(..., embed=True),
+        author_username: str = Body(..., embed=True),
+        author_name: str = Body(..., embed=True),
+    ) -> dict:
+        """Submit a question to a Q&A session."""
+        try:
+            from .events import get_qa_manager
+            
+            manager = get_qa_manager()
+            question = manager.submit_question(
+                session_id=session_id,
+                text=text,
+                author_username=author_username,
+                author_name=author_name,
+            )
+            
+            if not question:
+                return {
+                    "success": False,
+                    "error": "Session not found or max questions reached",
+                }
+            
+            return {
+                "success": True,
+                "question_id": question.id,
+                "text": question.text,
+                "score": question.score,
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.post(
+        "/events/qa/{session_id}/answer/{question_id}",
+        summary="Generate answer for a question",
+        tags=["Events"],
+    )
+    async def answer_qa_question(session_id: str, question_id: str) -> dict:
+        """Generate an AI-powered answer for a submitted question."""
+        try:
+            from .events import get_qa_manager
+            from .engines.ai_personality import PapitoPersonalityEngine
+            
+            personality = PapitoPersonalityEngine()
+            manager = get_qa_manager(personality)
+            
+            answer = manager.answer_question(session_id, question_id)
+            
+            if not answer:
+                return {
+                    "success": False,
+                    "error": "Question not found",
+                }
+            
+            return {
+                "success": True,
+                "question_id": question_id,
+                "answer": answer,
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.get(
+        "/events/qa/{session_id}/questions",
+        summary="Get prioritized questions",
+        tags=["Events"],
+    )
+    def get_qa_questions(session_id: str, limit: int = 10) -> dict:
+        """Get prioritized questions for a Q&A session."""
+        try:
+            from .events import get_qa_manager
+            
+            manager = get_qa_manager()
+            questions = manager.get_prioritized_questions(session_id, limit)
+            
+            return {
+                "success": True,
+                "questions": [
+                    {
+                        "id": q.id,
+                        "text": q.text,
+                        "author": f"@{q.author_username}",
+                        "score": q.score,
+                        "status": q.status.value,
+                    }
+                    for q in questions
+                ],
+                "count": len(questions),
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.post(
+        "/events/qa/{session_id}/generate-thread",
+        summary="Generate Q&A answer thread",
+        tags=["Events"],
+    )
+    def generate_qa_thread(session_id: str, limit: int = 10) -> dict:
+        """Generate a tweet thread of answered questions."""
+        try:
+            from .events import get_qa_manager
+            
+            manager = get_qa_manager()
+            thread = manager.generate_answer_thread(session_id, limit)
+            
+            return {
+                "success": True,
+                "thread": thread,
+                "tweet_count": len(thread),
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.get(
+        "/events/qa/active",
+        summary="Get active Q&A sessions",
+        tags=["Events"],
+    )
+    def get_active_qa_sessions() -> dict:
+        """Get all active Q&A sessions."""
+        try:
+            from .events import get_qa_manager
+            
+            manager = get_qa_manager()
+            active = manager.get_active_sessions()
+            
+            return {
+                "success": True,
+                "active": [
+                    {
+                        "id": s.id,
+                        "title": s.title,
+                        "hashtag": s.hashtag,
+                        "status": s.status.value,
+                        "questions_count": len(s.questions),
+                        "answered_count": len(s.answered_questions),
+                    }
+                    for s in active
+                ],
+                "count": len(active),
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+
     @app.post(
         "/blogs",
         response_model=BlogDraft,
