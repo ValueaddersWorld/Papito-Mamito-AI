@@ -101,7 +101,7 @@ class AutonomousScheduler:
         
         try:
             # Import here to avoid circular imports
-            from .intelligence.content_generator import IntelligentContentGenerator, PapitoContext
+            from ..intelligence.content_generator import IntelligentContentGenerator, PapitoContext
             
             # Create context
             context = PapitoContext()
