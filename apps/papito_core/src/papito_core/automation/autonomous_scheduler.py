@@ -145,6 +145,133 @@ class AutonomousScheduler:
         logger.info("🚀 Autonomous scheduler started - Papito is now FULLY AUTONOMOUS!")
         logger.info(f"📱 Twitter posting: {'ENABLED' if self._twitter_publisher and self._twitter_publisher.is_connected else 'DISABLED'}")
         
+        # === PHASE 1: Active Engagement Jobs ===
+        # Process mentions every 30 minutes
+        self.scheduler.add_job(
+            self._process_mentions,
+            CronTrigger(minute="0,30", timezone="Africa/Lagos"),
+            id="process_mentions",
+            replace_existing=True,
+            name="Process Twitter Mentions"
+        )
+        logger.info("📬 Scheduled: Mention monitoring every 30 minutes")
+        
+        # Engage with Afrobeat content 3x daily
+        self.scheduler.add_job(
+            self._afrobeat_engagement,
+            CronTrigger(hour="8,14,19", minute=15, timezone="Africa/Lagos"),
+            id="afrobeat_engagement",
+            replace_existing=True,
+            name="Afrobeat Community Engagement"
+        )
+        logger.info("🎵 Scheduled: Afrobeat engagement at 8:15, 14:15, 19:15 WAT")
+        
+        # === PHASE 2: Fan Interaction Jobs ===
+        # Welcome new followers 2x daily
+        self.scheduler.add_job(
+            self._welcome_followers,
+            CronTrigger(hour="11,22", minute=0, timezone="Africa/Lagos"),
+            id="welcome_followers",
+            replace_existing=True,
+            name="Welcome New Followers"
+        )
+        logger.info("👋 Scheduled: Follower welcoming at 11:00, 22:00 WAT")
+        
+        # Fan recognition session once daily (before evening post)
+        self.scheduler.add_job(
+            self._fan_recognition,
+            CronTrigger(hour=17, minute=30, timezone="Africa/Lagos"),
+            id="fan_recognition",
+            replace_existing=True,
+            name="Fan Recognition Session"
+        )
+        logger.info("⭐ Scheduled: Fan recognition at 17:30 WAT")
+        
+    async def _process_mentions(self) -> Dict[str, Any]:
+        """Process and respond to Twitter mentions."""
+        try:
+            from ..engagement import get_mention_monitor
+            from ..engines.ai_personality import PapitoPersonalityEngine
+            
+            personality = PapitoPersonalityEngine()
+            monitor = get_mention_monitor(personality)
+            
+            if not monitor.connect():
+                logger.warning("Could not connect MentionMonitor")
+                return {"success": False, "error": "Connection failed"}
+            
+            results = await monitor.process_mentions()
+            logger.info(f"📬 Processed {results['fetched']} mentions, replied to {results['responded']}")
+            return results
+            
+        except Exception as e:
+            logger.error(f"Mention processing error: {e}")
+            return {"success": False, "error": str(e)}
+    
+    async def _afrobeat_engagement(self) -> Dict[str, Any]:
+        """Engage with Afrobeat content on Twitter."""
+        try:
+            from ..engagement import get_afrobeat_engager
+            from ..engines.ai_personality import PapitoPersonalityEngine
+            
+            personality = PapitoPersonalityEngine()
+            engager = get_afrobeat_engager(personality)
+            
+            if not engager.connect():
+                logger.warning("Could not connect AfrobeatEngager")
+                return {"success": False, "error": "Connection failed"}
+            
+            results = await engager.run_engagement_session()
+            logger.info(f"🎵 Afrobeat engagement: {results['likes']} likes, {results['replies']} replies")
+            return results
+            
+        except Exception as e:
+            logger.error(f"Afrobeat engagement error: {e}")
+            return {"success": False, "error": str(e)}
+    
+    async def _welcome_followers(self) -> Dict[str, Any]:
+        """Welcome new followers."""
+        try:
+            from ..interactions import get_follower_manager
+            from ..engines.ai_personality import PapitoPersonalityEngine
+            
+            personality = PapitoPersonalityEngine()
+            manager = get_follower_manager(personality)
+            
+            if not manager.connect():
+                logger.warning("Could not connect FollowerManager")
+                return {"success": False, "error": "Connection failed"}
+            
+            results = await manager.run_welcome_session(max_welcomes=5)
+            logger.info(f"👋 Welcomed {results['welcomes_sent']} new followers")
+            return results
+            
+        except Exception as e:
+            logger.error(f"Follower welcome error: {e}")
+            return {"success": False, "error": str(e)}
+    
+    async def _fan_recognition(self) -> Dict[str, Any]:
+        """Run fan recognition activities."""
+        try:
+            from ..interactions import get_fan_recognition_manager
+            from ..engines.ai_personality import PapitoPersonalityEngine
+            
+            personality = PapitoPersonalityEngine()
+            manager = get_fan_recognition_manager(personality)
+            
+            if not manager.connect():
+                logger.warning("Could not connect FanRecognitionManager")
+                return {"success": False, "error": "Connection failed"}
+            
+            results = await manager.run_recognition_session()
+            logger.info(f"⭐ Fan recognition: {results['shoutouts_given']} shoutouts, FOTW: {results['fotw_announced']}")
+            return results
+            
+        except Exception as e:
+            logger.error(f"Fan recognition error: {e}")
+            return {"success": False, "error": str(e)}
+        
+        
     def stop(self) -> None:
         """Stop the autonomous scheduler."""
         if self._is_running:
