@@ -1656,6 +1656,265 @@ def create_app() -> FastAPI:
                 "promo_text": text,
             }
 
+    # ==========================================
+    # ACTIVE ENGAGEMENT ENDPOINTS
+    # ==========================================
+    
+    @app.get(
+        "/engagement/status",
+        summary="Get active engagement system status",
+        tags=["Engagement"],
+    )
+    def engagement_status() -> dict:
+        """Check the status of the active engagement systems."""
+        try:
+            from .engagement import get_mention_monitor, get_afrobeat_engager
+            
+            mention_monitor = get_mention_monitor()
+            afrobeat_engager = get_afrobeat_engager()
+            
+            return {
+                "mention_monitor": {
+                    "connected": mention_monitor.client is not None,
+                    "stats": mention_monitor.get_stats(),
+                },
+                "afrobeat_engager": {
+                    "connected": afrobeat_engager.client is not None,
+                    "stats": afrobeat_engager.get_stats(),
+                },
+                "active_engagement": True,
+                "message": "Papito AI is ready to engage with the community!",
+            }
+        except Exception as e:
+            return {
+                "active_engagement": False,
+                "error": str(e),
+            }
+    
+    @app.post(
+        "/engagement/process-mentions",
+        summary="Process and reply to new Twitter mentions",
+        tags=["Engagement"],
+    )
+    async def process_mentions() -> dict:
+        """Fetch new mentions and reply to them.
+        
+        This makes Papito actively engage with fans who mention him.
+        """
+        try:
+            from .engagement import get_mention_monitor
+            from .engines.ai_personality import PapitoPersonalityEngine
+            
+            # Get personality engine for AI responses
+            personality_engine = PapitoPersonalityEngine()
+            
+            # Get mention monitor with personality
+            monitor = get_mention_monitor(personality_engine)
+            
+            if not monitor.connect():
+                return {
+                    "success": False,
+                    "error": "Could not connect to Twitter. Check credentials.",
+                }
+            
+            # Process mentions
+            results = await monitor.process_mentions()
+            
+            return {
+                "success": True,
+                "results": results,
+                "stats": monitor.get_stats(),
+                "message": f"Processed {results['fetched']} mentions, replied to {results['responded']}",
+            }
+            
+        except Exception as e:
+            import traceback
+            return {
+                "success": False,
+                "error": str(e),
+                "traceback": traceback.format_exc(),
+            }
+    
+    @app.post(
+        "/engagement/discover-afrobeat",
+        summary="Discover and engage with Afrobeat content",
+        tags=["Engagement"],
+    )
+    async def discover_afrobeat() -> dict:
+        """Search for Afrobeat content and engage with the community.
+        
+        This makes Papito an active participant in the Afrobeat community,
+        liking, replying to, and quote-tweeting relevant content.
+        """
+        try:
+            from .engagement import get_afrobeat_engager
+            from .engines.ai_personality import PapitoPersonalityEngine
+            
+            # Get personality engine for AI responses
+            personality_engine = PapitoPersonalityEngine()
+            
+            # Get afrobeat engager
+            engager = get_afrobeat_engager(personality_engine)
+            
+            if not engager.connect():
+                return {
+                    "success": False,
+                    "error": "Could not connect to Twitter. Check credentials.",
+                }
+            
+            # Run engagement session
+            results = await engager.run_engagement_session()
+            
+            return {
+                "success": True,
+                "results": results,
+                "stats": engager.get_stats(),
+                "message": f"Engaged with {results['tweets_found']} tweets: {results['likes']} likes, {results['replies']} replies, {results['quotes']} quote tweets",
+            }
+            
+        except Exception as e:
+            import traceback
+            return {
+                "success": False,
+                "error": str(e),
+                "traceback": traceback.format_exc(),
+            }
+    
+    @app.post(
+        "/engagement/reply-to-tweet",
+        summary="Reply to a specific tweet",
+        tags=["Engagement"],
+    )
+    async def reply_to_tweet(
+        tweet_id: str = Body(..., embed=True),
+        reply_text: Optional[str] = Body(None, embed=True),
+    ) -> dict:
+        """Reply to a specific tweet as Papito.
+        
+        If reply_text is not provided, generates an AI response.
+        """
+        try:
+            from .social.twitter import TwitterPublisher
+            from .engines.ai_personality import PapitoPersonalityEngine
+            
+            publisher = TwitterPublisher.from_settings()
+            if not publisher.connect():
+                return {
+                    "success": False,
+                    "error": "Could not connect to Twitter",
+                }
+            
+            # Generate reply if not provided
+            if not reply_text:
+                personality = PapitoPersonalityEngine()
+                reply_text = personality.generate_content(
+                    content_type="engagement",
+                    include_hashtags=False,
+                    max_length=200,
+                )
+            
+            # Post reply
+            result = publisher.client.create_tweet(
+                text=reply_text,
+                in_reply_to_tweet_id=int(tweet_id),
+            )
+            
+            if result and result.data:
+                return {
+                    "success": True,
+                    "reply_id": str(result.data["id"]),
+                    "reply_text": reply_text,
+                }
+            
+            return {
+                "success": False,
+                "error": "Failed to post reply",
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.post(
+        "/engagement/like-tweet",
+        summary="Like a specific tweet",
+        tags=["Engagement"],
+    )
+    async def like_tweet(
+        tweet_id: str = Body(..., embed=True),
+    ) -> dict:
+        """Like a specific tweet as Papito."""
+        try:
+            from .social.twitter import TwitterPublisher
+            
+            publisher = TwitterPublisher.from_settings()
+            if not publisher.connect():
+                return {
+                    "success": False,
+                    "error": "Could not connect to Twitter",
+                }
+            
+            publisher.client.like(tweet_id=int(tweet_id))
+            
+            return {
+                "success": True,
+                "message": f"Liked tweet {tweet_id}",
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+    
+    @app.get(
+        "/engagement/pending-mentions",
+        summary="Get pending mentions to review",
+        tags=["Engagement"],
+    )
+    async def get_pending_mentions(limit: int = 10) -> dict:
+        """Get recent mentions that haven't been responded to yet.
+        
+        Useful for manual review before auto-responding.
+        """
+        try:
+            from .engagement import get_mention_monitor
+            
+            monitor = get_mention_monitor()
+            
+            if not monitor.connect():
+                return {
+                    "success": False,
+                    "error": "Could not connect to Twitter",
+                }
+            
+            mentions = await monitor.fetch_new_mentions()
+            
+            # Convert to serializable format
+            mention_data = []
+            for m in mentions[:limit]:
+                mention_data.append({
+                    "tweet_id": m.tweet_id,
+                    "author": f"@{m.author_username}",
+                    "text": m.text,
+                    "intent": m.intent.value if m.intent else "unknown",
+                    "created_at": m.created_at.isoformat() if m.created_at else None,
+                })
+            
+            return {
+                "success": True,
+                "mentions": mention_data,
+                "count": len(mention_data),
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+
     @app.post(
         "/blogs",
         response_model=BlogDraft,
