@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 # Papito Mamito AI - Docker Image
 # Supports both API server and autonomous agent modes
-# Cache bust: 2024-12-09-v1-engagement-endpoints
+# Cache bust: 2025-12-09-v2-full-autonomy
 
 FROM python:3.11-slim
 
