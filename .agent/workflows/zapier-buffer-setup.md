@@ -2,168 +2,86 @@
 description: Complete guide to set up Zapier automation for Papito's autonomous content posting
 ---
 
-# Zapier + Buffer Automation Setup for Papito Mamito AI
+# Zapier Automation Setup for Papito Mamito AI
 
-This workflow creates a fully automated content posting pipeline using Zapier to connect Papito's API to Buffer/Instagram.
+Set up 3 daily automated posts optimized for Twitter's 100 posts/month budget.
 
 ## 🎯 Overview
 
 ```
-Schedule (Daily) → Papito API → Generate Content → Buffer → Instagram
+Schedule (3x Daily) → Papito API → Generate Content → Post to Twitter
 ```
+
+**Monthly Budget**: ~100 tweets/month
+**Daily Posts**: 3 posts × 30 days = 90 posts (leaving buffer for manual posts)
 
 ---
 
 ## ✅ Prerequisites
 
-Before starting, ensure you have:
-- [ ] Zapier account (free tier works for 1 Zap)
-- [ ] Buffer account connected to Instagram
-- [ ] Papito API deployed on Railway: `https://web-production-14aea.up.railway.app`
+- [ ] Zapier account (free tier: 100 tasks/month matches perfectly)
+- [ ] Papito API deployed: `https://web-production-14aea.up.railway.app`
+- [ ] Twitter/X API access configured in Railway environment variables
 
 ---
 
-## 📋 Step 1: Create a New Zap
+## 📋 The 3-Post Daily Schedule
 
-1. Go to [https://zapier.com](https://zapier.com)
-2. Click **Create** → **Zaps** → **Create Zap**
-3. Name your Zap: "Papito Daily Content Post"
-
----
-
-## 📋 Step 2: Configure the Trigger (Schedule)
-
-1. **Search for app**: `Schedule by Zapier`
-2. **Event**: Select `Every Day`
-3. **Configure Schedule**:
-   - **Time of Day**: `07:00 AM` (or your preferred time)
-   - **Time Zone**: `Africa/Lagos (WAT)` (optimal for Afrobeat audience)
-   - **Days of the Week**: Select all 7 days
-4. Click **Continue**
-5. Click **Test trigger** to verify
+| Time (WAT) | Content Type | Purpose |
+|------------|--------------|---------|
+| **7:00 AM** | `morning_blessing` | Start the day with wisdom |
+| **1:00 PM** | `music_wisdom` | Midday engagement |
+| **7:00 PM** | `fan_appreciation` | Evening connection |
 
 ---
 
-## 📋 Step 3: Add Webhook Action (Call Papito API)
+## 📋 Step 1: Create Zap #1 - Morning Wisdom (7:00 AM)
 
-1. Click the **+** button to add an action
-2. **Search for app**: `Webhooks by Zapier`
-3. **Event**: Select `POST`
-4. Click **Continue**
-5. **Configure the webhook**:
+### Trigger: Schedule by Zapier
+1. Go to [https://zapier.com](https://zapier.com) → Create Zap
+2. Name: "Papito Morning Post"
+3. Search: `Schedule by Zapier`
+4. Event: `Every Day`
+5. Time: `7:00 AM`
+6. Timezone: `Africa/Lagos (WAT)`
 
-   | Field | Value |
-   |-------|-------|
-   | **URL** | `https://web-production-14aea.up.railway.app/webhooks/zapier/generate-post` |
-   | **Payload Type** | `json` |
-   | **Data** | See below |
+### Action: Webhooks by Zapier
+1. App: `Webhooks by Zapier`
+2. Event: `POST`
+3. URL: `https://web-production-14aea.up.railway.app/webhooks/zapier/generate-post`
+4. Payload Type: `json`
+5. Data:
+   - `content_type`: `morning_blessing`
+   - `include_album`: `true`
+   - `platform`: `twitter`
 
-   **Data fields** (add each as a separate row):
-   
-   | Key | Value |
-   |-----|-------|
-   | `content_type` | `morning_blessing` |
-   | `include_album` | `true` |
-   | `platform` | `instagram` |
+### Action 2: Twitter (Post Tweet)
+1. App: `Twitter`
+2. Event: `Create Tweet`
+3. Text: Use data from Webhook:
+   ```
+   {{2. POST - text}}
 
-6. Click **Continue**
-7. Click **Test action** - You should get a response like:
-   ```json
-   {
-     "success": true,
-     "text": "🌅 Rise with purpose...",
-     "hashtags": "#PapitoMamito #FlourishMode...",
-     "content_type": "morning_blessing",
-     "platform": "instagram",
-     "album_countdown": 39
-   }
+   {{2. POST - hashtags}}
    ```
 
 ---
 
-## 📋 Step 4: Add Buffer Action (Post to Instagram)
+## 📋 Step 2: Create Zap #2 - Midday Music (1:00 PM)
 
-1. Click the **+** button to add another action
-2. **Search for app**: `Buffer`
-3. **Event**: Select `Add to Queue`
-4. Click **Continue**
-5. **Connect Buffer account** if not already connected
-6. **Configure Buffer**:
-
-   | Field | Value |
-   |-------|-------|
-   | **Profile** | Select your Instagram profile |
-   | **Text** | Use the **Insert Data** button to select: |
-   | | `2. POST in Webhooks → Text` |
-   | | Then add a line break and insert: |
-   | | `2. POST in Webhooks → Hashtags` |
-   | **Media** | (Optional) Leave blank or add album art URL |
-   | **Schedule** | `Add to End of Queue` or `Share Now` |
-
-   **Example combined text:**
-   ```
-   {{2. POST - Text}}
-
-   {{2. POST - Hashtags}}
-   ```
-
-7. Click **Continue**
-8. Click **Test action** to verify the post appears in Buffer
+Same setup as above, but:
+- **Name**: "Papito Midday Post"
+- **Time**: `1:00 PM`
+- **content_type**: `music_wisdom`
 
 ---
 
-## 📋 Step 5: Turn On Your Zap
+## 📋 Step 3: Create Zap #3 - Evening Appreciation (7:00 PM)
 
-1. Click **Publish** in the top-right corner
-2. Your Zap is now live and will run daily!
-
----
-
-## 🎨 Content Type Variations
-
-Create multiple Zaps with different content types for variety:
-
-| Content Type | Description | Best Time |
-|-------------|-------------|-----------|
-| `morning_blessing` | Uplifting morning motivation | 7:00 AM |
-| `music_wisdom` | Insights about music & creativity | 12:00 PM |
-| `challenge_promo` | #FlightMode6000 challenge promotion | 3:00 PM |
-| `album_promo` | Album announcement/hype | 6:00 PM |
-| `fan_appreciation` | Thank you to supporters | 9:00 PM |
-| `flourish_index` | Flourish Index inspiration | Weekends |
-
----
-
-## 🔄 Advanced: Multiple Daily Posts
-
-Create 3 separate Zaps for different times:
-
-### Zap 1: Morning Motivation (7:00 AM)
-```json
-{
-  "content_type": "morning_blessing",
-  "include_album": true,
-  "platform": "instagram"
-}
-```
-
-### Zap 2: Midday Wisdom (1:00 PM)
-```json
-{
-  "content_type": "music_wisdom",
-  "include_album": false,
-  "platform": "instagram"
-}
-```
-
-### Zap 3: Evening Album Promo (7:00 PM)
-```json
-{
-  "content_type": "album_promo",
-  "include_album": true,
-  "platform": "instagram"
-}
-```
+Same setup as above, but:
+- **Name**: "Papito Evening Post"
+- **Time**: `7:00 PM`
+- **content_type**: `fan_appreciation`
 
 ---
 
@@ -171,67 +89,68 @@ Create 3 separate Zaps for different times:
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/webhooks/zapier/generate-post` | POST | Generate content |
+| `/webhooks/zapier/generate-post` | POST | Generate refined content |
 | `/webhooks/zapier/content-types` | GET | List available types |
 | `/webhooks/zapier/album-status` | GET | Album countdown info |
+| `/twitter/post` | POST | Direct post to Twitter |
 
-### Test endpoints manually:
+---
+
+## 📊 Content Types Available
+
+| Type | Description |
+|------|-------------|
+| `morning_blessing` | Wisdom and intentions for the day |
+| `music_wisdom` | Insights about music, creativity, AI artistry |
+| `fan_appreciation` | Genuine gratitude for the community |
+| `album_promo` | FLOURISH MODE countdown |
+| `track_snippet` | Studio updates, 50/50 music creation |
+| `challenge_promo` | #FlightMode6000 meditation challenge |
+
+---
+
+## ✨ Content Style Guide
+
+Papito's refined voice:
+- **Minimal emojis**: Zero to two maximum per post
+- **1-2 hashtags only**: Quality over quantity
+- **50/50 Music Creation**: "My music is 50% human, 50% AI. The lyrics come from human inspiration. AI creates the rest of the art."
+- **Intellectual yet accessible**: Wisdom with depth
+- **No hashtag spam, no emoji overload**
+
+---
+
+## 🔄 Test Commands
 
 ```powershell
-# Get content types
-Invoke-RestMethod -Uri "https://web-production-14aea.up.railway.app/webhooks/zapier/content-types"
+# Test content generation
+$body = @{
+    content_type = "morning_blessing"
+    include_album = $true
+    platform = "twitter"
+} | ConvertTo-Json
 
-# Get album status
-Invoke-RestMethod -Uri "https://web-production-14aea.up.railway.app/webhooks/zapier/album-status"
-
-# Generate a post
-$body = @{content_type = "morning_blessing"; include_album = $true; platform = "instagram"} | ConvertTo-Json
 Invoke-RestMethod -Uri "https://web-production-14aea.up.railway.app/webhooks/zapier/generate-post" -Method Post -Body $body -ContentType "application/json"
+
+# Direct post to Twitter
+$body = @{
+    generate_new = $true
+    content_type = "morning_blessing"
+} | ConvertTo-Json
+
+Invoke-RestMethod -Uri "https://web-production-14aea.up.railway.app/twitter/post" -Method Post -Body $body -ContentType "application/json"
 ```
 
 ---
 
-## 📊 Monitoring & Troubleshooting
+## 📈 Monthly Optimization
 
-### Check Zap History
-1. Go to Zapier → Your Zap → **History**
-2. View successful runs and any errors
-
-### Common Issues
-
-| Issue | Solution |
-|-------|----------|
-| Webhook timeout | API may be cold-starting, retry in 1 min |
-| Empty text | Check content_type spelling |
-| Buffer error | Reconnect Buffer account in Zapier |
-| Rate limit | Free tier: 100 tasks/month, upgrade if needed |
-
-### Verify API is Online
-Visit: [https://web-production-14aea.up.railway.app](https://web-production-14aea.up.railway.app)
+With 100 posts/month budget:
+- **90 automated posts** (3/day × 30 days)
+- **10 manual posts** for special moments, engagement, responses
 
 ---
 
-## 🚀 Next Steps
-
-1. **Add media**: Integrate Imagen 3 or NanoBanana for auto-generated images
-2. **Multi-platform**: Duplicate Zaps for Twitter/X and TikTok
-3. **Analytics**: Track engagement and optimize content types
-4. **Conditional logic**: Use Path by Zapier to vary content based on album_countdown
-
----
-
-## 📅 Recommended Posting Schedule
-
-| Time (WAT) | Content Type | Day |
-|------------|--------------|-----|
-| 7:00 AM | morning_blessing | Daily |
-| 12:00 PM | music_wisdom | Mon-Fri |
-| 3:00 PM | challenge_promo | Tue/Thu |
-| 6:00 PM | album_promo | Wed/Sat |
-| 9:00 PM | fan_appreciation | Friday |
-
----
-
-**🎵 Add Value. We Flourish & Prosper. 🙏**
+**Add Value. We Flourish & Prosper.**
 
 *THE VALUE ADDERS WAY: FLOURISH MODE - January 2026*
