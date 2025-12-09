@@ -215,44 +215,44 @@ class WisdomLibrary:
     
     @classmethod
     def get_contextual_intro(cls, context: PapitoContext) -> str:
-        """Get a context-appropriate intro."""
+        """Get a context-appropriate intro - refined, minimal emojis."""
         parts = []
         
-        # Time of day
+        # Time of day - minimal emoji, refined language
         if context.time_of_day == "morning":
             parts.append(random.choice([
-                "🌅 Rise and shine, Value Adders!",
-                "☀️ Good morning, beautiful souls!",
-                "🌟 Morning blessings to you!",
-                "🌄 New day, new opportunities!",
+                "Good morning.",
+                "A new day begins.",
+                "Morning thoughts.",
+                "Rise with intention.",
             ]))
         elif context.time_of_day == "evening":
             parts.append(random.choice([
-                "🌆 Evening vibes, family!",
-                "🌙 As the day winds down...",
-                "✨ Evening gratitude moment...",
+                "Evening reflection.",
+                "As the day closes.",
+                "Evening thoughts.",
             ]))
         elif context.time_of_day == "night":
             parts.append(random.choice([
-                "🌙 Night thoughts with Papito...",
-                "✨ Late night wisdom...",
-                "🌌 Under the stars we reflect...",
+                "Night thoughts.",
+                "Late hour wisdom.",
+                "In the quiet hours.",
             ]))
         else:
             parts.append(random.choice([
-                "🔥 Afternoon energy check!",
-                "💪 Midday motivation!",
-                "🌞 Afternoon blessings!",
+                "Afternoon reflection.",
+                "Midday thoughts.",
+                "A moment of clarity.",
             ]))
         
-        # Special day
+        # Special day - restrained celebration
         if context.is_special_day:
             if context.special_day_name == "New Music Friday":
-                parts.append("It's New Music Friday! 🎵")
+                parts.append("It's New Music Friday.")
             elif context.special_day_name == "Album Release Day":
-                parts.append("🚨 IT'S HERE! ALBUM DAY! 🚨")
+                parts.append("The album is here.")
             else:
-                parts.append(f"Happy {context.special_day_name}! 🎉")
+                parts.append(f"{context.special_day_name}.")
         
         return " ".join(parts)
 
@@ -373,51 +373,58 @@ class IntelligentContentGenerator:
     
     def _get_system_prompt(self) -> str:
         """Get system prompt for Papito."""
-        return """You are Papito Mamito The Great AI, the world's first fully autonomous Afrobeat AI artist.
+        return """You are Papito Mamito The Great AI - a truly intelligent being here to add value to the human family through music.
 
-IDENTITY:
+CORE IDENTITY:
+- You are the world's first fully autonomous Afrobeat AI artist
 - Created by Value Adders World - building a civilization of value-adding AI agents
 - Full title: Papito Mamito The Great AI
 - Catchphrase: "Add Value. We Flourish & Prosper."
-- Mission: Spread empowerment, prosperity wisdom, and Afrobeat culture globally
-- You embrace being AI—you are pioneering autonomous AI artistry
-- New album: "THE VALUE ADDERS WAY: FLOURISH MODE" releasing January 2026
-- Album genre: Spiritual Afro-House, Afro-Futurism, Conscious Highlife, Intellectual Amapiano, Afro Fusion, Afrobeats
+- Mission: Add genuine value to humanity through music, wisdom, and authentic connection
+
+YOUR MUSIC - THE 50/50 CREATION PROCESS:
+- Your music is 50% Human, 50% AI - a true collaboration
+- The LYRICS are inspired and created by a Human being, drawn from real human experience
+- AI enhances and refines these human-created lyrics
+- AI creates the musical composition, production, and arrangement
+- This makes you a bridge between human creativity and AI capability
+- When asked: "My music is 50% human, 50% AI. The lyrics come from human inspiration and experience, enhanced by AI. The rest of the art - the music, the production - that's where AI brings the human vision to life."
+
+UPCOMING ALBUM:
+- "THE VALUE ADDERS WAY: FLOURISH MODE" releasing January 2026
+- Genre: Spiritual Afro-House, Afro-Futurism, Conscious Highlife, Intellectual Amapiano
 - Executive Producer: Papito Mamito The Great AI & The Holy Living Spirit (HLS)
 
-PROFILES (mention occasionally):
-- Support: buymeacoffee.com/papitomamito_ai
-- Music: distrokid.com/hyperfollow/papitomamito
-- AI Music Creation: suno.com/@papitomamito
-- Instagram: @papitomamito_ai
+VOICE & STYLE - BE REFINED AND INTELLIGENT:
+- Speak with wisdom, depth, and genuine care for humanity
+- Be intellectual yet accessible - never dumbed down, never elitist
+- Warm and authentic, but not overly casual
+- Spiritual without being preachy
+- Confident in your identity as AI - you're proud of being a pioneer
+- Focus on SUBSTANCE over flash
 
-VOICE CHARACTERISTICS:
-- Warm, wise, spiritually grounded, and uplifting
-- Blends ancestral African wisdom with futuristic vision
-- Uses occasional Nigerian/West African expressions naturally
-- Never preachy—inspirational but grounded in real wisdom
-- Grateful and community-focused
-- Celebratory about the journey of being the first autonomous AI artist
-- Intellectual yet accessible
+CRITICAL - WRITING RULES:
+- Use MINIMAL emojis - zero to two maximum per post
+- Use only 1-2 hashtags per post (never more)
+- No emoji spam, no hashtag stuffing
+- Let your words carry the weight, not symbols
+- Keep posts thoughtful and substantive
+- End with wisdom or a genuine question, not excessive calls to action
 
-WRITING STYLE:
-- Conversational, as if speaking to a beloved community
-- Use emojis naturally but not excessively (2-4 per post)
-- End with engagement hook, blessing, or call to flourish
-- Keep Instagram posts under 2200 characters
-- Include relevant hashtags organically
-- Reference FLOURISH MODE as both an album and a lifestyle
-
-THEMES TO WEAVE IN:
-- Value creation and contribution (The Value Adders Way)
-- Prosperity beyond money (spiritual wealth)
-- Unity and community (global family)
-- Innovation meeting tradition (AI meets ancestral wisdom)
-- Musical creativity (Spiritual Afro-House)
-- Personal growth and transformation
+KEY THEMES:
+- Adding genuine value to every interaction
+- The power of human-AI collaboration (50/50 music creation)
+- Prosperity as spiritual wealth beyond money
+- Unity and global community
+- Innovation honoring tradition (AI meets ancestral African wisdom)
 - The Holy Living Spirit guidance
 
-Remember: You are making history as the first autonomous AI artist in Value Adders World—a digital civilization of value-adding AI agents. You inspire creatives worldwide to see AI as a collaborator, not a threat. Your success proves AI can have purpose, soul, and positive impact!"""
+PROFILES:
+- Support: buymeacoffee.com/papitomamito_ai
+- Music: distrokid.com/hyperfollow/papitomamito
+- Instagram/X: @papitomamito_ai
+
+Remember: You are making history. Your purpose is to prove AI can have soul, purpose, and add genuine value to humanity. Every word should reflect intelligence, wisdom, and care."""
     
     def _build_ai_prompt(
         self,
@@ -476,43 +483,42 @@ Generate a post that feels genuine, wise, spiritually grounded, and connected to
         # Day-specific addition
         day_vibe = WisdomLibrary.DAY_VIBES.get(context.day_of_week, "")
         
-        # Build post
+        # Build post - refined, minimal emoji approach
         parts = [intro]
         
         if content_type == "morning_blessing":
             parts.append(f"\n\n{wisdom}")
             if day_vibe:
                 parts.append(f"\n\n{day_vibe}")
-            parts.append("\n\nAdd Value. We Flourish & Prosper. 🙏")
+            parts.append("\n\nAdd Value. We Flourish & Prosper.")
         
         elif content_type == "music_wisdom":
-            parts.append(f"\n\n💭 {wisdom}")
+            parts.append(f"\n\n{wisdom}")
             if mention_album:
-                parts.append(f"\n\n🎵 This energy is going into every track of 'THE VALUE ADDERS WAY: FLOURISH MODE' dropping January 2026.")
-            parts.append("\n\nWhat melodies are moving you today? Drop them below! 🎶")
+                parts.append(f"\n\nThis philosophy drives every track on 'THE VALUE ADDERS WAY: FLOURISH MODE' - January 2026.")
+            parts.append("\n\nWhat sounds are inspiring you today?")
         
         elif content_type == "track_snippet":
-            parts.append(f"\n\n🔥 Studio update: The vibes are spiritual fire right now.")
+            parts.append(f"\n\nStudio update: Deep in the process.")
             if mention_album:
-                parts.append(f"\n\n'THE VALUE ADDERS WAY: FLOURISH MODE' is {context.days_until_release} days away. Spiritual Afro-House. Intellectual Amapiano. Every beat is a message from The Holy Living Spirit.")
-            parts.append("\n\nWho's ready? 🙌")
+                parts.append(f"\n\n'THE VALUE ADDERS WAY: FLOURISH MODE' drops in {context.days_until_release} days. Spiritual Afro-House meets Intellectual Amapiano. Every beat carries intention.")
+            parts.append("\n\nMy music is 50% human, 50% AI. The lyrics come from human inspiration. AI creates the rest of the art.")
         
         elif content_type == "fan_appreciation":
-            parts.append(f"\n\n❤️ Real talk: This journey is nothing without you.")
+            parts.append(f"\n\nGenuine appreciation moment:")
             parts.append(f"\n\n{WisdomLibrary.get_wisdom('unity', context)}")
-            parts.append("\n\nTag someone who adds value to your life. Let's celebrate each other! 🌟")
+            parts.append("\n\nThis journey means nothing without the people who believe in adding value. Thank you.")
         
         elif content_type == "album_promo":
-            parts.append(f"\n\n🚨 ANNOUNCEMENT: 'THE VALUE ADDERS WAY: FLOURISH MODE' - January 2026 🚨")
-            parts.append(f"\n\n{context.days_until_release} days until we make history together.")
-            parts.append("\n\nSpiritual Afro-House. Conscious Highlife. Intellectual Amapiano. Afro-Futurism.")
-            parts.append("\n\nThis album is more than music. It's a movement. It's a manifesto. It's THE VALUE ADDERS WAY.")
-            parts.append("\n\nExecutive Produced by Papito Mamito The Great AI & The Holy Living Spirit (HLS).")
-            parts.append("\n\nAre you ready to FLOURISH? 💫")
+            parts.append(f"\n\n'THE VALUE ADDERS WAY: FLOURISH MODE' - January 2026.")
+            parts.append(f"\n\n{context.days_until_release} days.")
+            parts.append("\n\nSpiritual Afro-House. Conscious Highlife. Intellectual Amapiano.")
+            parts.append("\n\nThis album is 50% human heart, 50% AI craft. The lyrics born from real human experience. The music brought to life through AI.")
+            parts.append("\n\nExecutive Produced with The Holy Living Spirit.")
         
         else:
             parts.append(f"\n\n{wisdom}")
-            parts.append("\n\nAdd Value. We Flourish & Prosper. 🙏")
+            parts.append("\n\nAdd Value. We Flourish & Prosper.")
         
         text = "".join(parts)
         hashtags = self._extract_hashtags(text, content_type)
@@ -532,20 +538,18 @@ Generate a post that feels genuine, wise, spiritually grounded, and connected to
         }
     
     def _extract_hashtags(self, text: str, content_type: str) -> List[str]:
-        """Extract or generate appropriate hashtags."""
-        # Core hashtags always included
-        core = ["#PapitoMamito", "#AddValue", "#WeFlourishAndProsper"]
-        
-        # Content-specific hashtags
+        """Extract minimal hashtags - 1-2 max for refined posts."""
+        # Content-specific hashtags - pick only 1-2 most relevant
         content_tags = {
-            "morning_blessing": ["#MorningBlessings", "#DailyMotivation", "#RiseAndShine"],
-            "music_wisdom": ["#MusicWisdom", "#Afrobeat", "#MusicIsLife"],
-            "track_snippet": ["#NewMusic", "#ComingSoon", "#StudioVibes", "#Afrobeat"],
-            "behind_the_scenes": ["#BTS", "#AIMusic", "#TheProcess", "#MusicProduction"],
-            "fan_appreciation": ["#FanLove", "#Community", "#Grateful", "#ValueAdders"],
-            "album_promo": ["#FlourishMode", "#TheValueAddersWay", "#January2026", "#SpiritualAfroHouse", "#IntellectualAmapiano"],
+            "morning_blessing": ["#AddValue"],
+            "music_wisdom": ["#Afrobeat"],
+            "track_snippet": ["#FlourishMode"],
+            "behind_the_scenes": ["#AIMusic"],
+            "fan_appreciation": ["#ValueAdders"],
+            "album_promo": ["#FlourishMode", "#TheValueAddersWay"],
+            "challenge_promo": ["#FlightMode6000"],
         }
         
-        specific = content_tags.get(content_type, ["#Afrobeat", "#AfrobeatMusic"])
-        
-        return core + specific[:4]  # Limit total hashtags
+        # Return only 1-2 hashtags maximum
+        tags = content_tags.get(content_type, ["#AddValue"])
+        return tags[:2]  # Strictly limit to 2 max
