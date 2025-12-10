@@ -3858,8 +3858,17 @@ def create_app() -> FastAPI:
         summary="Retrieve merch catalog",
         dependencies=[Depends(authorize)],
     )
-    def list_merch() -> list[MerchItem]:
-        return fanbase_registry.list_merch()
+    @app.post(
+        "/marketing/blitz",
+        summary="Trigger Engagement Blitz Protocol",
+        # dependencies=[Depends(authorize)], # Optional auth
+    )
+    def run_marketing_blitz():
+        """Trigger the Engagement Blitz Protocol (Direct Reply Strategy)."""
+        from .marketing.engagement_blitz import EngagementBlitz
+        blitz = EngagementBlitz()
+        actions = blitz.execute()
+        return {"status": "executed", "actions": actions}
 
     return app
 
