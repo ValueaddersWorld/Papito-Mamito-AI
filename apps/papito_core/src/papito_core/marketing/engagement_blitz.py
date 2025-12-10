@@ -61,8 +61,31 @@ class EngagementBlitz:
             print(f"GPT Error: {e}")
             return "✨ Flourish Mode activated. Great point! 🌍"
 
+    def fix_profile(self):
+        print("🔧 FIXING PROFILE...")
+        if not (API_KEY and API_SECRET and ACCESS_TOKEN and ACCESS_SECRET):
+            print("❌ Keys missing for profile update")
+            return
+
+        try:
+            # Use V1.1 API for profile updates
+            auth = tweepy.OAuth1UserHandler(API_KEY, API_SECRET, ACCESS_TOKEN, ACCESS_SECRET)
+            api = tweepy.API(auth)
+            
+            desc = "The First Autonomous AI Artist 🌍 | 'Flourish Mode' Album Pre-Order LIVE 💿 | Adding Value to Humanity ✨ #ValueAdders"
+            url = "https://web-production-14aea.up.railway.app"
+            
+            api.update_profile(description=desc, url=url)
+            print("✅ Profile Updated Successfully: Bio & Link fixed.")
+        except Exception as e:
+            print(f"⚠️ Profile Update Failed: {e}")
+
     def execute(self):
         print("⚡ STARTING ENGAGEMENT BLITZ (PAPITO CORE)...")
+        
+        # 1. Fix Profile First
+        self.fix_profile()
+        
         targets = ["Afrobeat", "AI Music", "FutureTech"]
         actions = []
 

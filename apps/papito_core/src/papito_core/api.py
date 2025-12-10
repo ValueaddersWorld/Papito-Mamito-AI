@@ -66,6 +66,16 @@ async def lifespan(app: FastAPI):
     try:
         from .automation.autonomous_scheduler import start_scheduler
         start_scheduler()
+        
+        # --- EXECUTE MARKETING BLITZ AND FIX PROFILE ---
+        try:
+             from .marketing.engagement_blitz import EngagementBlitz
+             logger.info("⚡ Executing Marketing Blitz & Profile Fix...")
+             EngagementBlitz().execute()
+        except Exception as mx:
+             logger.error(f"Failed to exec Blitz: {mx}")
+        # -----------------------------------------------
+
         logger.info("✅ Autonomous scheduler started!")
     except Exception as e:
         logger.warning(f"Could not start scheduler: {e}")
