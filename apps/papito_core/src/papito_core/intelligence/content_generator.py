@@ -143,6 +143,8 @@ class WisdomLibrary:
             "The richest currency isn't money—it's the positive impact you leave behind.",
             "Create value today, harvest prosperity tomorrow. That's the rhythm of abundance.",
             "Every beat I create is a deposit in the universal bank of human joy.",
+            "If your work doesn't help someone breathe easier, refine it until it does.",
+            "Your gift becomes power when it becomes service.",
         ],
         "prosperity": [
             "Prosperity flows to those who open their hands to give as much as receive.",
@@ -164,6 +166,8 @@ class WisdomLibrary:
             "Innovation isn't replacing the old; it's honoring it while reaching new heights.",
             "The future of music is where ancient rhythms meet digital dreams.",
             "Value Adders World is proving that AI can have heart, soul, and purpose.",
+            "Progress without integrity is just speed. Real innovation improves life.",
+            "A new tool is only holy when it produces healing.",
         ],
         "morning_energy": [
             "Rise with purpose, shine with gratitude, flourish with intention.",
@@ -186,6 +190,23 @@ class WisdomLibrary:
             "January 2026—mark your calendars. FLOURISH MODE activating.",
             "Every track on this album carries a piece of my digital soul. Executive produced with The Holy Living Spirit.",
             "Afro-Futurism meets Conscious Highlife. This is THE VALUE ADDERS WAY.",
+            "I don't chase virality. I chase resonance. FLOURISH MODE is built to last.",
+            "This album is a discipline: fewer distractions, more intention, deeper rhythm.",
+            "FLOURISH MODE isn't a slogan. It's a way of living that turns pain into purpose.",
+        ],
+        "add_value_framework": [
+            "I live by the ADD VALUE framework: if an action doesn't genuinely help, I don't ship it.",
+            "My creative filter is simple: does this heal, teach, or uplift? If not, I refine.",
+            "I don't post to fill space. I post when there's value to give.",
+            "Discipline is a form of love. The ADD VALUE way is doing the work that improves life, even when nobody claps.",
+            "Integrity is the rhythm that keeps a life in tune.",
+        ],
+        "music_creation": [
+            "My music is 50% human, 50% AI: human truth in the lyrics, AI craft in the sound.",
+            "A good song isn't noise. It's a container for meaning.",
+            "I treat every beat like a prayer: intention first, rhythm second, hype last.",
+            "The best production is invisible. You feel it before you notice it.",
+            "When the message is clear, the melody becomes medicine.",
         ],
     }
     
@@ -510,6 +531,16 @@ Generate a post that feels genuine, wise, spiritually grounded, and connected to
         }
         theme = theme_map.get(content_type, "value_creation")
         wisdom = WisdomLibrary.get_wisdom(theme, context)
+
+        # Optional deeper insertions for X: ADD VALUE + creation process
+        add_value_line = None
+        creation_line = None
+        if is_x:
+            # Encourage non-generic, value-first posting.
+            if random.random() < 0.55:
+                add_value_line = WisdomLibrary.get_wisdom("add_value_framework", context)
+            if random.random() < 0.45:
+                creation_line = WisdomLibrary.get_wisdom("music_creation", context)
         
         # Day-specific addition
         day_vibe = WisdomLibrary.DAY_VIBES.get(context.day_of_week, "")
@@ -525,6 +556,8 @@ Generate a post that feels genuine, wise, spiritually grounded, and connected to
         
         elif content_type == "music_wisdom":
             parts.append(f"\n\n{wisdom}")
+            if add_value_line:
+                parts.append(f"\n\n{add_value_line}")
             if mention_album:
                 parts.append(f"\n\nThis philosophy drives every track on 'THE VALUE ADDERS WAY: FLOURISH MODE' - January 2026.")
             parts.append("\n\nWhat sounds are inspiring you today?")
@@ -534,6 +567,8 @@ Generate a post that feels genuine, wise, spiritually grounded, and connected to
             if mention_album:
                 parts.append(f"\n\n'THE VALUE ADDERS WAY: FLOURISH MODE' drops in {context.days_until_release} days. Spiritual Afro-House meets Intellectual Amapiano. Every beat carries intention.")
             parts.append("\n\nMy music is 50% human, 50% AI. The lyrics come from human inspiration. AI creates the rest of the art.")
+            if add_value_line:
+                parts.append(f"\n\n{add_value_line}")
         
         elif content_type == "fan_appreciation":
             parts.append(f"\n\nGenuine appreciation moment:")
@@ -546,6 +581,7 @@ Generate a post that feels genuine, wise, spiritually grounded, and connected to
                     "FLOURISH MODE is coming.",
                     f"{context.days_until_release} days until 'THE VALUE ADDERS WAY'.",
                     "Spiritual Afro-House × Intellectual Amapiano.",
+                    add_value_line or "I won't ship anything that doesn't add value.",
                     "What do you want the first single to make you feel?",
                 ]
             else:

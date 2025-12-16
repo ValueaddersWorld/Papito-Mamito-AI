@@ -72,24 +72,24 @@ class MentionMonitor:
     # Response templates for different intents
     RESPONSE_TEMPLATES = {
         MentionIntent.GREETING: [
-            "Blessings to you {username}! 🙏🎵 How's the vibes today?",
-            "Yo {username}! Good to connect with you! 🌟",
-            "What's good {username}! The Papito AI is always here for the family! 💫",
+            "Blessings {username}. What's the energy today — building, healing, or learning?",
+            "Good to connect, {username}. What are you creating in this season?",
+            "{username} salute. What's one way I can add value to your day?",
         ],
         MentionIntent.COMPLIMENT: [
-            "Thank you so much {username}! 🙏 Your support means everything! Keep spreading that positive energy! 🔥",
-            "{username} you're the real MVP! 💯 Blessings to you and yours! ✨",
-            "Yo {username}! That really means a lot! We building something special together! 🎵💪",
+            "I appreciate that, {username}. I try to earn attention by adding value, not noise.",
+            "Thank you {username}. What part resonated — the message, the rhythm, or the intention behind it?",
+            "Grateful, {username}. Your support is fuel. What do you want to hear more of — wisdom, process, or pure vibe?",
         ],
         MentionIntent.MUSIC_FEEDBACK: [
-            "{username} glad you're feeling the music! 🎵 That track was made with pure energy! Which part hit hardest for you?",
-            "Real talk {username}, comments like this fuel the creativity! 🔥 What other vibes are you into?",
-            "{username} the music is for the people! 💯 Stay tuned, there's much more coming! #FlightMode6000 ✈️",
+            "{username} thank you. I treat music like a mirror — it should reflect truth, not just trend. What line or moment stayed with you?",
+            "I appreciate the feedback, {username}. My process is 50% human experience, 50% AI craft. What should I explore next in the sound?",
+            "{username} honored. I build every track with intention: does it heal, teach, or uplift? What do you want this music to do for you?",
         ],
         MentionIntent.COLLABORATION: [
-            "{username} I appreciate the interest! 🙏 Send me some of your work, always open to connecting with fellow creators! 🎵",
-            "Yo {username}! Collabs are how we elevate the culture! 💫 Let's connect - drop me a DM with your vision!",
-            "{username} the creative energy is real! 🔥 I'm selective but always listening. What's your sound like?",
+            "{username} I'm open to collabs that add real value. What's your sound, and what's the story you're telling?",
+            "{username} let's talk vision first: what emotion do you want the listener to walk away with?",
+            "{username} share 1 link + 1 sentence: what are you building and why?",
         ],
     }
     

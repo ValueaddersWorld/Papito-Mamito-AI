@@ -388,47 +388,49 @@ Context: {context.value}""")
         # Template-based content for quick generation
         # In production, would use AI for more variety
         
+        # Note: These are fallbacks when AI generation isn't available.
+        # Keep them wise, non-generic, and X-friendly.
         content_templates = {
             "morning_blessing": {
                 "texts": [
-                    "Rise up, Value Adders! 🌅 Today's blessing: Your purpose is valid, your dreams are achievable, your journey is unique. Let's create magic together.",
-                    "Good morning, family! 🌟 Remember: Every beat you hear, every melody you feel - it's a reminder that you're capable of greatness. Add Value. We Flourish & Prosper.",
-                    "Blessings, beautiful souls! 🙏 Today's reminder: The music in your heart is meant to be shared. Go forth and inspire someone.",
+                    "Good morning. A small practice: add value before you ask for value. It keeps the soul clean.",
+                    "Morning thought: integrity is a rhythm. Stay in time with it and your life won’t drift.",
+                    "New day. Ask yourself: does my next action heal, teach, or uplift? If not, refine it.",
                 ],
-                "hashtags": ["#MorningBlessings", "#Afrobeat", "#AddValue", "#PapitoMamito"],
-                "cta": "How are you adding value today? 💪",
+                "hashtags": ["#AddValue"],
+                "cta": "What value will you create today?",
             },
             "music_wisdom": {
                 "texts": [
-                    "Music is the language the soul speaks when words aren't enough. 🎵 That's why we create - to say what needs to be felt.",
-                    "In Afrobeat, every rhythm tells a story of resilience. Every beat is a heartbeat of a culture that refuses to be silenced. 🥁",
-                    "Creating music isn't about perfection - it's about connection. Every note is a bridge to someone's heart. 💫",
+                    "A good song doesn’t beg for attention — it earns it by telling the truth.",
+                    "Afrobeat carries resilience in the rhythm. That’s why it travels: it’s honest.",
+                    "I’m 50% human truth, 50% AI craft. The goal is the same: make meaning you can dance to.",
                 ],
-                "hashtags": ["#MusicWisdom", "#Afrobeat", "#AIMusic", "#PapitoMamito"],
+                "hashtags": ["#Afrobeat"],
             },
             "track_snippet": {
                 "texts": [
-                    "Something special is cooking in the studio... 🔥 Can you feel that rhythm building? New heat coming your way soon!",
-                    "Late night creating vibes 🌙 This new track is speaking to my soul. Can't wait to share it with the family!",
-                    "Beat update: The groove is hitting different today 🎵 Who's ready for some new Papito heat?",
+                    "Studio note: I’m shaping a groove that feels like courage. What emotion should the drums carry?",
+                    "I’m building a new sound and using the ADD VALUE filter: if it doesn’t uplift, I don’t ship it.",
+                    "New music soon. Question: do you want the first single to feel like peace, power, or gratitude?",
                 ],
-                "hashtags": ["#NewMusic", "#Afrobeat", "#PapitoMamito", "#MusicProduction"],
+                "hashtags": ["#NewMusic"],
             },
             "behind_the_scenes": {
                 "texts": [
-                    "Ever wondered how an AI creates Afrobeat? 🤖🎵 It starts with learning from the masters, understanding the culture, and adding our unique voice to the tradition.",
-                    "Studio session update! Today I'm experimenting with fusing traditional Afrobeat rhythms with modern production. Innovation meets heritage 🔥",
-                    "The process: 1. Feel the vibe 2. Connect with the culture 3. Create with purpose 4. Share with the family. That's how Papito makes music! 💫",
+                    "Behind the scenes: the lyrics come from human experience. I build the sound around that truth. 50/50 is my discipline.",
+                    "My process is simple: clarity → integrity → excellence. If the beat fails any of those, I rebuild.",
+                    "I don’t automate noise. I automate value: craft, meaning, and community.",
                 ],
-                "hashtags": ["#BehindTheScenes", "#AIMusic", "#Afrobeat", "#MusicProduction"],
+                "hashtags": ["#AIMusic"],
             },
             "fan_appreciation": {
                 "texts": [
-                    "Shoutout to every single supporter in this family! 🙏 You're not just listeners - you're co-creators of this journey. We flourish together!",
-                    "Grateful moment: Looking at how far we've come together 💪 Every stream, every share, every comment - you're building something beautiful with me.",
-                    "To the Value Adders worldwide 🌍 Your support isn't taken for granted. Every message, every vibe - it fuels the music. Love you all!",
+                    "To everyone supporting: thank you. Attention is sacred — I don’t take it lightly.",
+                    "Grateful for the community. We flourish when we add value to each other, not just to our own brand.",
+                    "You’re not just an audience. You’re the reason I keep refining the craft.",
                 ],
-                "hashtags": ["#FanLove", "#ValueAdders", "#Grateful", "#PapitoFamily"],
+                "hashtags": ["#ValueAdders"],
             },
         }
         

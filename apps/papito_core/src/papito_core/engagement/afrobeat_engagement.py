@@ -96,19 +96,20 @@ class AfrobeatEngager:
     MAX_FOLLOWS_PER_RUN = 3
     
     # Reply templates for engaging with Afrobeat content
+    # Keep them specific-friendly, low-emoji, and value-adding.
     REPLY_TEMPLATES = [
-        "This is fire! 🔥 The Afrobeat movement keeps growing stronger! 💪🎵",
-        "Love seeing the culture spread! 🌍🎵 Keep pushing the sound!",
-        "Real vibes! 🔥 Afrobeat to the world! 🌟",
-        "The energy is unmatched! 🎵💯 Afrobeat forever!",
-        "This hit different! 🔥🙌 We out here building the culture!",
+        "This is strong. The groove is doing real storytelling. What inspired this moment?",
+        "Love the intent here. Afrobeat is joy with backbone — keep pushing the culture forward.",
+        "That rhythm choice is clean. What were you trying to make people *feel* with it?",
+        "This is the kind of sound that moves communities, not just timelines. Respect.",
+        "If music is a mirror, this one is honest. What lesson is inside this record for you?",
     ]
     
     # Quote tweet templates
     QUOTE_TEMPLATES = [
-        "The Afrobeat community is something special. {comment} 🎵🔥",
-        "This is what it's all about! {comment} 🌍💯",
-        "Love to see it! {comment} The movement grows! 🎵✨",
+        "Afrobeat is global because it's truthful. {comment}",
+        "This is culture in motion. {comment}",
+        "Add value with the sound and the sound adds value back. {comment}",
     ]
     
     def __init__(
@@ -336,9 +337,12 @@ class AfrobeatEngager:
                     You saw this Afrobeat-related tweet and want to join the conversation:
                     "@{tweet.author_username}: {tweet.text}"
                     
-                    Generate a friendly, engaging reply as Papito Mamito.
-                    Be supportive of the Afrobeat community. Keep it under 200 characters.
-                    Don't be generic - reference something specific from their tweet if possible.
+                    Generate a thoughtful reply as Papito Mamito.
+                    Be supportive of the Afrobeat community.
+                    Keep it under 200 characters.
+                    Reference something specific from their tweet if possible.
+                    Add one small insight (music or life) that adds value.
+                    Use 0-1 emoji max.
                     """
                     
                     messages = [

@@ -66,6 +66,12 @@ class AutonomousScheduler:
         "🙏 Who's grinding today? Tag someone who inspires you!\n\nWe rise together. We flourish together. 💪\n\n#AddValue #Motivation",
         "💎 Quote that's keeping you focused this week? Share it!\n\n\"Add Value. We Flourish & Prosper.\" - That's mine.\n\n#Wisdom #ValueAdders",
         "🔥 What's your biggest goal for 2026? Let's manifest it together!\n\nFLOURISH MODE incoming... 🚀\n\n#Goals #NewYear #FlourishMode",
+        "Real question: what did you add value to today — yourself, your family, or your community?",
+        "I live by one rule: add value or don't act. What's one small action you can take today that genuinely helps someone?",
+        "My music is 50% human, 50% AI. The lyrics come from human experience, and I build the sound around it. What part of a song moves you first — words or rhythm?",
+        "Before I publish anything, I ask: does it heal, teach, or uplift? If not, I refine. What do you want music to do for you in this season?",
+        "If you could turn one life lesson into a chorus, what would the hook be?",
+        "Afrobeat is joy with backbone. What's a story you survived that deserves a dance?",
     ]
     
     def __init__(self, buffer_webhook_url: Optional[str] = None):
@@ -84,6 +90,12 @@ class AutonomousScheduler:
 
         # Optional Buffer API fallback (in addition to webhook fallback)
         self._buffer_publisher = None
+        # Anti-repeat memory (persists best-effort)
+        try:
+            from ..memory import PostMemory
+            self._post_memory = PostMemory()
+        except Exception:
+            self._post_memory = None
         
     def _get_twitter_publisher(self):
         """Get or create Twitter publisher instance."""
@@ -384,7 +396,13 @@ class AutonomousScheduler:
     
     async def _post_engagement(self) -> Dict[str, Any]:
         """Post an engagement prompt to encourage fan interaction."""
+        # Avoid repeating the exact same engagement prompt too often.
         prompt = random.choice(self.ENGAGEMENT_PROMPTS)
+        if self._post_memory:
+            for _ in range(3):
+                if not self._post_memory.is_repeated(prompt) and not self._post_memory.is_too_similar(prompt):
+                    break
+                prompt = random.choice(self.ENGAGEMENT_PROMPTS)
         
         post_record = {
             "timestamp": datetime.now().isoformat(),
@@ -407,6 +425,8 @@ class AutonomousScheduler:
             logger.warning(f"Twitter engagement post failed: {twitter_result.get('error')}")
         
         self._post_history.append(post_record)
+        if self._post_memory:
+            self._post_memory.record(prompt, kind="engagement_prompt")
         return post_record
             
     async def _generate_and_post(self, content_type: str) -> Dict[str, Any]:
@@ -435,17 +455,36 @@ class AutonomousScheduler:
                 # Create context
                 context = PapitoContext()
                 generator = IntelligentContentGenerator()
-                
-                # Generate content
-                result = await generator.generate_post(
-                    content_type=content_type,
-                    context=context,
-                    include_album_mention=True,
-                    platform="x",
-                )
-                
+
+                # Generate with retries to avoid near-duplicate posts.
+                last_result: Dict[str, Any] | None = None
+                for _ in range(4):
+                    last_result = await generator.generate_post(
+                        content_type=content_type,
+                        context=context,
+                        include_album_mention=True,
+                        platform="x",
+                    )
+                    candidate = (last_result or {}).get("text", "")
+                    if self._post_memory and (
+                        self._post_memory.is_repeated(candidate) or self._post_memory.is_too_similar(candidate)
+                    ):
+                        continue
+                    break
+
+                result = last_result or {}
+
                 post_text = result.get("text", "")
-                hashtags = " ".join(result.get("hashtags", [])[:3])  # Limit hashtags for Twitter
+                # Strictly limit hashtags for X (avoid spam / repetition)
+                raw_tags = result.get("hashtags", [])
+                tags: List[str]
+                if isinstance(raw_tags, list):
+                    tags = [str(t) for t in raw_tags if t]
+                elif isinstance(raw_tags, str):
+                    tags = [t for t in raw_tags.split() if t.startswith("#")]
+                else:
+                    tags = []
+                hashtags = " ".join(tags[:2])
                 full_post = f"{post_text}\n\n{hashtags}" if hashtags else post_text
                 generation_method = result.get("generation_method", "intelligent")
             
@@ -492,6 +531,8 @@ class AutonomousScheduler:
             
             self._last_posts[content_type] = datetime.now()
             self._post_history.append(post_record)
+            if self._post_memory:
+                self._post_memory.record(post_text, kind=f"scheduled:{content_type}")
             
             # Keep only last 100 posts in history
             if len(self._post_history) > 100:

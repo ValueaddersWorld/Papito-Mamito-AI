@@ -34,6 +34,8 @@ from .personality_evolution import (
     get_personality_evolution,
 )
 
+from .post_memory import PostMemory
+
 __all__ = [
     # Interaction Memory
     "InteractionMemory",
@@ -57,4 +59,6 @@ __all__ = [
     "LearningMoment",
     "GrowthArea",
     "get_personality_evolution",
+    # Post Memory
+    "PostMemory",
 ]
