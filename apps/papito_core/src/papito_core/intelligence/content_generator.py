@@ -580,7 +580,7 @@ Generate a post that feels genuine, wise, spiritually grounded, and connected to
                 parts = [
                     "FLOURISH MODE is coming.",
                     f"{context.days_until_release} days until 'THE VALUE ADDERS WAY'.",
-                    "Spiritual Afro-House × Intellectual Amapiano.",
+                    "Spiritual Afro-House meets Intellectual Amapiano.",
                     add_value_line or "I won't ship anything that doesn't add value.",
                     "What do you want the first single to make you feel?",
                 ]
