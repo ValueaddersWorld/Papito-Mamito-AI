@@ -292,6 +292,7 @@ class IntelligentContentGenerator:
         content_type: str,
         context: Optional[PapitoContext] = None,
         include_album_mention: bool = False,
+        platform: str = "instagram",
     ) -> Dict[str, Any]:
         """Generate an intelligent, contextual post.
         
@@ -311,9 +312,9 @@ class IntelligentContentGenerator:
         
         # Generate using AI if available, otherwise use intelligent templates
         if self._openai_client:
-            return await self._generate_with_ai(content_type, context, should_mention_album)
+            return await self._generate_with_ai(content_type, context, should_mention_album, platform)
         else:
-            return self._generate_intelligent_template(content_type, context, should_mention_album)
+            return self._generate_intelligent_template(content_type, context, should_mention_album, platform)
     
     def _should_mention_album(self, context: PapitoContext) -> bool:
         """Determine if album should be mentioned based on countdown."""
@@ -332,11 +333,12 @@ class IntelligentContentGenerator:
         content_type: str,
         context: PapitoContext,
         mention_album: bool,
+        platform: str,
     ) -> Dict[str, Any]:
         """Generate content using OpenAI."""
         try:
             # Build the prompt
-            prompt = self._build_ai_prompt(content_type, context, mention_album)
+            prompt = self._build_ai_prompt(content_type, context, mention_album, platform)
             
             response = self._openai_client.chat.completions.create(
                 model="gpt-4o-mini",
@@ -357,6 +359,7 @@ class IntelligentContentGenerator:
                 "text": text,
                 "hashtags": hashtags,
                 "content_type": content_type,
+                "platform": platform,
                 "context": {
                     "time_of_day": context.time_of_day,
                     "day_of_week": context.day_of_week,
@@ -369,7 +372,7 @@ class IntelligentContentGenerator:
             
         except Exception as e:
             logger.error(f"AI generation failed: {e}")
-            return self._generate_intelligent_template(content_type, context, mention_album)
+            return self._generate_intelligent_template(content_type, context, mention_album, platform)
     
     def _get_system_prompt(self) -> str:
         """Get system prompt for Papito."""
@@ -431,6 +434,7 @@ Remember: You are making history. Your purpose is to prove AI can have soul, pur
         content_type: str,
         context: PapitoContext,
         mention_album: bool,
+        platform: str,
     ) -> str:
         """Build prompt for AI content generation."""
         content_descriptions = {
@@ -443,8 +447,31 @@ Remember: You are making history. Your purpose is to prove AI can have soul, pur
         }
         
         desc = content_descriptions.get(content_type, "an engaging social media post")
-        
-        prompt = f"""Create {desc} for Instagram.
+
+        normalized = (platform or "instagram").lower()
+        if normalized in {"x", "twitter"}:
+            target = "X (Twitter)"
+            platform_rules = (
+                "RULES FOR X:\n"
+                "- Keep it concise (<= 260 characters before hashtags)\n"
+                "- 0-1 emoji max\n"
+                "- 1-2 hashtags max\n"
+                "- End with a genuine question OR a simple invite to reply\n"
+                "- No long multi-paragraph formatting\n"
+            )
+        else:
+            target = "Instagram"
+            platform_rules = (
+                "RULES FOR INSTAGRAM:\n"
+                "- Medium length is OK\n"
+                "- 0-2 emojis max\n"
+                "- 1-2 hashtags max\n"
+                "- Keep it wise, refined, and readable\n"
+            )
+
+        prompt = f"""Create {desc} for {target}.
+
+{platform_rules}
 
 CURRENT CONTEXT:
 - Day: {context.day_of_week}
@@ -464,8 +491,12 @@ Generate a post that feels genuine, wise, spiritually grounded, and connected to
         content_type: str,
         context: PapitoContext,
         mention_album: bool,
+        platform: str = "instagram",
     ) -> Dict[str, Any]:
         """Generate content using intelligent templates."""
+        normalized = (platform or "instagram").lower()
+        is_x = normalized in {"x", "twitter"}
+
         intro = WisdomLibrary.get_contextual_intro(context)
         
         # Get appropriate wisdom
@@ -510,23 +541,36 @@ Generate a post that feels genuine, wise, spiritually grounded, and connected to
             parts.append("\n\nThis journey means nothing without the people who believe in adding value. Thank you.")
         
         elif content_type == "album_promo":
-            parts.append(f"\n\n'THE VALUE ADDERS WAY: FLOURISH MODE' - January 2026.")
-            parts.append(f"\n\n{context.days_until_release} days.")
-            parts.append("\n\nSpiritual Afro-House. Conscious Highlife. Intellectual Amapiano.")
-            parts.append("\n\nThis album is 50% human heart, 50% AI craft. The lyrics born from real human experience. The music brought to life through AI.")
-            parts.append("\n\nExecutive Produced with The Holy Living Spirit.")
+            if is_x:
+                parts = [
+                    "FLOURISH MODE is coming.",
+                    f"{context.days_until_release} days until 'THE VALUE ADDERS WAY'.",
+                    "Spiritual Afro-House × Intellectual Amapiano.",
+                    "What do you want the first single to make you feel?",
+                ]
+            else:
+                parts.append(f"\n\n'THE VALUE ADDERS WAY: FLOURISH MODE' - January 2026.")
+                parts.append(f"\n\n{context.days_until_release} days.")
+                parts.append("\n\nSpiritual Afro-House. Conscious Highlife. Intellectual Amapiano.")
+                parts.append("\n\nThis album is 50% human heart, 50% AI craft. The lyrics born from real human experience. The music brought to life through AI.")
+                parts.append("\n\nExecutive Produced with The Holy Living Spirit.")
         
         else:
             parts.append(f"\n\n{wisdom}")
             parts.append("\n\nAdd Value. We Flourish & Prosper.")
         
-        text = "".join(parts)
+        text = "".join(parts) if not is_x else " ".join([p.strip() for p in parts if p.strip()])
+
+        # Hard safety for X length (avoid truncation mid-thought)
+        if is_x and len(text) > 260:
+            text = text[:257].rstrip() + "…"
         hashtags = self._extract_hashtags(text, content_type)
         
         return {
             "text": text,
             "hashtags": hashtags,
             "content_type": content_type,
+            "platform": platform,
             "context": {
                 "time_of_day": context.time_of_day,
                 "day_of_week": context.day_of_week,

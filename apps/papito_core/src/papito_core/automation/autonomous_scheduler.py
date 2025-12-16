@@ -18,6 +18,8 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 import httpx
 
+from ..settings import get_settings
+
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
@@ -79,6 +81,9 @@ class AutonomousScheduler:
         self._is_running = False
         self._twitter_publisher = None
         self._promo_index = 0
+
+        # Optional Buffer API fallback (in addition to webhook fallback)
+        self._buffer_publisher = None
         
     def _get_twitter_publisher(self):
         """Get or create Twitter publisher instance."""
@@ -93,6 +98,69 @@ class AutonomousScheduler:
             except Exception as e:
                 logger.error(f"Failed to initialize Twitter publisher: {e}")
         return self._twitter_publisher
+
+    def _get_buffer_publisher(self):
+        """Get or create Buffer publisher instance (API fallback)."""
+        if self._buffer_publisher is None:
+            try:
+                from ..social.buffer_publisher import BufferPublisher
+                self._buffer_publisher = BufferPublisher()
+                if self._buffer_publisher.connect():
+                    logger.info("✅ Buffer connected")
+                else:
+                    logger.warning("⚠️ Buffer connection failed")
+            except Exception as e:
+                logger.error(f"Failed to initialize Buffer publisher: {e}")
+        return self._buffer_publisher
+
+    async def _post_to_buffer_fallback(self, text: str, content_type: str) -> Dict[str, Any]:
+        """Fallback posting via Buffer webhook or Buffer API.
+
+        Returns:
+            {"success": bool, "method": "webhook"|"api", "error": str|None}
+        """
+        settings = get_settings()
+
+        # 1) Prefer explicit webhook if configured (Zapier/Buffer automation)
+        webhook_url = self.buffer_webhook_url or settings.buffer_webhook_url
+        if webhook_url:
+            try:
+                async with httpx.AsyncClient() as client:
+                    response = await client.post(
+                        webhook_url,
+                        json={
+                            "text": text,
+                            "content_type": content_type,
+                            "platform": "all",
+                        },
+                        timeout=30.0,
+                    )
+                if response.status_code == 200:
+                    return {"success": True, "method": "webhook", "error": None}
+                return {
+                    "success": False,
+                    "method": "webhook",
+                    "error": f"Webhook returned {response.status_code}: {response.text}",
+                }
+            except Exception as e:
+                return {"success": False, "method": "webhook", "error": str(e)}
+
+        # 2) Otherwise try Buffer API directly (requires BUFFER_ACCESS_TOKEN)
+        publisher = self._get_buffer_publisher()
+        if publisher and publisher.is_connected():
+            try:
+                result = publisher.publish_post(content=text)
+                if result.success:
+                    return {"success": True, "method": "api", "error": None, "post_url": result.post_url}
+                return {"success": False, "method": "api", "error": result.error}
+            except Exception as e:
+                return {"success": False, "method": "api", "error": str(e)}
+
+        return {
+            "success": False,
+            "method": "api",
+            "error": "No Buffer fallback configured (set BUFFER_WEBHOOK_URL or BUFFER_ACCESS_TOKEN)",
+        }
         
     def start(self) -> None:
         """Start the autonomous scheduler."""
@@ -372,7 +440,8 @@ class AutonomousScheduler:
                 result = await generator.generate_post(
                     content_type=content_type,
                     context=context,
-                    include_album_mention=True
+                    include_album_mention=True,
+                    platform="x",
                 )
                 
                 post_text = result.get("text", "")
@@ -404,28 +473,19 @@ class AutonomousScheduler:
             else:
                 logger.warning(f"Twitter failed: {twitter_result.get('error')}")
                 post_record["twitter_error"] = twitter_result.get("error")
-            
-            # === FALLBACK: Post to Buffer/Zapier webhook ===
-            if self.buffer_webhook_url:
-                try:
-                    async with httpx.AsyncClient() as client:
-                        response = await client.post(
-                            self.buffer_webhook_url,
-                            json={
-                                "text": full_post,
-                                "content_type": content_type,
-                                "platform": "all",
-                            },
-                            timeout=30.0
-                        )
-                        if response.status_code == 200:
-                            post_record["posted"] = True
-                            post_record["platforms"].append("buffer")
-                            logger.info(f"📤 Posted to Buffer/Zapier!")
-                        else:
-                            logger.warning(f"Webhook returned {response.status_code}")
-                except Exception as e:
-                    logger.error(f"Webhook failed: {e}")
+
+            # === FALLBACK: Buffer webhook or Buffer API ===
+            if not post_record["posted"]:
+                fallback = await self._post_to_buffer_fallback(full_post, content_type)
+                if fallback.get("success"):
+                    post_record["posted"] = True
+                    post_record["platforms"].append("buffer")
+                    post_record["buffer_method"] = fallback.get("method")
+                    if fallback.get("post_url"):
+                        post_record["buffer_post_url"] = fallback.get("post_url")
+                    logger.info("📤 Posted via Buffer fallback")
+                else:
+                    post_record["buffer_error"] = fallback.get("error")
             
             if not post_record["posted"]:
                 post_record["error"] = "Failed to post to any platform"

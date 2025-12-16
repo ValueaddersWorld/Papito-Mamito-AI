@@ -1507,6 +1507,185 @@ def create_app() -> FastAPI:
             }
 
     # ==========================================
+    # ADD VALUE GROWTH ENGINE ENDPOINTS
+    # ==========================================
+    # Powered by the ADD VALUE Framework™
+    # Goal: 1000 Followers in 12 Weeks
+    # ==========================================
+    
+    @app.get(
+        "/growth/status",
+        summary="Get 1000 Followers Campaign Status",
+        tags=["ADD VALUE Growth Engine"],
+    )
+    def growth_status() -> dict:
+        """Get the current status of the 1000 followers growth campaign.
+        
+        Returns progress, phase, metrics, and ADD VALUE Framework stats.
+        """
+        try:
+            from .automation.autonomous_agent import AutonomousAgent
+            agent = AutonomousAgent()
+            return agent.get_growth_status()
+        except Exception as e:
+            from .add_value import FollowerGrowthEngine
+            engine = FollowerGrowthEngine()
+            return engine.get_campaign_progress()
+    
+    @app.get(
+        "/growth/daily-plan",
+        summary="Get today's growth action plan",
+        tags=["ADD VALUE Growth Engine"],
+    )
+    def growth_daily_plan() -> dict:
+        """Get the ADD VALUE-powered daily action plan for follower growth.
+        
+        Returns prioritized actions for maximum growth today.
+        """
+        try:
+            from .add_value import FollowerGrowthEngine
+            engine = FollowerGrowthEngine()
+            plan = engine.get_daily_action_plan()
+            
+            return {
+                "success": True,
+                "date": datetime.now().isoformat(),
+                "phase": engine.get_current_phase().value,
+                "action_plan": [
+                    {
+                        "action": d.action.value,
+                        "priority": d.priority,
+                        "reasoning": d.reasoning,
+                        "expected_impact": d.expected_impact,
+                    }
+                    for d in plan
+                ],
+                "daily_targets": engine.PHASE_STRATEGIES[engine.get_current_phase()],
+                "message": "ADD VALUE Framework - Optimize every action for growth",
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    @app.post(
+        "/growth/evaluate-action",
+        summary="Evaluate next growth action using ADD VALUE",
+        tags=["ADD VALUE Growth Engine"],
+    )
+    def growth_evaluate_action() -> dict:
+        """Use the ADD VALUE Framework to evaluate the best next action.
+        
+        Goes through all 8 pillars to make an intelligent decision.
+        """
+        try:
+            from .add_value import FollowerGrowthEngine
+            engine = FollowerGrowthEngine()
+            decision = engine.evaluate_next_action()
+            
+            return {
+                "success": True,
+                "decision": {
+                    "action": decision.action.value,
+                    "priority": decision.priority,
+                    "reasoning": decision.reasoning,
+                    "expected_impact": decision.expected_impact,
+                },
+                "framework_state": {
+                    "ready_to_act": decision.add_value_decision.ready_to_act if decision.add_value_decision else False,
+                    "progress": decision.add_value_decision.progress if decision.add_value_decision else 0,
+                    "pillars_complete": {
+                        "awareness": decision.add_value_decision.awareness.completed if decision.add_value_decision else False,
+                        "define": decision.add_value_decision.define.completed if decision.add_value_decision else False,
+                        "devise": decision.add_value_decision.devise.completed if decision.add_value_decision else False,
+                        "validate": decision.add_value_decision.validate.completed if decision.add_value_decision else False,
+                    },
+                },
+                "message": "ADD VALUE. We Flourish & Prosper.",
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    @app.post(
+        "/growth/update-followers",
+        summary="Update current follower count",
+        tags=["ADD VALUE Growth Engine"],
+    )
+    def growth_update_followers(
+        count: int = Body(..., embed=True),
+    ) -> dict:
+        """Update the current follower count in the Growth Engine.
+        
+        Call this after fetching real count from Twitter API.
+        """
+        try:
+            from .add_value import FollowerGrowthEngine
+            engine = FollowerGrowthEngine()
+            
+            old_count = engine.metrics.current_followers
+            gained = count - old_count if count > old_count else 0
+            
+            engine.update_metrics(
+                current_followers=count,
+                followers_gained=gained
+            )
+            
+            # Check for milestone
+            next_milestone = None
+            for target, name, message in engine.MILESTONES:
+                if count >= target:
+                    next_milestone = {"target": target, "name": name, "message": message, "reached": True}
+                elif count < target:
+                    next_milestone = {"target": target, "name": name, "remaining": target - count, "reached": False}
+                    break
+            
+            return {
+                "success": True,
+                "previous_count": old_count,
+                "current_count": count,
+                "gained_today": gained,
+                "progress_percentage": (count / 1000) * 100,
+                "next_milestone": next_milestone,
+                "message": f"Follower count updated: {old_count} → {count} (+{gained})" if gained else f"Follower count: {count}",
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    @app.get(
+        "/growth/framework-info",
+        summary="Get ADD VALUE Framework information",
+        tags=["ADD VALUE Growth Engine"],
+    )
+    def growth_framework_info() -> dict:
+        """Get information about the ADD VALUE Framework powering the growth engine."""
+        from .add_value.framework import Pillar, AddValueFramework
+        
+        return {
+            "name": "ADD VALUE Framework™",
+            "version": "1.0.0",
+            "author": "Christopher Ikembasi",
+            "organization": "Value Adders World",
+            "description": "A universal decision-making framework for human and AI intelligence",
+            "pillars": [
+                {
+                    "code": p.value,
+                    "name": p.name,
+                    "mantra": p.mantra,
+                    "question": p.question,
+                }
+                for p in Pillar
+            ],
+            "phases": [
+                {"name": "PREPARATION (Pillars 1-4)", "pillars": ["Awareness", "Define", "Devise", "Validate"]},
+                {"name": "EXECUTION (Pillars 5-8)", "pillars": ["Act Upon", "Learn", "Understand", "Evolve"]},
+            ],
+            "growth_campaign": {
+                "goal": "1000 Followers",
+                "timeline": "12 Weeks",
+                "phases": ["Foundation", "Momentum", "Growth", "Consolidation"],
+            },
+            "catchphrase": "Add Value. We Flourish & Prosper.",
+        }
+
+    # ==========================================
     # TWITTER DIRECT POSTING ENDPOINTS
     # ==========================================
     
@@ -1599,6 +1778,7 @@ def create_app() -> FastAPI:
                     content_type=content_type,
                     context=context,
                     include_album_mention=True,
+                    platform="x",
                 )
                 
                 post_text = result.get("text", "")

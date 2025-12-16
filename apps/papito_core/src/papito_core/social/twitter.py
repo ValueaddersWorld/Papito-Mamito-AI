@@ -191,11 +191,51 @@ class TwitterPublisher:
                 )
                 
         except tweepy.TweepyException as e:
-            logger.error(f"Failed to post tweet: {e}")
-            return TweetResult(
-                success=False,
-                error=str(e),
-            )
+            # Tweepy exceptions often contain the HTTP response with structured error details.
+            status_code = None
+            details: List[str] = []
+
+            resp = getattr(e, "response", None)
+            if resp is not None:
+                status_code = getattr(resp, "status_code", None)
+                try:
+                    data = resp.json()
+                    if isinstance(data, dict):
+                        # Twitter/X tends to return {"title","detail","type","errors":[...]}
+                        title = data.get("title")
+                        detail = data.get("detail")
+                        if title:
+                            details.append(str(title))
+                        if detail:
+                            details.append(str(detail))
+                        errors = data.get("errors")
+                        if isinstance(errors, list):
+                            for err in errors[:3]:
+                                if isinstance(err, dict):
+                                    msg = err.get("message") or err.get("detail") or err.get("title")
+                                    if msg:
+                                        details.append(str(msg))
+                except Exception:
+                    pass
+
+            hint = None
+            if status_code == 403:
+                hint = (
+                    "403 Forbidden from X: this usually means the app/user token does not have "
+                    "write permission. In the X Developer Portal, set App permissions to 'Read and Write', "
+                    "then regenerate the Access Token & Secret and update Railway env vars."
+                )
+
+            error = str(e)
+            if status_code is not None:
+                error = f"HTTP {status_code}: {error}"
+            if details:
+                error = f"{error} | Details: {' | '.join(details)}"
+            if hint:
+                error = f"{error} | Hint: {hint}"
+
+            logger.error(f"Failed to post tweet: {error}")
+            return TweetResult(success=False, error=error)
     
     def post_thread(self, tweets: List[str]) -> List[TweetResult]:
         """Post a thread of tweets.
