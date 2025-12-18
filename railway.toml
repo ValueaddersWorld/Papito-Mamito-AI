@@ -6,8 +6,14 @@ builder = "DOCKERFILE"
 dockerfilePath = "./Dockerfile"
 
 [deploy]
-# Wrap in sh -c to ensure $PORT is expanded by the shell
-startCommand = "sh -c 'python -m uvicorn papito_core.api:app --host 0.0.0.0 --port $PORT'"
+# Run either the API (web) or the 24/7 autonomous agent (worker) based on PAPITO_ROLE.
+# - PAPITO_ROLE=api    -> starts FastAPI (default)
+# - PAPITO_ROLE=worker -> starts `papito agent start` loop
+#
+# Recommended Railway setup:
+# 1) Service A (Web/API): PAPITO_ROLE=api, PAPITO_ENABLE_SCHEDULER=false
+# 2) Service B (Worker):  PAPITO_ROLE=worker, PAPITO_AGENT_INTERVAL=60
+startCommand = "sh -c 'if [ \"${PAPITO_ROLE:-api}\" = \"worker\" ]; then python -m uvicorn papito_core.api:app --host 0.0.0.0 --port $PORT & papito agent start --interval ${PAPITO_AGENT_INTERVAL:-60}; else python -m uvicorn papito_core.api:app --host 0.0.0.0 --port $PORT; fi'"
 
 # Restart on failure
 restartPolicyType = "ON_FAILURE"

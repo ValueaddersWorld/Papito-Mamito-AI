@@ -9,6 +9,7 @@ This module handles:
 """
 
 import asyncio
+import json
 import logging
 import os
 import random
@@ -123,11 +124,49 @@ class MentionMonitor:
         self.last_mention_id: Optional[str] = None
         self.processed_mentions: set = set()
         self.user_id: Optional[str] = None
+
+        # Best-effort persistence (prevents re-processing after restarts)
+        self._state_file = os.getenv(
+            "PAPITO_MENTION_STATE_FILE",
+            os.path.join("data", "mention_monitor_state.json"),
+        )
+        self._load_state()
         
         # Stats tracking
         self.mentions_processed = 0
         self.replies_sent = 0
         self.errors = 0
+
+    def _load_state(self) -> None:
+        try:
+            if not os.path.exists(self._state_file):
+                return
+            with open(self._state_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if isinstance(data, dict):
+                self.last_mention_id = data.get("last_mention_id") or self.last_mention_id
+                processed = data.get("processed_mentions")
+                if isinstance(processed, list):
+                    self.processed_mentions.update(str(x) for x in processed if x)
+        except Exception:
+            # Never crash the agent for a corrupted state file.
+            return
+
+    def _save_state(self) -> None:
+        try:
+            os.makedirs(os.path.dirname(self._state_file), exist_ok=True)
+            processed = list(self.processed_mentions)
+            # Cap the set so the file doesn't grow unbounded.
+            processed = processed[-2000:]
+            payload = {
+                "updated_at": datetime.utcnow().isoformat(),
+                "last_mention_id": self.last_mention_id,
+                "processed_mentions": processed,
+            }
+            with open(self._state_file, "w", encoding="utf-8") as f:
+                json.dump(payload, f, indent=2)
+        except Exception:
+            return
         
     def connect(self) -> bool:
         """Connect to Twitter API.
@@ -415,6 +454,9 @@ class MentionMonitor:
             except Exception as e:
                 logger.error(f"Error processing mention: {e}")
                 results["errors"] += 1
+
+        # Persist best-effort state for next run
+        self._save_state()
         
         return results
     

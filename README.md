@@ -137,6 +137,26 @@ docker build -t papito-api .
 docker run -p 8000:8000 --env-file .env papito-api
 ```
 
+## 🚂 Railway (Recommended 24/7 Setup)
+
+To run Papito truly 24/7 on Railway (like automated accounts on X), use **two Railway services** from the same repo/image:
+
+- **Service A (Web/API)**
+	- `PAPITO_ROLE=api`
+	- `PAPITO_ENABLE_SCHEDULER=false` (prevents duplicate posting)
+	- Keep `PORT` managed by Railway
+
+- **Service B (Worker/Agent)**
+	- `PAPITO_ROLE=worker`
+	- `PAPITO_AGENT_INTERVAL=60` (seconds)
+	- Set X credentials (`X_API_KEY`, `X_API_SECRET`, `X_ACCESS_TOKEN`, `X_ACCESS_TOKEN_SECRET`, optional `X_BEARER_TOKEN`)
+
+The worker runs `papito agent start` continuously, including active engagement loops (mentions + community engagement + welcoming new followers).
+
+Notes:
+- Ensure your X Developer App permissions are **Read and Write** and you regenerated tokens after changing permissions.
+- Railway restarts are fine; state is persisted under `data/` JSON files inside the container filesystem.
+
 ## 🎵 CLI Commands
 
 ### Content Calendar

@@ -441,3 +441,8 @@ Context: {context.value}""")
             "hashtags": template.get("hashtags", []),
             "cta": template.get("cta", ""),
         }
+
+
+# Backwards-compat: older modules import PapitoPersonalityEngine.
+# Keep this alias to avoid breaking the autonomous engagement loop.
+PapitoPersonalityEngine = AIPersonalityEngine

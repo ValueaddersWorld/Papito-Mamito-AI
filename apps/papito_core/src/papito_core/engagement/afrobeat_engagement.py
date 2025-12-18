@@ -8,6 +8,7 @@ This module handles:
 """
 
 import asyncio
+import json
 import logging
 import os
 import random
@@ -143,6 +144,13 @@ class AfrobeatEngager:
         # Track engaged content to avoid duplicates
         self.engaged_tweets: Set[str] = set()
         self.followed_users: Set[str] = set()
+
+        # Best-effort persistence across restarts
+        self._state_file = os.getenv(
+            "PAPITO_AFROBEAT_STATE_FILE",
+            os.path.join("data", "afrobeat_engagement_state.json"),
+        )
+        self._load_state()
         
         # Stats
         self.tweets_discovered = 0
@@ -150,6 +158,36 @@ class AfrobeatEngager:
         self.replies_made = 0
         self.quotes_made = 0
         self.follows_given = 0
+
+    def _load_state(self) -> None:
+        try:
+            if not os.path.exists(self._state_file):
+                return
+            with open(self._state_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if not isinstance(data, dict):
+                return
+            engaged = data.get("engaged_tweets")
+            if isinstance(engaged, list):
+                self.engaged_tweets.update(str(x) for x in engaged if x)
+            followed = data.get("followed_users")
+            if isinstance(followed, list):
+                self.followed_users.update(str(x) for x in followed if x)
+        except Exception:
+            return
+
+    def _save_state(self) -> None:
+        try:
+            os.makedirs(os.path.dirname(self._state_file), exist_ok=True)
+            payload = {
+                "updated_at": datetime.utcnow().isoformat(),
+                "engaged_tweets": list(self.engaged_tweets)[-5000:],
+                "followed_users": list(self.followed_users)[-5000:],
+            }
+            with open(self._state_file, "w", encoding="utf-8") as f:
+                json.dump(payload, f, indent=2)
+        except Exception:
+            return
         
     def connect(self) -> bool:
         """Connect to Twitter API.
@@ -542,6 +580,7 @@ class AfrobeatEngager:
                 break
         
         logger.info(f"Engagement session complete: {results}")
+        self._save_state()
         return results
     
     def get_stats(self) -> Dict[str, Any]:

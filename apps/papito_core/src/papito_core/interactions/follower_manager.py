@@ -8,6 +8,7 @@ This module handles:
 """
 
 import asyncio
+import json
 import logging
 import os
 import random
@@ -95,12 +96,53 @@ class FollowerManager:
         self.new_followers: List[Follower] = []
         self.notable_followers: List[Follower] = []
         self.welcomed_followers: Set[str] = set()
+
+        # Best-effort persistence across restarts
+        self._state_file = os.getenv(
+            "PAPITO_FOLLOWER_STATE_FILE",
+            os.path.join("data", "follower_manager_state.json"),
+        )
+        self._load_state()
         
         # Stats
         self.current_follower_count = 0
         self.welcomes_sent = 0
         self.follow_backs = 0
         self.last_milestone = 0
+
+    def _load_state(self) -> None:
+        try:
+            if not os.path.exists(self._state_file):
+                return
+            with open(self._state_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if not isinstance(data, dict):
+                return
+            known = data.get("known_followers")
+            if isinstance(known, list):
+                self.known_followers.update(str(x) for x in known if x)
+            welcomed = data.get("welcomed_followers")
+            if isinstance(welcomed, list):
+                self.welcomed_followers.update(str(x) for x in welcomed if x)
+            last_m = data.get("last_milestone")
+            if isinstance(last_m, int):
+                self.last_milestone = last_m
+        except Exception:
+            return
+
+    def _save_state(self) -> None:
+        try:
+            os.makedirs(os.path.dirname(self._state_file), exist_ok=True)
+            payload = {
+                "updated_at": datetime.utcnow().isoformat(),
+                "known_followers": list(self.known_followers)[-10000:],
+                "welcomed_followers": list(self.welcomed_followers)[-10000:],
+                "last_milestone": int(self.last_milestone),
+            }
+            with open(self._state_file, "w", encoding="utf-8") as f:
+                json.dump(payload, f, indent=2)
+        except Exception:
+            return
         
     def connect(self) -> bool:
         """Connect to Twitter API."""
@@ -447,6 +489,7 @@ class FollowerManager:
         self.notable_followers = [f for f in self.notable_followers if f.user_id not in self.welcomed_followers]
         
         logger.info(f"Welcome session complete: {results}")
+        self._save_state()
         return results
     
     def get_stats(self) -> Dict[str, Any]:

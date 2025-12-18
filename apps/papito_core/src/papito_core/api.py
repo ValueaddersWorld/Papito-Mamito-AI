@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import time
 from collections import deque
 from contextlib import asynccontextmanager
@@ -63,32 +64,50 @@ async def lifespan(app: FastAPI):
     """Handle startup and shutdown events."""
     # Startup
     logger.info("🚀 Starting Papito Mamito API...")
-    try:
-        from .automation.autonomous_scheduler import start_scheduler
-        start_scheduler()
-        
-        # --- EXECUTE MARKETING BLITZ AND FIX PROFILE ---
-        try:
-             from .marketing.engagement_blitz import EngagementBlitz
-             logger.info("⚡ Executing Marketing Blitz & Profile Fix...")
-             EngagementBlitz().execute()
-        except Exception as mx:
-             logger.error(f"Failed to exec Blitz: {mx}")
-        # -----------------------------------------------
+    scheduler_started = False
+    role = os.getenv("PAPITO_ROLE", "api").strip().lower()
+    enable_scheduler_raw = os.getenv("PAPITO_ENABLE_SCHEDULER")
+    if enable_scheduler_raw is None:
+        # Safe default: scheduler is OFF unless explicitly enabled.
+        enable_scheduler = False
+    else:
+        enable_scheduler = enable_scheduler_raw.strip().lower() in {"1", "true", "yes", "y", "on"}
 
-        logger.info("✅ Autonomous scheduler started!")
-    except Exception as e:
-        logger.warning(f"Could not start scheduler: {e}")
+    if enable_scheduler:
+        try:
+            from .automation.autonomous_scheduler import start_scheduler
+            start_scheduler()
+            scheduler_started = True
+
+            # --- EXECUTE MARKETING BLITZ AND FIX PROFILE ---
+            # Run only when the scheduler is enabled.
+            try:
+                from .marketing.engagement_blitz import EngagementBlitz
+                logger.info("⚡ Executing Marketing Blitz & Profile Fix...")
+                EngagementBlitz().execute()
+            except Exception as mx:
+                logger.error(f"Failed to exec Blitz: {mx}")
+            # -----------------------------------------------
+
+            logger.info("✅ Autonomous scheduler started!")
+        except Exception as e:
+            logger.warning(f"Could not start scheduler: {e}")
+    else:
+        logger.info(
+            f"ℹ️ Scheduler disabled for this process (role={role}). "
+            "Set PAPITO_ENABLE_SCHEDULER=true to enable."
+        )
     
     yield
     
     # Shutdown
     logger.info("🛑 Shutting down Papito Mamito API...")
-    try:
-        from .automation.autonomous_scheduler import stop_scheduler
-        stop_scheduler()
-    except Exception:
-        pass
+    if scheduler_started:
+        try:
+            from .automation.autonomous_scheduler import stop_scheduler
+            stop_scheduler()
+        except Exception:
+            pass
 
 
 def create_app() -> FastAPI:

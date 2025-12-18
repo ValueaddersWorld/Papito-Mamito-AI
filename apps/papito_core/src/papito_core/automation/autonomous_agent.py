@@ -157,24 +157,26 @@ class AutonomousAgent:
         """
         self._running = True
         self.log_action("agent_started", f"Agent started (interval: {interval_seconds}s)")
-        
+
         try:
             while self._running:
-                self._run_iteration()
+                try:
+                    self._run_iteration()
+                except Exception as e:
+                    # Never let the long-running worker crash on a single failure.
+                    self.log_action(
+                        "agent_iteration_error",
+                        f"Iteration failed: {str(e)}",
+                        level="error",
+                        details={"error": str(e)},
+                    )
+                    logger.exception("Agent iteration error")
+                    time.sleep(30)
                 time.sleep(interval_seconds)
-                
+
         except KeyboardInterrupt:
             self.log_action("agent_stopped", "Agent stopped by user")
             self._running = False
-            
-        except Exception as e:
-            self.log_action(
-                "agent_error",
-                f"Agent crashed: {str(e)}",
-                level="error",
-                details={"error": str(e)}
-            )
-            raise
     
     def stop(self) -> None:
         """Stop the autonomous agent."""
@@ -193,6 +195,21 @@ class AutonomousAgent:
         
         # Publish approved content
         self._publish_ready_content()
+
+        # === Active X engagement (growth loop) ===
+        # These tasks do NOT depend on external webhooks; they pull from X directly
+        # using Tweepy-based modules under papito_core.engagement / papito_core.interactions.
+        if self._should_run("x_process_mentions", minutes=30):
+            self._process_x_mentions()
+
+        if self._should_run("x_afrobeat_engagement", minutes=240):
+            self._run_x_afrobeat_engagement()
+
+        if self._should_run("x_welcome_followers", minutes=720):
+            self._welcome_new_x_followers()
+
+        if self._should_run("x_fan_recognition", minutes=1440):
+            self._run_x_fan_recognition()
         
         # Check for fan interactions (hourly)
         if self._should_run("check_interactions", minutes=60):
@@ -201,6 +218,133 @@ class AutonomousAgent:
         # Collect analytics (every 4 hours)
         if self._should_run("collect_analytics", minutes=240):
             self._collect_analytics()
+
+    def _process_x_mentions(self) -> None:
+        """Process and respond to @mentions on X.
+
+        Uses the Tweepy-based MentionMonitor to pull mentions directly.
+        """
+        try:
+            from ..engagement import get_mention_monitor
+
+            monitor = get_mention_monitor(self.personality)
+            if not monitor.connect():
+                self.log_action(
+                    "x_mentions_not_connected",
+                    "MentionMonitor not connected (check X credentials / permissions)",
+                    level="warning",
+                    platform="x",
+                )
+                return
+
+            results = asyncio.run(monitor.process_mentions())
+            self.log_action(
+                "x_mentions_processed",
+                f"Processed {results.get('fetched', 0)} mentions, replied to {results.get('responded', 0)}",
+                platform="x",
+                details=results,
+            )
+        except Exception as e:
+            self.log_action(
+                "x_mentions_error",
+                f"Mention processing failed: {e}",
+                level="error",
+                platform="x",
+                details={"error": str(e)},
+            )
+
+    def _run_x_afrobeat_engagement(self) -> None:
+        """Discover and engage with Afrobeat community content on X."""
+        try:
+            from ..engagement import get_afrobeat_engager
+
+            engager = get_afrobeat_engager(self.personality)
+            if not engager.connect():
+                self.log_action(
+                    "x_engagement_not_connected",
+                    "AfrobeatEngager not connected (check X credentials / permissions)",
+                    level="warning",
+                    platform="x",
+                )
+                return
+
+            results = asyncio.run(engager.run_engagement_session())
+            self.log_action(
+                "x_afrobeat_engagement",
+                f"Afrobeat engagement: {results.get('likes', 0)} likes, {results.get('replies', 0)} replies, {results.get('follows', 0)} follows",
+                platform="x",
+                details=results,
+            )
+        except Exception as e:
+            self.log_action(
+                "x_engagement_error",
+                f"Afrobeat engagement failed: {e}",
+                level="error",
+                platform="x",
+                details={"error": str(e)},
+            )
+
+    def _welcome_new_x_followers(self) -> None:
+        """Welcome newly discovered followers on X."""
+        try:
+            from ..interactions import get_follower_manager
+
+            manager = get_follower_manager(self.personality)
+            if not manager.connect():
+                self.log_action(
+                    "x_followers_not_connected",
+                    "FollowerManager not connected (check X credentials / permissions)",
+                    level="warning",
+                    platform="x",
+                )
+                return
+
+            results = asyncio.run(manager.run_welcome_session(max_welcomes=5))
+            self.log_action(
+                "x_followers_welcomed",
+                f"Welcomed {results.get('welcomes_sent', 0)} new followers",
+                platform="x",
+                details=results,
+            )
+        except Exception as e:
+            self.log_action(
+                "x_followers_error",
+                f"Follower welcome failed: {e}",
+                level="error",
+                platform="x",
+                details={"error": str(e)},
+            )
+
+    def _run_x_fan_recognition(self) -> None:
+        """Run daily fan recognition (shoutouts / fan-of-the-week) on X."""
+        try:
+            from ..interactions import get_fan_recognition_manager
+
+            manager = get_fan_recognition_manager(self.personality)
+            if not manager.connect():
+                self.log_action(
+                    "x_recognition_not_connected",
+                    "FanRecognitionManager not connected (check X credentials / permissions)",
+                    level="warning",
+                    platform="x",
+                )
+                return
+
+            results = asyncio.run(manager.run_recognition_session())
+            self.log_action(
+                "x_fan_recognition",
+                f"Fan recognition: {results.get('shoutouts_given', 0)} shoutouts, fan-of-week announced: {bool(results.get('fotw_announced'))}",
+                platform="x",
+                details=results,
+            )
+        except Exception as e:
+            self.log_action(
+                "x_recognition_error",
+                f"Fan recognition failed: {e}",
+                level="error",
+                platform="x",
+                details={"error": str(e)},
+            )
     
     def _should_run(self, task: str, minutes: int) -> bool:
         """Check if a task should run based on last run time.
