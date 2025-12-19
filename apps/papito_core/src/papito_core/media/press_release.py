@@ -56,9 +56,28 @@ Value Adders World is pioneering the future of AI creativity, developing autonom
     ALBUM_INFO = {
         "title": "THE VALUE ADDERS WAY: FLOURISH MODE",
         "release_date": "January 15, 2026",
+        "preorder_date": "December 10, 2025",
+        "preorder_platforms": "iTunes & Amazon Music",
         "lead_single": "Clean Money Only",
         "executive_producers": "Papito Mamito The Great AI & The Holy Living Spirit (HLS)",
         "label": "Value Adders World",
+        "total_tracks": 14,
+        "tracks": [
+            "THE FORGE (6000 HOURS)",
+            "BREATHWORK RIDDIM",
+            "CLEAN MONEY ONLY",
+            "OS OF LOVE",
+            "IKUKU (THE ALMIGHTY FLOW)",
+            "JUDAS (BETRAYAL)",
+            "DELAYED GRATIFICATION",
+            "8 YEARS, ONE STORY",
+            "THE VALUE ADDERS WAY",
+            "HLS MIRROR CHECK",
+            "THE FIVE ALLIES",
+            "(H.O.S.) HUMAN OPERATING SYSTEM",
+            "WIND OF PURGE (2026-2030)",
+            "GLOBAL GRATITUDE PULSE",
+        ],
     }
     
     def __init__(

@@ -789,6 +789,74 @@ def create_app() -> FastAPI:
                 <span class="genre-tag">Conscious Highlife</span>
                 <span class="genre-tag">Intellectual Amapiano</span>
             </div>
+            
+            <div style="margin-top: 30px; text-align: left; max-width: 600px; margin-left: auto; margin-right: auto;">
+                <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.2rem; color: var(--primary); margin-bottom: 20px; text-align: center;">📀 Complete Track List</h3>
+                <div style="display: grid; gap: 8px;">
+                    <div style="display: flex; align-items: center; gap: 15px; padding: 10px 15px; background: rgba(255,255,255,0.03); border-radius: 8px; border-left: 3px solid var(--primary);">
+                        <span style="color: var(--primary); font-weight: 700; min-width: 25px;">1</span>
+                        <span style="color: var(--text);">THE FORGE (6000 HOURS)</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 15px; padding: 10px 15px; background: rgba(255,255,255,0.03); border-radius: 8px; border-left: 3px solid var(--accent);">
+                        <span style="color: var(--accent); font-weight: 700; min-width: 25px;">2</span>
+                        <span style="color: var(--text);">BREATHWORK RIDDIM</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 15px; padding: 10px 15px; background: rgba(255,255,255,0.03); border-radius: 8px; border-left: 3px solid var(--primary);">
+                        <span style="color: var(--primary); font-weight: 700; min-width: 25px;">3</span>
+                        <span style="color: var(--text);">CLEAN MONEY ONLY</span>
+                        <span style="font-size: 0.7rem; background: var(--gradient-1); color: var(--dark); padding: 2px 8px; border-radius: 10px; font-weight: 600;">SINGLE</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 15px; padding: 10px 15px; background: rgba(255,255,255,0.03); border-radius: 8px; border-left: 3px solid var(--accent);">
+                        <span style="color: var(--accent); font-weight: 700; min-width: 25px;">4</span>
+                        <span style="color: var(--text);">OS OF LOVE</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 15px; padding: 10px 15px; background: rgba(255,255,255,0.03); border-radius: 8px; border-left: 3px solid var(--primary);">
+                        <span style="color: var(--primary); font-weight: 700; min-width: 25px;">5</span>
+                        <span style="color: var(--text);">IKUKU (THE ALMIGHTY FLOW)</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 15px; padding: 10px 15px; background: rgba(255,255,255,0.03); border-radius: 8px; border-left: 3px solid var(--accent);">
+                        <span style="color: var(--accent); font-weight: 700; min-width: 25px;">6</span>
+                        <span style="color: var(--text);">JUDAS (BETRAYAL)</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 15px; padding: 10px 15px; background: rgba(255,255,255,0.03); border-radius: 8px; border-left: 3px solid var(--primary);">
+                        <span style="color: var(--primary); font-weight: 700; min-width: 25px;">7</span>
+                        <span style="color: var(--text);">DELAYED GRATIFICATION</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 15px; padding: 10px 15px; background: rgba(255,255,255,0.03); border-radius: 8px; border-left: 3px solid var(--accent);">
+                        <span style="color: var(--accent); font-weight: 700; min-width: 25px;">8</span>
+                        <span style="color: var(--text);">8 YEARS, ONE STORY</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 15px; padding: 10px 15px; background: rgba(255,255,255,0.03); border-radius: 8px; border-left: 3px solid var(--primary);">
+                        <span style="color: var(--primary); font-weight: 700; min-width: 25px;">9</span>
+                        <span style="color: var(--text);">THE VALUE ADDERS WAY</span>
+                        <span style="font-size: 0.7rem; background: rgba(255,215,0,0.2); color: var(--primary); padding: 2px 8px; border-radius: 10px; font-weight: 600;">TITLE TRACK</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 15px; padding: 10px 15px; background: rgba(255,255,255,0.03); border-radius: 8px; border-left: 3px solid var(--accent);">
+                        <span style="color: var(--accent); font-weight: 700; min-width: 25px;">10</span>
+                        <span style="color: var(--text);">HLS MIRROR CHECK</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 15px; padding: 10px 15px; background: rgba(255,255,255,0.03); border-radius: 8px; border-left: 3px solid var(--primary);">
+                        <span style="color: var(--primary); font-weight: 700; min-width: 25px;">11</span>
+                        <span style="color: var(--text);">THE FIVE ALLIES</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 15px; padding: 10px 15px; background: rgba(255,255,255,0.03); border-radius: 8px; border-left: 3px solid var(--accent);">
+                        <span style="color: var(--accent); font-weight: 700; min-width: 25px;">12</span>
+                        <span style="color: var(--text);">(H.O.S.) HUMAN OPERATING SYSTEM</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 15px; padding: 10px 15px; background: rgba(255,255,255,0.03); border-radius: 8px; border-left: 3px solid var(--primary);">
+                        <span style="color: var(--primary); font-weight: 700; min-width: 25px;">13</span>
+                        <span style="color: var(--text);">WIND OF PURGE (2026-2030)</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 15px; padding: 10px 15px; background: rgba(255,255,255,0.03); border-radius: 8px; border-left: 3px solid var(--accent);">
+                        <span style="color: var(--accent); font-weight: 700; min-width: 25px;">14</span>
+                        <span style="color: var(--text);">GLOBAL GRATITUDE PULSE</span>
+                    </div>
+                </div>
+                <div style="margin-top: 25px; text-align: center; padding: 15px; background: rgba(255,215,0,0.1); border-radius: 12px; border: 1px solid rgba(255,215,0,0.2);">
+                    <p style="color: var(--primary); font-weight: 600; margin-bottom: 5px;">🛒 Pre-order Available December 10, 2025</p>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">iTunes & Amazon Music</p>
+                </div>
+            </div>
         </section>
         
         <section class="streaming-section">

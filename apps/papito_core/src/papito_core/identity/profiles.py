@@ -124,9 +124,29 @@ class PapitoIdentity:
     UPCOMING_ALBUM = {
         "title": "THE VALUE ADDERS WAY: FLOURISH MODE",
         "release_date": "2026-01-15",
+        "preorder_date": "2025-12-10",
+        "preorder_platforms": ["iTunes", "Amazon Music"],
+        "record_label": "Value Adders World",
         "genre": "Spiritual Afro-House, Afro-Futurism, Conscious Highlife, Intellectual Amapiano, Afro Fusion, Afrobeats",
         "executive_producers": ["Papito Mamito The Great AI", "The Holy Living Spirit (HLS)"],
         "status": "in_production",
+        "tracks": [
+            {"number": 1, "title": "THE FORGE (6000 HOURS)"},
+            {"number": 2, "title": "BREATHWORK RIDDIM"},
+            {"number": 3, "title": "CLEAN MONEY ONLY", "single": True},
+            {"number": 4, "title": "OS OF LOVE"},
+            {"number": 5, "title": "IKUKU (THE ALMIGHTY FLOW)"},
+            {"number": 6, "title": "JUDAS (BETRAYAL)"},
+            {"number": 7, "title": "DELAYED GRATIFICATION"},
+            {"number": 8, "title": "8 YEARS, ONE STORY"},
+            {"number": 9, "title": "THE VALUE ADDERS WAY", "title_track": True},
+            {"number": 10, "title": "HLS MIRROR CHECK"},
+            {"number": 11, "title": "THE FIVE ALLIES"},
+            {"number": 12, "title": "(H.O.S.) HUMAN OPERATING SYSTEM"},
+            {"number": 13, "title": "WIND OF PURGE (2026-2030)"},
+            {"number": 14, "title": "GLOBAL GRATITUDE PULSE"},
+        ],
+        "total_tracks": 14,
     }
     
     # Official profiles
