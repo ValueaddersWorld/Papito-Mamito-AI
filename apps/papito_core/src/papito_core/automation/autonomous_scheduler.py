@@ -267,6 +267,51 @@ class AutonomousScheduler:
         )
         logger.info("⭐ Scheduled: Fan recognition at 17:30 WAT")
         
+        # === PHASE 3: Growth Blitz - Aggressive Follower Growth ===
+        # "Hand-to-Hand Combat" protocol: 3x daily at peak engagement times
+        self.scheduler.add_job(
+            self._growth_blitz,
+            CronTrigger(hour="9,14,20", minute=0, timezone="Africa/Lagos"),
+            id="growth_blitz",
+            replace_existing=True,
+            name="🚀 Growth Blitz Session"
+        )
+        logger.info("🚀 Scheduled: Growth Blitz at 9:00, 14:00, 20:00 WAT")
+        
+    async def _growth_blitz(self) -> Dict[str, Any]:
+        """Run aggressive Growth Blitz for follower growth.
+        
+        This executes the "Hand-to-Hand Combat" protocol:
+        - Follow smaller Afrobeat artists (not superstars who won't engage back)
+        - Reply to relevant conversations with genuine value
+        - Quote tweet interesting content with added insight
+        - Like content strategically
+        - Build real relationships
+        """
+        try:
+            from ..engagement.growth_blitz import get_growth_blitz
+            
+            blitz = get_growth_blitz()
+            stats = blitz.run_blitz()
+            
+            logger.info(
+                f"🚀 Growth Blitz complete: "
+                f"Follows: {stats.follows_succeeded}, "
+                f"Replies: {stats.replies_sent}, "
+                f"Likes: {stats.likes_given}, "
+                f"Quotes: {stats.quote_tweets}"
+            )
+            
+            return {
+                "success": True,
+                "session": stats.to_dict(),
+                "status": blitz.get_status(),
+            }
+            
+        except Exception as e:
+            logger.error(f"Growth Blitz error: {e}")
+            return {"success": False, "error": str(e)}
+        
     async def _process_mentions(self) -> Dict[str, Any]:
         """Process and respond to Twitter mentions."""
         try:
