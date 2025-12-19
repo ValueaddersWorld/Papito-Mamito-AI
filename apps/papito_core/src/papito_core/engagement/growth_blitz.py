@@ -18,7 +18,7 @@ from datetime import datetime, timedelta
 from dataclasses import dataclass, field
 import tweepy
 
-from ..engines.ai_personality import PapitoPersonalityEngine, get_personality_engine
+from ..engines.ai_personality import PapitoPersonalityEngine
 
 logger = logging.getLogger("papito.growth_blitz")
 
@@ -184,7 +184,7 @@ class GrowthBlitz:
         
         self.client: Optional[tweepy.Client] = None
         self.api: Optional[tweepy.API] = None
-        self.personality = get_personality_engine()
+        self.personality: Optional[PapitoPersonalityEngine] = None  # Lazy init
         
         # Track what we've already done
         self.followed_users: set = set()
