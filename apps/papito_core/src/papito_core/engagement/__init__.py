@@ -27,6 +27,12 @@ from .afrobeat_engagement import (
     AFROBEAT_HASHTAGS,
 )
 
+from .growth_blitz import (
+    GrowthBlitz,
+    BlitzStats,
+    get_growth_blitz,
+)
+
 __all__ = [
     # Fan engagement
     "EngagementTier",
@@ -44,4 +50,8 @@ __all__ = [
     "DiscoveredTweet",
     "get_afrobeat_engager",
     "AFROBEAT_HASHTAGS",
+    # Growth Blitz
+    "GrowthBlitz",
+    "BlitzStats",
+    "get_growth_blitz",
 ]

@@ -1705,6 +1705,69 @@ def create_app() -> FastAPI:
         }
 
     # ==========================================
+    # GROWTH BLITZ - AGGRESSIVE FOLLOWER GROWTH
+    # ==========================================
+    # "Hand-to-Hand Combat" Protocol for Rapid Growth
+    # ==========================================
+    
+    @app.post(
+        "/growth/blitz",
+        summary="🚀 Run Growth Blitz Session",
+        tags=["ADD VALUE Growth Engine"],
+    )
+    async def run_growth_blitz() -> dict:
+        """Run an aggressive Growth Blitz session.
+        
+        This executes the "Hand-to-Hand Combat" protocol:
+        - Follow smaller Afrobeat artists (not superstars who won't engage back)
+        - Reply to relevant conversations with genuine value  
+        - Quote tweet interesting content with added insight
+        - Like content strategically
+        - Build real relationships
+        
+        This is designed for rapid follower growth while maintaining authenticity.
+        """
+        try:
+            from .engagement.growth_blitz import get_growth_blitz
+            
+            blitz = get_growth_blitz()
+            stats = blitz.run_blitz()
+            
+            return {
+                "success": True,
+                "session": stats.to_dict(),
+                "status": blitz.get_status(),
+                "message": f"🚀 Growth Blitz complete! Follows: {stats.follows_succeeded}, Replies: {stats.replies_sent}, Likes: {stats.likes_given}",
+            }
+        except Exception as e:
+            import traceback
+            return {
+                "success": False,
+                "error": str(e),
+                "traceback": traceback.format_exc(),
+            }
+    
+    @app.get(
+        "/growth/blitz/status",
+        summary="Get Growth Blitz status",
+        tags=["ADD VALUE Growth Engine"],
+    )
+    def growth_blitz_status() -> dict:
+        """Get the current status of the Growth Blitz engine."""
+        try:
+            from .engagement.growth_blitz import get_growth_blitz
+            blitz = get_growth_blitz()
+            return {
+                "success": True,
+                **blitz.get_status(),
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+
+    # ==========================================
     # TWITTER DIRECT POSTING ENDPOINTS
     # ==========================================
     
