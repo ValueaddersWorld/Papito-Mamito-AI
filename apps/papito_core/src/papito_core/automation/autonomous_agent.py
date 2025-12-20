@@ -30,6 +30,7 @@ from ..queue import ReviewQueue
 from ..queue.review_queue import ContentCategory
 from ..settings import get_settings
 from ..social import InstagramPublisher, XPublisher, BufferPublisher, TrendingDetector
+from ..social.twitter import TwitterPublisher
 from ..social.base import Platform, PublishResult
 from .content_scheduler import ContentScheduler, ContentType
 
@@ -615,19 +616,55 @@ class AutonomousAgent:
             use_buffer = True
             
         elif platform == "x":
-            if self.x_publisher.is_connected():
-                return self.x_publisher.publish_post(
-                    content=item.body,
-                    media_urls=item.media_urls if item.media_urls else None
+            # Prefer Tweepy-based publisher for write operations (reliable auth for posting).
+            try:
+                twitter = TwitterPublisher.from_settings()
+                if twitter.connect():
+                    tweet = twitter.post_tweet(text=item.body)
+                    return PublishResult(
+                        success=tweet.success,
+                        platform=Platform.X,
+                        post_id=tweet.tweet_id,
+                        post_url=tweet.tweet_url,
+                        error=tweet.error,
+                        raw_response={"tweet_id": tweet.tweet_id, "tweet_url": tweet.tweet_url},
+                    )
+            except Exception as e:
+                # Fall back to Buffer if Tweepy fails or credentials are missing.
+                self.log_action(
+                    "x_publish_primary_failed",
+                    f"Primary X publish failed; will try Buffer fallback: {e}",
+                    level="warning",
+                    platform="x",
+                    details={"error": str(e)},
                 )
+
+            # Secondary path: httpx-based XPublisher (may be read-only depending on tokens).
+            try:
+                if not self.x_publisher.is_connected():
+                    self.x_publisher.connect()
+                if self.x_publisher.is_connected():
+                    return self.x_publisher.publish_post(
+                        content=item.body,
+                        media_urls=item.media_urls if item.media_urls else None,
+                    )
+            except Exception:
+                pass
+
             use_buffer = True
         
         # Fallback to Buffer
-        if use_buffer and self.buffer.is_connected():
-            return self.buffer.publish_post(
-                content=item.body,
-                media_urls=item.media_urls if item.media_urls else None
-            )
+        if use_buffer:
+            try:
+                if not self.buffer.is_connected():
+                    self.buffer.connect()
+                if self.buffer.is_connected():
+                    return self.buffer.publish_post(
+                        content=item.body,
+                        media_urls=item.media_urls if item.media_urls else None,
+                    )
+            except Exception:
+                pass
         
         return PublishResult(
             success=False,

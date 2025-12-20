@@ -6,7 +6,7 @@ Write-Host "[MUSIC] Papito Mamito AI - 1000 Followers Campaign" -ForegroundColor
 Write-Host "===============================================" -ForegroundColor Magenta
 Write-Host ""
 
-$API_BASE = "https://web-production-14aea.up.railway.app"
+$API_BASE = if ($env:PAPITO_API_BASE_URL) { $env:PAPITO_API_BASE_URL } else { "http://localhost:8000" }
 
 # Health Check
 Write-Host "[CHECK] Checking API health..." -ForegroundColor Cyan
@@ -93,10 +93,10 @@ Write-Host "[COMMANDS] Quick Start Commands:" -ForegroundColor Green
 Write-Host ""
 Write-Host "  # Test content generation" -ForegroundColor DarkGray
 Write-Host "  `$body = @{content_type='morning_blessing'; include_album=`$true; platform='twitter'} | ConvertTo-Json" -ForegroundColor White
-Write-Host "  Invoke-RestMethod -Uri 'https://web-production-14aea.up.railway.app/webhooks/zapier/generate-post' -Method Post -Body `$body -ContentType 'application/json'" -ForegroundColor White
+Write-Host "  Invoke-RestMethod -Uri '$API_BASE/webhooks/zapier/generate-post' -Method Post -Body `$body -ContentType 'application/json'" -ForegroundColor White
 Write-Host ""
 Write-Host "  # Check album countdown" -ForegroundColor DarkGray
-Write-Host "  Invoke-RestMethod -Uri 'https://web-production-14aea.up.railway.app/webhooks/zapier/album-status'" -ForegroundColor White
+Write-Host "  Invoke-RestMethod -Uri '$API_BASE/webhooks/zapier/album-status'" -ForegroundColor White
 Write-Host ""
 
 # Test content generation

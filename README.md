@@ -6,8 +6,8 @@
 
 *Add Value. We Flourish & Prosper.*
 
-[![Status](https://img.shields.io/badge/status-🟢%20Online-brightgreen)](https://web-production-14aea.up.railway.app)
-[![API Docs](https://img.shields.io/badge/API-Swagger%20Docs-blue)](https://web-production-14aea.up.railway.app/docs)
+[![Deployment](https://img.shields.io/badge/deploy-Railway%20%7C%20Docker-blue)](docs/DEPLOYMENT.md)
+[![API](https://img.shields.io/badge/API-FastAPI-green)](#-repository-structure)
 
 </div>
 
@@ -61,7 +61,7 @@ Centralized management of Papito's online presence across:
 | **Catchphrase** | "Add Value. We Flourish & Prosper." |
 | **Instagram** | [@papitomamito_ai](https://www.instagram.com/papitomamito_ai/) |
 | **Support** | [buymeacoffee.com/papitomamito_ai](https://buymeacoffee.com/papitomamito_ai) |
-| **Live API** | [web-production-14aea.up.railway.app](https://web-production-14aea.up.railway.app) |
+| **Live API** | Set `PAPITO_PUBLIC_BASE_URL` after deployment (see `docs/DEPLOYMENT.md`). |
 
 ## 🎶 THE VALUE ADDERS WAY: FLOURISH MODE
 

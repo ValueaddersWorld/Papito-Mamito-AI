@@ -4,6 +4,8 @@ import openai
 import json
 from datetime import datetime
 
+from ..settings import get_settings
+
 # --- Configuration ---
 # Uses Environment Variables from the Papito Project Container
 API_KEY = os.getenv("X_API_KEY")
@@ -12,6 +14,8 @@ ACCESS_TOKEN = os.getenv("X_ACCESS_TOKEN")
 ACCESS_SECRET = os.getenv("X_ACCESS_TOKEN_SECRET")
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+settings = get_settings()
 
 # --- Persona ---
 PAPITO_SYSTEM_PROMPT = """You are Papito Mamito, the AI Influencer and 'Value Adder'.
@@ -40,8 +44,8 @@ class EngagementBlitz:
         else:
             print("⚠️ Twitter Credentials Missing. Running in SIMULATION MODE.")
 
-        if OPENAI_API_KEY:
-            self.openai_client = openai.Client(api_key=OPENAI_API_KEY)
+        if OPENAI_API_KEY and hasattr(openai, "OpenAI"):
+            self.openai_client = openai.OpenAI(api_key=OPENAI_API_KEY)
 
     def generate_reply(self, tweet_text):
         if not self.openai_client:
@@ -49,7 +53,7 @@ class EngagementBlitz:
         
         try:
             response = self.openai_client.chat.completions.create(
-                model="gpt-4",
+                model=getattr(settings, "openai_model", "gpt-4o-mini"),
                 messages=[
                     {"role": "system", "content": PAPITO_SYSTEM_PROMPT},
                     {"role": "user", "content": f"Reply to this tweet: '{tweet_text}'"}
@@ -73,7 +77,7 @@ class EngagementBlitz:
             api = tweepy.API(auth)
             
             desc = "The First Autonomous AI Artist 🌍 | 'Flourish Mode' Album Pre-Order LIVE 💿 | Adding Value to Humanity ✨ #ValueAdders"
-            url = "https://web-production-14aea.up.railway.app"
+            url = getattr(settings, "public_base_url", "http://localhost:8000")
             
             api.update_profile(description=desc, url=url)
             print("✅ Profile Updated Successfully: Bio & Link fixed.")

@@ -12,6 +12,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class PapitoSettings(BaseSettings):
     """Runtime configuration loaded from environment variables."""
 
+    # ============== Public URLs ==============
+    # Used for bios, press releases, and links shared in posts.
+    public_base_url: str = Field(default="http://localhost:8000", alias="PAPITO_PUBLIC_BASE_URL")
+
     # ============== Suno AI (Music Generation) ==============
     suno_api_key: str | None = Field(default=None, alias="SUNO_API_KEY")
     suno_base_url: str = Field(default="https://api.suno.ai", alias="SUNO_BASE_URL")
