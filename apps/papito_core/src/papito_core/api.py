@@ -9,6 +9,7 @@ import time
 from collections import deque
 from contextlib import asynccontextmanager
 from datetime import datetime
+from pathlib import Path
 from typing import Optional
 
 from fastapi import (
@@ -22,6 +23,9 @@ from fastapi import (
 )
 from fastapi.responses import HTMLResponse
 from fastapi.security import APIKeyHeader
+from fastapi.staticfiles import StaticFiles
+
+from starlette.datastructures import UploadFile
 
 from .automation import AnalyticsSummary, StreamingAnalyticsService
 from .config import PapitoPaths
@@ -29,6 +33,15 @@ from .fanbase import FanbaseRegistry
 from .models import BlogBrief, BlogDraft, FanProfile, MerchItem, ReleaseTrack, SongIdeationRequest
 from .settings import get_settings
 from .storage import ReleaseCatalog
+from .storage.hosted_music import (
+    HostedTrack,
+    SUPPORTED_EXTENSIONS,
+    load_library,
+    now_iso,
+    safe_audio_filename,
+    save_library,
+)
+from .utils import slugify
 from .workflows import BlogWorkflow, MusicWorkflow
 
 # Set up logging
@@ -166,6 +179,17 @@ def create_app() -> FastAPI:
             catalog = ReleaseCatalog(paths=paths)
     except Exception as e:
         print(f"Warning: Failed to initialize ReleaseCatalog: {e}")
+
+    # Hosted music storage (local filesystem, suitable for Railway volumes)
+    hosted_dir: Path | None = None
+    if paths:
+        try:
+            hosted_dir = paths.release_hosted
+            hosted_dir.mkdir(parents=True, exist_ok=True)
+            app.mount("/media", StaticFiles(directory=str(hosted_dir)), name="media")
+        except Exception as e:
+            print(f"Warning: Failed to initialize hosted media directory: {e}")
+            hosted_dir = None
 
     def authorize(request: Request, api_key: str | None = Depends(api_key_header)) -> str:
         keys = settings.api_keys_set
@@ -1018,6 +1042,206 @@ def create_app() -> FastAPI:
     @app.get("/health", summary="Health check")
     def health() -> dict[str, str]:
         return {"status": "ok", "service": "papito-mamito-ai"}
+
+        @app.get("/music", response_class=HTMLResponse, summary="Hosted music library")
+        def music_page() -> HTMLResponse:
+                """Fan-facing page to stream hosted tracks directly on the platform."""
+
+                tracks: list[HostedTrack] = []
+                if hosted_dir is not None:
+                        try:
+                                tracks = load_library(hosted_dir)
+                        except Exception:
+                                tracks = []
+
+                rows = []
+                for t in tracks:
+                        label = t.title
+                        if t.release_title:
+                                label = f"{t.release_title} — {t.title}"
+                        audio_src = f"/media/{t.filename}"
+                        rows.append(
+                                f"""
+                                <div style=\"padding:16px;border:1px solid rgba(255,255,255,0.08);border-radius:16px;background:rgba(20,20,35,0.65);margin-bottom:14px;\">
+                                    <div style=\"font-weight:700;margin-bottom:6px;\">{label}</div>
+                                    <div style=\"opacity:0.8;font-size:0.9rem;margin-bottom:10px;\">Uploaded: {t.uploaded_at}</div>
+                                    <audio controls preload=\"none\" style=\"width:100%\">
+                                        <source src=\"{audio_src}\" type=\"{t.content_type}\">
+                                        Your browser does not support the audio element.
+                                    </audio>
+                                </div>
+                                """
+                        )
+
+                if not rows:
+                        rows_html = "<p style=\"opacity:0.85\">No tracks hosted yet. Check back soon.</p>"
+                else:
+                        rows_html = "\n".join(rows)
+
+                html = f"""<!DOCTYPE html>
+<html lang=\"en\">
+    <head>
+        <meta charset=\"UTF-8\" />
+        <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />
+        <title>Music | Papito Mamito</title>
+        <style>
+            body {{ margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; background:#0a0a0f; color:#fff; }}
+            .wrap {{ max-width: 900px; margin: 0 auto; padding: 40px 16px; }}
+            a {{ color: #FFD700; text-decoration: none; }}
+            .top {{ display:flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }}
+            .badge {{ display:inline-block; padding:6px 12px; border-radius:999px; background: rgba(255,215,0,0.14); border:1px solid rgba(255,215,0,0.3); font-size: 0.85rem; }}
+            h1 {{ margin: 18px 0 10px; font-size: 2rem; }}
+            .sub {{ opacity: 0.85; margin-bottom: 22px; }}
+        </style>
+    </head>
+    <body>
+        <div class=\"wrap\">
+            <div class=\"top\">
+                <span class=\"badge\">Hosted on Papito Platform</span>
+                <a href=\"/\">Home</a>
+            </div>
+            <h1>Music Library</h1>
+            <div class=\"sub\">Stream old + new releases here. Add Value. We Flourish & Prosper.</div>
+            {rows_html}
+        </div>
+    </body>
+</html>"""
+                return HTMLResponse(content=html)
+
+        @app.get("/music/library.json", summary="Hosted music library (JSON)")
+        def music_library_json() -> dict:
+                if hosted_dir is None:
+                        return {"tracks": [], "storage": "disabled"}
+                try:
+                        tracks = load_library(hosted_dir)
+                        return {"tracks": [t.to_dict() for t in tracks], "storage": "local"}
+                except Exception as e:
+                        return {"tracks": [], "storage": "local", "error": str(e)}
+
+        @app.get("/music/upload", response_class=HTMLResponse, summary="Upload hosted track (admin)")
+        def music_upload_form() -> HTMLResponse:
+                html = """<!DOCTYPE html>
+<html lang=\"en\">
+    <head>
+        <meta charset=\"UTF-8\" />
+        <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />
+        <title>Upload Track | Papito Admin</title>
+        <style>
+            body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; background:#0a0a0f; color:#fff; }
+            .wrap { max-width: 760px; margin: 0 auto; padding: 40px 16px; }
+            label { display:block; margin: 14px 0 6px; opacity:0.9; }
+            input, textarea { width:100%; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.14); background: rgba(20,20,35,0.75); color:#fff; }
+            button { margin-top: 18px; padding: 12px 16px; border-radius: 12px; border: 1px solid rgba(255,215,0,0.35); background: rgba(255,215,0,0.16); color: #fff; font-weight: 700; cursor: pointer; }
+            .hint { margin-top: 10px; opacity: 0.8; font-size: 0.9rem; }
+            a { color: #FFD700; text-decoration:none; }
+        </style>
+    </head>
+    <body>
+        <div class=\"wrap\">
+            <div style=\"display:flex; justify-content: space-between; align-items:center; gap:12px; flex-wrap:wrap\">
+                <h1 style=\"margin:0\">Upload Track</h1>
+                <a href=\"/music\">View Library</a>
+            </div>
+            <p class=\"hint\">Admin-only: include an <b>X-API-Key</b> header when submitting this form (use a REST client). This page is for manual reference.</p>
+            <form action=\"/music/upload\" method=\"post\" enctype=\"multipart/form-data\">
+                <label>Title</label>
+                <input name=\"title\" placeholder=\"Track title\" required />
+
+                <label>Release Title (optional)</label>
+                <input name=\"release_title\" placeholder=\"Album / EP name\" />
+
+                <label>Track Number (optional)</label>
+                <input name=\"track_number\" type=\"number\" min=\"1\" />
+
+                <label>Description (optional)</label>
+                <textarea name=\"description\" rows=\"3\" placeholder=\"Short description\"></textarea>
+
+                <label>Audio File</label>
+                <input name=\"file\" type=\"file\" accept=\"audio/*\" required />
+
+                <button type=\"submit\">Upload</button>
+                <div class=\"hint\">Supported: mp3, m4a, wav, flac, ogg. For Railway, use a persistent Volume for /app/content to keep uploads.</div>
+            </form>
+        </div>
+    </body>
+</html>"""
+                return HTMLResponse(content=html)
+
+        @app.post("/music/upload", summary="Upload hosted track (admin)")
+        async def music_upload(
+                request: Request,
+                title: str = Body(None),
+                release_title: str | None = Body(None),
+                track_number: int | None = Body(None),
+                description: str | None = Body(None),
+                identity: str = Depends(authorize),
+        ) -> dict:
+                # NOTE: FastAPI's Body(...) won't parse multipart. We therefore parse form manually.
+                # This endpoint requires X-API-Key when PAPITO_API_KEYS is set.
+                if hosted_dir is None:
+                        raise HTTPException(status_code=500, detail="Hosted storage is not configured")
+
+                form = await request.form()
+                title = str(form.get("title") or "").strip()
+                release_title_raw = form.get("release_title")
+                release_title = str(release_title_raw).strip() if release_title_raw else None
+
+                track_number_raw = form.get("track_number")
+                track_number = int(track_number_raw) if track_number_raw not in (None, "") else None
+
+                description_raw = form.get("description")
+                description = str(description_raw).strip() if description_raw else None
+
+                file_obj = form.get("file")
+                if not title:
+                        raise HTTPException(status_code=400, detail="title is required")
+                if not isinstance(file_obj, UploadFile):
+                        raise HTTPException(status_code=400, detail="file is required")
+
+                original_name = file_obj.filename or "audio"
+                ext = Path(original_name).suffix.lower()
+                if ext not in SUPPORTED_EXTENSIONS:
+                        raise HTTPException(status_code=400, detail=f"Unsupported file extension: {ext}")
+
+                # Build safe filename (avoid collisions by prefixing an id)
+                track_id = f"{slugify(title)}-{int(time.time())}"
+                filename = f"{track_id}-{safe_audio_filename(title, ext)}"
+                out_path = hosted_dir / filename
+
+                # Stream write to disk
+                size = 0
+                with out_path.open("wb") as f:
+                        while True:
+                                chunk = await file_obj.read(1024 * 1024)
+                                if not chunk:
+                                        break
+                                f.write(chunk)
+                                size += len(chunk)
+
+                # Update library
+                tracks = load_library(hosted_dir)
+                tracks.insert(
+                        0,
+                        HostedTrack(
+                                id=track_id,
+                                title=title,
+                                filename=filename,
+                                content_type=file_obj.content_type or "audio/mpeg",
+                                bytes=size,
+                                uploaded_at=now_iso(),
+                                release_title=release_title,
+                                track_number=track_number,
+                                description=description,
+                        ),
+                )
+                save_library(hosted_dir, tracks)
+
+                return {
+                        "success": True,
+                        "uploaded_by": identity,
+                        "track": tracks[0].to_dict(),
+                        "stream_url": f"/media/{filename}",
+                }
 
     @app.get("/about", response_class=HTMLResponse, summary="About Papito Mamito")
     def about_page() -> HTMLResponse:
