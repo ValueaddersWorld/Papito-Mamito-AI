@@ -24,6 +24,11 @@ class PapitoSettings(BaseSettings):
 
     # ============== API Security ==============
     api_keys_raw: str | None = Field(default=None, alias="PAPITO_API_KEYS")
+    upload_tokens_raw: str | None = Field(
+        default=None,
+        alias="PAPITO_UPLOAD_TOKENS",
+        description="Comma-separated upload tokens for browser-based uploads (no custom headers).",
+    )
     api_rate_limit_per_min: int = Field(default=60, alias="PAPITO_API_RATE_LIMIT_PER_MIN")
 
     # ============== Firebase ==============
@@ -109,6 +114,16 @@ class PapitoSettings(BaseSettings):
     @property
     def api_keys_set(self) -> set[str]:
         return set(self.api_keys)
+
+    @property
+    def upload_tokens(self) -> List[str]:
+        if not self.upload_tokens_raw:
+            return []
+        return [token.strip() for token in self.upload_tokens_raw.split(",") if token.strip()]
+
+    @property
+    def upload_tokens_set(self) -> set[str]:
+        return set(self.upload_tokens)
 
     @property
     def buffer_profile_id_list(self) -> List[str]:

@@ -1142,8 +1142,14 @@ def create_app() -> FastAPI:
                 <h1 style=\"margin:0\">Upload Track</h1>
                 <a href=\"/music\">View Library</a>
             </div>
-            <p class=\"hint\">Admin-only: include an <b>X-API-Key</b> header when submitting this form (use a REST client). This page is for manual reference.</p>
+            <p class=\"hint\">Admin-only: if <b>PAPITO_API_KEYS</b> is enabled, browser uploads must include <b>Upload Token</b> (PAPITO_UPLOAD_TOKENS) or an API key. REST clients can also use the <b>X-API-Key</b> header.</p>
             <form action=\"/music/upload\" method=\"post\" enctype=\"multipart/form-data\">
+                <label>Upload Token (recommended for browser)</label>
+                <input name=\"upload_token\" placeholder=\"PAPITO_UPLOAD_TOKENS value\" />
+
+                <label>API Key (alternative)</label>
+                <input name=\"api_key\" placeholder=\"PAPITO_API_KEYS value\" />
+
                 <label>Title</label>
                 <input name=\"title\" placeholder=\"Track title\" required />
 
@@ -1170,11 +1176,6 @@ def create_app() -> FastAPI:
         @app.post("/music/upload", summary="Upload hosted track (admin)")
         async def music_upload(
                 request: Request,
-                title: str = Body(None),
-                release_title: str | None = Body(None),
-                track_number: int | None = Body(None),
-                description: str | None = Body(None),
-                identity: str = Depends(authorize),
         ) -> dict:
                 # NOTE: FastAPI's Body(...) won't parse multipart. We therefore parse form manually.
                 # This endpoint requires X-API-Key when PAPITO_API_KEYS is set.
@@ -1182,6 +1183,38 @@ def create_app() -> FastAPI:
                         raise HTTPException(status_code=500, detail="Hosted storage is not configured")
 
                 form = await request.form()
+
+                # Authorization (supports browser form without custom headers)
+                def authorize_upload(form_data) -> str:
+                    keys = settings.api_keys_set
+                    tokens = settings.upload_tokens_set
+
+                    header_key = request.headers.get("x-api-key")
+                    form_key = form_data.get("api_key")
+                    form_token = form_data.get("upload_token")
+
+                    provided = None
+                    if header_key:
+                        provided = str(header_key).strip()
+                    elif form_key:
+                        provided = str(form_key).strip()
+                    elif form_token:
+                        provided = str(form_token).strip()
+
+                    # If any auth list is configured, require a valid credential.
+                    if keys or tokens:
+                        valid = (provided in keys) or (provided in tokens)
+                        if not valid:
+                            raise HTTPException(status_code=401, detail="Invalid upload credential.")
+
+                    identity = provided or (request.client.host if request.client else "anonymous")
+                    try:
+                        rate_limiter.hit(identity)
+                    except RateLimitExceeded:
+                        raise HTTPException(status_code=429, detail="Rate limit exceeded.")
+                    return identity
+
+                identity = authorize_upload(form)
                 title = str(form.get("title") or "").strip()
                 release_title_raw = form.get("release_title")
                 release_title = str(release_title_raw).strip() if release_title_raw else None
@@ -2122,6 +2155,7 @@ def create_app() -> FastAPI:
         tags=["Twitter"],
     )
     async def twitter_post(
+        identity: str = Depends(authorize),
         text: Optional[str] = Body(None, embed=True),
         content_type: str = Body("morning_blessing", embed=True),
         generate_new: bool = Body(True, embed=True),
@@ -2181,7 +2215,9 @@ def create_app() -> FastAPI:
         summary="Post Clean Money Only promotion to Twitter",
         tags=["Twitter"],
     )
-    async def twitter_promote_single() -> dict:
+    async def twitter_promote_single(
+        identity: str = Depends(authorize),
+    ) -> dict:
         """Post a promotion for the Clean Money Only single."""
         promo_texts = [
             "🔥 NEW SINGLE COMING: 'Clean Money Only' from THE VALUE ADDERS WAY: FLOURISH MODE 💰✨\n\nThis one hits different. When you move with integrity, the universe moves with you.\n\n#CleanMoneyOnly #FlourishMode #PapitoMamito #Afrobeat",
