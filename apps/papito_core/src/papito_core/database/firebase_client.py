@@ -235,43 +235,69 @@ class FirebaseClient:
         try:
             # Check if already initialized
             _firebase_admin.get_app()
+            print("Firebase app already initialized")
         except ValueError:
             # Not initialized, do it now
             cred = None
+            
+            # Debug: Log credential sources
+            print(f"Firebase init: credentials_json present: {bool(self._credentials_json)}")
+            print(f"Firebase init: credentials_json length: {len(self._credentials_json) if self._credentials_json else 0}")
+            print(f"Firebase init: service_account_path: {self._service_account_path}")
+            print(f"Firebase init: project_id: {self._project_id}")
             
             # Priority 1: Use credentials JSON string (for cloud deployment)
             if self._credentials_json:
                 try:
                     import base64
+                    # Strip any quotes that may have been accidentally included
+                    creds_str = self._credentials_json.strip()
+                    if creds_str.startswith('"') and creds_str.endswith('"'):
+                        creds_str = creds_str[1:-1]
+                        print("Firebase init: Stripped surrounding quotes from credentials")
+                    
                     # Try to decode as base64 first
                     try:
-                        decoded = base64.b64decode(self._credentials_json).decode('utf-8')
+                        decoded = base64.b64decode(creds_str).decode('utf-8')
                         cred_dict = json.loads(decoded)
-                    except Exception:
+                        print(f"Firebase init: Successfully decoded base64 credentials, project: {cred_dict.get('project_id')}")
+                    except Exception as b64_err:
+                        print(f"Firebase init: Base64 decode failed ({b64_err}), trying raw JSON")
                         # Not base64, try as raw JSON
-                        cred_dict = json.loads(self._credentials_json)
+                        cred_dict = json.loads(creds_str)
+                        print(f"Firebase init: Successfully parsed raw JSON credentials, project: {cred_dict.get('project_id')}")
                     
                     cred = _firebase_admin.credentials.Certificate(cred_dict)
+                    print("Firebase init: Created credentials Certificate successfully")
                 except Exception as e:
-                    print(f"Warning: Failed to parse Firebase credentials JSON: {e}")
+                    # CRITICAL: Don't silently fall back to ADC if credentials were explicitly provided
+                    print(f"ERROR: Failed to parse Firebase credentials JSON: {e}")
+                    print(f"ERROR: credentials_json first 50 chars: {self._credentials_json[:50] if self._credentials_json else 'None'}")
+                    raise RuntimeError(f"Firebase credentials provided but failed to parse: {e}")
             
             # Priority 2: Use service account file path
             elif self._service_account_path:
                 cred = _firebase_admin.credentials.Certificate(self._service_account_path)
+                print(f"Firebase init: Using service account file: {self._service_account_path}")
             
             # Priority 3: Use default credentials (GOOGLE_APPLICATION_CREDENTIALS)
             # If no credentials provided, Firebase will use default
+            else:
+                print("Firebase init: No credentials provided, using Application Default Credentials")
             
             if cred:
                 _firebase_admin.initialize_app(cred, {
                     'projectId': self._project_id
                 } if self._project_id else None)
+                print("Firebase init: App initialized with explicit credentials")
             else:
                 # Use application default credentials
                 _firebase_admin.initialize_app()
+                print("Firebase init: App initialized with ADC")
         
         self._db = _firestore.client()
         self._initialized = True
+        print("Firebase init: Firestore client created successfully")
     
     @property
     def db(self):
