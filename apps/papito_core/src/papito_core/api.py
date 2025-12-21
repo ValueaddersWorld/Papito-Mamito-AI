@@ -2148,6 +2148,67 @@ def create_app() -> FastAPI:
                 "error": str(e),
                 "traceback": traceback.format_exc(),
             }
+
+    @app.get(
+        "/agent/telemetry",
+        summary="Agent telemetry (queue + recent logs)",
+        tags=["Agent"],
+    )
+    def agent_telemetry(
+        limit: int = 50,
+        identity: str = Depends(authorize),
+    ) -> dict:
+        """Operational proof endpoint.
+
+        Shows whether the autonomous worker is alive by reading recent agent logs
+        and queue stats from Firestore.
+        """
+        try:
+            from .database import get_firebase_client
+
+            db = get_firebase_client()
+            stats = db.get_queue_stats()
+            logs = db.get_recent_logs(limit=max(1, min(limit, 200)))
+
+            log_dicts = []
+            for log in logs:
+                log_dicts.append(
+                    {
+                        "created_at": log.created_at.isoformat() if log.created_at else None,
+                        "level": log.level,
+                        "action": log.action,
+                        "message": log.message,
+                        "platform": log.platform,
+                        "content_id": log.content_id,
+                    }
+                )
+
+            # Quick liveness hints
+            last_seen = None
+            last_published = None
+            for entry in log_dicts:
+                if last_seen is None and entry.get("created_at"):
+                    last_seen = entry["created_at"]
+                if last_published is None and entry.get("action") == "post_published":
+                    last_published = entry.get("created_at")
+
+            return {
+                "ok": True,
+                "requested_by": identity,
+                "queue_stats": stats,
+                "last_log_at": last_seen,
+                "last_post_published_at": last_published,
+                "recent_logs": log_dicts,
+            }
+        except Exception as e:
+            import traceback
+
+            return {
+                "ok": False,
+                "requested_by": identity,
+                "error": str(e),
+                "traceback": traceback.format_exc(),
+            }
     
     @app.post(
         "/twitter/post",
