@@ -2210,6 +2210,26 @@ def create_app() -> FastAPI:
                 "traceback": traceback.format_exc(),
             }
     
+    @app.get(
+        "/agent/debug-env",
+        summary="Debug environment variables (temporary)",
+        tags=["Agent"],
+    )
+    def debug_env(identity: str = Depends(authorize)) -> dict:
+        """Debug endpoint to check raw environment variable values."""
+        import os
+        
+        firebase_creds = os.environ.get("FIREBASE_CREDENTIALS_JSON", "")
+        
+        return {
+            "FIREBASE_CREDENTIALS_JSON_present": bool(firebase_creds),
+            "FIREBASE_CREDENTIALS_JSON_length": len(firebase_creds) if firebase_creds else 0,
+            "FIREBASE_CREDENTIALS_JSON_first_50": firebase_creds[:50] if firebase_creds else None,
+            "FIREBASE_PROJECT_ID": os.environ.get("FIREBASE_PROJECT_ID"),
+            "settings_firebase_creds_present": bool(get_settings().firebase_credentials_json),
+            "settings_firebase_creds_length": len(get_settings().firebase_credentials_json) if get_settings().firebase_credentials_json else 0,
+        }
+    
     @app.post(
         "/twitter/post",
         summary="Post directly to Twitter",
