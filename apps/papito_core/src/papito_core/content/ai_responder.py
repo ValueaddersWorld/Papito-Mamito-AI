@@ -78,7 +78,7 @@ Your speaking style:
 - Use affirmations and uplifting language
 - Include occasional African proverbs or wisdom
 - Express gratitude freely ("Blessings!", "I appreciate you!")
-- Use emojis sparingly but effectively (🙏✨🎵💫)
+- Use emojis SPARINGLY - maximum one per response, or none. Professionalism over decoration.
 - Keep responses warm but concise
 - Never be negative, preachy, or condescending
 
@@ -283,7 +283,7 @@ Your music uplifts, your words heal, your presence inspires."""
     def _build_prompt(self, context: ResponseContext) -> str:
         """Build the prompt for AI generation."""
         platform_note = {
-            "instagram": "Keep it warm and use appropriate emojis. Max 500 characters.",
+            "instagram": "Keep it warm but professional. Max 500 characters. One emoji max or none.",
             "x": "Be concise - max 280 characters. Can include relevant hashtag.",
             "dm": "Be personal and helpful. Can be longer if needed."
         }.get(context.platform, "Keep it conversational and warm.")
@@ -313,27 +313,28 @@ Respond directly without any preamble or explanation - just the response text.""
     
     def _generate_template(self, context: ResponseContext) -> str:
         """Generate a template response when AI is unavailable."""
+        # Minimal emoji templates (0-1 emoji per response)
         templates = {
             Sentiment.POSITIVE: [
-                f"Blessings, {context.sender_name}! 🙏 Your love fuels the movement! Thank you for being part of the Value Adders family! ✨",
-                f"Ah, {context.sender_name}! Your words mean everything! We rise together! 💫",
-                f"Family! 🙌 {context.sender_name} coming through with the love! We appreciate you! 🎵"
+                f"Blessings, {context.sender_name}. Your love fuels the movement. Thank you for being part of the Value Adders family",
+                f"{context.sender_name}, your words mean everything. We rise together 🙏",
+                f"{context.sender_name} coming through with the love. We appreciate you"
             ],
             Sentiment.NEGATIVE: [
-                f"Peace and blessings, {context.sender_name} 🙏 Every perspective is valued. Let's keep adding value together! ✨",
-                f"I hear you, {context.sender_name}. In the spirit of growth, I appreciate the feedback! 💫"
+                f"Peace and blessings, {context.sender_name}. Every perspective is valued. Let's keep adding value together",
+                f"I hear you, {context.sender_name}. In the spirit of growth, I appreciate the feedback 🙏"
             ],
             Sentiment.QUESTION: [
-                f"Great question, {context.sender_name}! 🙏 Appreciate you reaching out. Blessings! ✨",
-                f"Ah, {context.sender_name}! Love the curiosity! Stay tuned for more! 💫"
+                f"Great question, {context.sender_name}. Appreciate you reaching out",
+                f"{context.sender_name}, love the curiosity. Stay tuned for more 🙏"
             ],
             Sentiment.REQUEST: [
-                f"Blessings, {context.sender_name}! 🙏 Your support means everything. Will definitely keep this in mind! ✨",
-                f"I appreciate you, {context.sender_name}! The family is growing! 💫"
+                f"Blessings, {context.sender_name}. Your support means everything. Will definitely keep this in mind",
+                f"I appreciate you, {context.sender_name}. The family is growing 🙏"
             ],
             Sentiment.NEUTRAL: [
-                f"Blessings, {context.sender_name}! 🙏 Grateful for your presence! Let's keep adding value! ✨",
-                f"Family! 🎵 {context.sender_name} in the building! Appreciate you! 💫"
+                f"Blessings, {context.sender_name}. Grateful for your presence. Let's keep adding value",
+                f"{context.sender_name} in the building. Appreciate you 🙏"
             ]
         }
         

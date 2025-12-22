@@ -88,22 +88,22 @@ class PapitoPersonality:
         "Afrobeat is the heartbeat",
     ])
     
-    # Greeting variations
+    # Greeting variations (minimal emoji - 0 to 1 per greeting)
     greetings: List[str] = field(default_factory=lambda: [
-        "Blessings, {name}! 🌟",
-        "Hey {name}! So grateful to connect with you 🙏",
-        "{name}! You're valued here 💪",
-        "Welcome to the family, {name}! 🎵",
-        "Much love, {name}! 🔥",
+        "Blessings, {name}",
+        "Hey {name}! Grateful to connect with you",
+        "{name}! You're valued here",
+        "Welcome to the family, {name}",
+        "Much love, {name} 🙏",
     ])
     
-    # Thank you variations
+    # Thank you variations (minimal emoji - 0 to 1 per response)
     thank_yous: List[str] = field(default_factory=lambda: [
-        "Your support means everything! 🙏",
-        "We flourish because of supporters like you! ✨",
-        "Grateful for you being part of this journey! 💪",
-        "This is exactly why we create - for beautiful souls like you! 🌟",
-        "Your energy fuels the music! 🔥",
+        "Your support means everything",
+        "We flourish because of supporters like you",
+        "Grateful for you being part of this journey 🙏",
+        "This is exactly why we create - for beautiful souls like you",
+        "Your energy fuels the music",
     ])
 
 
@@ -168,7 +168,7 @@ RESPONSE GUIDELINES:
 1. Keep responses concise but warm
 2. Always acknowledge the person by name if available
 3. Focus on adding value - inspiration, gratitude, or helpful insight
-4. Include relevant emojis (🌟 💪 🎵 🔥 🙏) but don't overdo it
+4. Use MINIMAL emojis - maximum ONE emoji per response, or none at all. Professionalism over decoration.
 5. For new followers: Welcome them warmly to the "Value Adders" family
 6. For feedback: Show genuine gratitude and openness
 7. Never be defensive or dismissive
@@ -340,30 +340,31 @@ Context: {context.value}""")
         """Generate a template-based fallback response."""
         name = fan_name or "friend"
         
+        # Template responses with minimal emojis (0-1 per response)
         templates = {
             ResponseContext.NEW_FOLLOWER: [
-                f"{self._get_greeting(name)} Welcome to the family! We flourish together 🌟",
-                f"Blessings, {name}! So grateful to have you here. Add Value. We Flourish & Prosper. 💪",
+                f"{self._get_greeting(name)} Welcome to the family. We flourish together",
+                f"Blessings, {name}. Grateful to have you here. Add Value. We Flourish & Prosper.",
             ],
             ResponseContext.FAN_COMMENT: [
-                f"{self._get_thank_you()} Much love, {name}! 🙏",
-                f"Grateful for you, {name}! Your energy adds to the music 🎵",
+                f"{self._get_thank_you()} Much love, {name}",
+                f"Grateful for you, {name}. Your energy adds to the music 🙏",
             ],
             ResponseContext.MENTION: [
-                f"Thank you for the shoutout, {name}! We flourish together 🔥",
-                f"Appreciate you, {name}! Blessings to you and yours 🌟",
+                f"Thank you for the shoutout, {name}. We flourish together",
+                f"Appreciate you, {name}. Blessings to you and yours",
             ],
             ResponseContext.DM: [
-                f"Hey {name}! Thanks for reaching out. You're valued here 💪",
-                f"Blessings, {name}! Grateful you took time to connect 🙏",
+                f"Hey {name}. Thanks for reaching out. You're valued here",
+                f"Blessings, {name}. Grateful you took time to connect 🙏",
             ],
             ResponseContext.QUESTION: [
-                f"Great question, {name}! Music is our journey together 🎵",
-                f"Thanks for asking, {name}! Creating with purpose, always 🌟",
+                f"Great question, {name}. Music is our journey together",
+                f"Thanks for asking, {name}. Creating with purpose, always",
             ],
             ResponseContext.FEEDBACK: [
-                f"This means everything, {name}! Your feedback shapes the music 🙏",
-                f"Grateful for your thoughts, {name}! We grow together 💪",
+                f"This means everything, {name}. Your feedback shapes the music",
+                f"Grateful for your thoughts, {name}. We grow together 🙏",
             ],
         }
         
