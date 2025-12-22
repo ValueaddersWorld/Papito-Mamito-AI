@@ -189,13 +189,29 @@ class AutonomousAgent:
         # Check if it's time to post based on scheduler
         posting_slot = self.scheduler.should_post_now(tolerance_minutes=10)
         
-        if posting_slot and self._should_run(f"slot_{posting_slot.hour}", minutes=90):
-            # Generate content for this slot
-            content_type = self.scheduler.select_content_type(posting_slot)
-            self._generate_scheduled_content(content_type, posting_slot.platforms)
-        
+        try:
+            if posting_slot and self._should_run(f"slot_{posting_slot.hour}", minutes=90):
+                # Generate content for this slot
+                content_type = self.scheduler.select_content_type(posting_slot)
+                self._generate_scheduled_content(content_type, posting_slot.platforms)
+        except Exception as e:
+            self.log_action(
+                "scheduled_content_error",
+                f"Scheduled content generation failed: {e}",
+                level="error",
+                details={"error": str(e)},
+            )
+
         # Publish approved content
-        self._publish_ready_content()
+        try:
+            self._publish_ready_content()
+        except Exception as e:
+            self.log_action(
+                "publish_ready_content_error",
+                f"Publishing ready content failed: {e}",
+                level="error",
+                details={"error": str(e)},
+            )
 
         # === Active X engagement (growth loop) ===
         # These tasks do NOT depend on external webhooks; they pull from X directly
@@ -206,6 +222,10 @@ class AutonomousAgent:
         if self._should_run("x_afrobeat_engagement", minutes=240):
             self._run_x_afrobeat_engagement()
 
+        # Growth Blitz (hand-to-hand combat): run ~3x/day.
+        if self._should_run("x_growth_blitz", minutes=480):
+            self._run_x_growth_blitz()
+
         if self._should_run("x_welcome_followers", minutes=720):
             self._welcome_new_x_followers()
 
@@ -214,11 +234,27 @@ class AutonomousAgent:
         
         # Check for fan interactions (hourly)
         if self._should_run("check_interactions", minutes=60):
-            self._check_and_respond_to_interactions()
+            try:
+                self._check_and_respond_to_interactions()
+            except Exception as e:
+                self.log_action(
+                    "check_interactions_error",
+                    f"Interaction check failed: {e}",
+                    level="error",
+                    details={"error": str(e)},
+                )
         
         # Collect analytics (every 4 hours)
         if self._should_run("collect_analytics", minutes=240):
-            self._collect_analytics()
+            try:
+                self._collect_analytics()
+            except Exception as e:
+                self.log_action(
+                    "collect_analytics_error",
+                    f"Analytics collection failed: {e}",
+                    level="error",
+                    details={"error": str(e)},
+                )
 
     def _process_x_mentions(self) -> None:
         """Process and respond to @mentions on X.
@@ -280,6 +316,44 @@ class AutonomousAgent:
             self.log_action(
                 "x_engagement_error",
                 f"Afrobeat engagement failed: {e}",
+                level="error",
+                platform="x",
+                details={"error": str(e)},
+            )
+
+    def _run_x_growth_blitz(self) -> None:
+        """Run the Growth Blitz engagement session on X."""
+        try:
+            from ..engagement import get_growth_blitz
+
+            blitz = get_growth_blitz()
+            if not blitz.connect():
+                self.log_action(
+                    "x_growth_blitz_not_connected",
+                    "GrowthBlitz not connected (check X credentials / permissions)",
+                    level="warning",
+                    platform="x",
+                )
+                return
+
+            stats = blitz.run_blitz()
+            details = stats.to_dict() if hasattr(stats, "to_dict") else {"stats": str(stats)}
+            self.log_action(
+                "x_growth_blitz",
+                (
+                    "Growth blitz complete: "
+                    f"follows {details.get('follows_succeeded', 0)}/{details.get('follows_attempted', 0)}, "
+                    f"replies {details.get('replies_sent', 0)}, "
+                    f"likes {details.get('likes_given', 0)}, "
+                    f"quotes {details.get('quote_tweets', 0)}"
+                ),
+                platform="x",
+                details=details,
+            )
+        except Exception as e:
+            self.log_action(
+                "x_growth_blitz_error",
+                f"Growth blitz failed: {e}",
                 level="error",
                 platform="x",
                 details={"error": str(e)},
@@ -724,15 +798,16 @@ class AutonomousAgent:
                     platform=interaction.platform,
                 )
                 
-                # For very negative sentiment, flag for human review
+                # For very negative sentiment, log it but still respond with empathy
+                # An autonomous agent should handle ALL interactions
                 if sentiment == Sentiment.VERY_NEGATIVE:
                     self.log_action(
-                        "response_needs_review",
-                        f"Negative sentiment from {interaction.fan_username} - flagging for review",
+                        "handling_negative_sentiment",
+                        f"Negative sentiment from {interaction.fan_username} - responding with empathy",
                         interaction_id=interaction.id,
                         details={"sentiment": sentiment.value, "tier": fan.tier}
                     )
-                    continue
+                    # Note: We continue to send the response - AI personality handles negative sentiment appropriately
                 
                 # Send the response
                 result = self._send_response(
@@ -862,7 +937,7 @@ class AutonomousAgent:
                 platform="x"
             )
         
-        if self.settings.buffer_access_token:
+        if self.settings.has_buffer_credentials():
             connections["buffer"] = self.buffer.connect()
             self.log_action(
                 "platform_connected" if connections["buffer"] else "platform_failed",

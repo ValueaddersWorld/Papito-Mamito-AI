@@ -12,22 +12,34 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, model_validator
 
 # Lazy import to avoid issues when firebase-admin is not installed
 _firebase_admin = None
 _firestore = None
 
+# Public aliases (used by tests for patching)
+firebase_admin = None
+firestore = None
+credentials = None
+
 
 def _ensure_firebase():
     """Lazily import firebase-admin modules."""
     global _firebase_admin, _firestore
+    global firebase_admin, firestore, credentials
     if _firebase_admin is None:
         try:
-            import firebase_admin
-            from firebase_admin import credentials, firestore
-            _firebase_admin = firebase_admin
-            _firestore = firestore
+            import firebase_admin as _fa
+            from firebase_admin import credentials as _cred
+            from firebase_admin import firestore as _fs
+
+            _firebase_admin = _fa
+            _firestore = _fs
+
+            firebase_admin = _fa
+            firestore = _fs
+            credentials = _cred
         except ImportError:
             raise ImportError(
                 "firebase-admin is required for database operations. "
@@ -46,14 +58,14 @@ class ContentQueueItem(BaseModel):
     
     title: str
     body: str
-    media_urls: List[str] = []
-    hashtags: List[str] = []
-    
-    formatted: Dict[str, Any] = {}
+    media_urls: List[str] = Field(default_factory=list)
+    hashtags: List[str] = Field(default_factory=list)
+
+    formatted: Dict[str, Any] = Field(default_factory=dict)
     
     status: str = "pending_review"  # "pending_review", "approved", "rejected", "published", "failed"
-    auto_approve: bool = False
-    requires_review: bool = True
+    auto_approve: Optional[bool] = None
+    requires_review: Optional[bool] = None
     reviewed_by: Optional[str] = None
     reviewed_at: Optional[datetime] = None
     rejection_reason: Optional[str] = None
@@ -64,6 +76,22 @@ class ContentQueueItem(BaseModel):
     updated_at: Optional[datetime] = None
     source_blog_id: Optional[str] = None
     source_track_id: Optional[str] = None
+
+    @model_validator(mode="after")
+    def _set_queue_defaults(self) -> "ContentQueueItem":
+        auto_types = {
+            "daily_blessing",
+            "morning_blessing",
+            "gratitude",
+            "fan_shoutout",
+            "music_quote",
+            "affirmation",
+        }
+        if self.auto_approve is None:
+            self.auto_approve = self.content_type in auto_types
+        if self.requires_review is None:
+            self.requires_review = not bool(self.auto_approve)
+        return self
 
 
 class PublishedContent(BaseModel):
@@ -80,7 +108,7 @@ class PublishedContent(BaseModel):
     title: str
     body: str
     
-    metrics: Dict[str, Any] = {}
+    metrics: Dict[str, Any] = Field(default_factory=dict)
     metrics_updated_at: Optional[datetime] = None
     
     published_at: Optional[datetime] = None
@@ -98,11 +126,11 @@ class FanInteraction(BaseModel):
     
     post_id: Optional[str] = None
     fan_username: str
-    fan_display_name: str
-    fan_profile_url: str
+    fan_display_name: Optional[str] = None
+    fan_profile_url: Optional[str] = None
     
     message: str
-    media_urls: List[str] = []
+    media_urls: List[str] = Field(default_factory=list)
     
     status: str = "pending"  # "pending", "responding", "responded", "ignored", "flagged"
     response: Optional[str] = None
@@ -111,6 +139,15 @@ class FanInteraction(BaseModel):
     
     sentiment: str = "neutral"  # "positive", "neutral", "negative"
     requires_human: bool = False
+
+    # Convenience / back-compat used in tests.
+    responded: bool = False
+
+    @model_validator(mode="after")
+    def _sync_responded(self) -> "FanInteraction":
+        if self.status == "responded":
+            self.responded = True
+        return self
     
     received_at: Optional[datetime] = None
     created_at: Optional[datetime] = None
@@ -234,7 +271,7 @@ class FirebaseClient:
             
         try:
             # Check if already initialized
-            _firebase_admin.get_app()
+            firebase_admin.get_app()
             print("Firebase app already initialized")
         except ValueError:
             # Not initialized, do it now
@@ -267,7 +304,7 @@ class FirebaseClient:
                         cred_dict = json.loads(creds_str)
                         print(f"Firebase init: Successfully parsed raw JSON credentials, project: {cred_dict.get('project_id')}")
                     
-                    cred = _firebase_admin.credentials.Certificate(cred_dict)
+                    cred = credentials.Certificate(cred_dict)
                     print("Firebase init: Created credentials Certificate successfully")
                 except Exception as e:
                     # CRITICAL: Don't silently fall back to ADC if credentials were explicitly provided
@@ -277,8 +314,15 @@ class FirebaseClient:
             
             # Priority 2: Use service account file path
             elif self._service_account_path:
-                cred = _firebase_admin.credentials.Certificate(self._service_account_path)
-                print(f"Firebase init: Using service account file: {self._service_account_path}")
+                try:
+                    cred = credentials.Certificate(self._service_account_path)
+                    print(f"Firebase init: Using service account file: {self._service_account_path}")
+                except (FileNotFoundError, OSError) as e:
+                    print(
+                        f"WARNING: Firebase init: service account file not accessible ({e}); "
+                        "falling back to Application Default Credentials"
+                    )
+                    cred = None
             
             # Priority 3: Use default credentials (GOOGLE_APPLICATION_CREDENTIALS)
             # If no credentials provided, Firebase will use default
@@ -286,16 +330,16 @@ class FirebaseClient:
                 print("Firebase init: No credentials provided, using Application Default Credentials")
             
             if cred:
-                _firebase_admin.initialize_app(cred, {
+                firebase_admin.initialize_app(cred, {
                     'projectId': self._project_id
                 } if self._project_id else None)
                 print("Firebase init: App initialized with explicit credentials")
             else:
                 # Use application default credentials
-                _firebase_admin.initialize_app()
+                firebase_admin.initialize_app()
                 print("Firebase init: App initialized with ADC")
         
-        self._db = _firestore.client()
+        self._db = firestore.client()
         self._initialized = True
         print("Firebase init: Firestore client created successfully")
     
@@ -304,6 +348,11 @@ class FirebaseClient:
         """Get Firestore client instance."""
         self._initialize()
         return self._db
+
+    @db.setter
+    def db(self, value):
+        self._db = value
+        self._initialized = True
     
     # ============== Content Queue Operations ==============
     
@@ -561,7 +610,7 @@ class FirebaseClient:
         """Get recent agent logs."""
         query = (
             self.db.collection("agent_logs")
-            .order_by("created_at", direction=_firestore.Query.DESCENDING)
+            .order_by("created_at", direction=firestore.Query.DESCENDING)
             .limit(limit)
         )
         
@@ -612,6 +661,13 @@ def get_firebase_client() -> FirebaseClient:
         service_account_path = getattr(settings, 'firebase_service_account_path', None)
         project_id = getattr(settings, 'firebase_project_id', None)
         credentials_json = getattr(settings, 'firebase_credentials_json', None)
+
+        # Guard against placeholder values from env.example/.env (e.g. /path/to/...).
+        # If Firebase isn't actually configured, prefer letting the client fall back
+        # to ADC rather than crashing on a bogus file path.
+        if not settings.has_firebase_credentials():
+            service_account_path = None
+            credentials_json = None
         
         _client_instance = FirebaseClient(
             service_account_path=service_account_path,

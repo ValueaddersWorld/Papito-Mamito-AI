@@ -24,20 +24,20 @@ class InstagramContent:
     def get_full_caption(self, max_length: int = 2200) -> str:
         """Get caption with hashtags, respecting length limit."""
         hashtag_str = " ".join(f"#{tag}" for tag in self.hashtags)
-        
-        # Add hashtags at end with spacing
-        if hashtag_str:
-            full = f"{self.caption}\n\n.\n.\n.\n{hashtag_str}"
-        else:
-            full = self.caption
-        
-        if len(full) > max_length:
-            # Truncate caption to fit
-            allowed = max_length - len(hashtag_str) - 10
-            truncated = self.caption[:allowed].rsplit(" ", 1)[0] + "..."
-            return f"{truncated}\n\n.\n.\n.\n{hashtag_str}"
-        
-        return full
+
+        suffix = f"\n\n.\n.\n.\n{hashtag_str}" if hashtag_str else ""
+        full = f"{self.caption}{suffix}"
+
+        if len(full) <= max_length:
+            return full
+
+        reserve = len(suffix) + 3  # ellipsis
+        allowed = max(max_length - reserve, 0)
+        base = self.caption[:allowed].rstrip()
+        if base and " " in base:
+            base = base.rsplit(" ", 1)[0]
+        truncated = f"{base}..." if base else "..."
+        return f"{truncated}{suffix}"
 
 
 @dataclass

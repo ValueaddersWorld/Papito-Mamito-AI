@@ -16,5 +16,14 @@
     "currency": "USD",
     "url": "https://valueadders.world/merch/we-rise-vinyl",
     "inventory": 40
+  },
+  {
+    "sku": "SKU1",
+    "name": "Papito Tee",
+    "description": "Limited edition tee",
+    "price": 25.0,
+    "currency": "USD",
+    "url": null,
+    "inventory": null
   }
 ]

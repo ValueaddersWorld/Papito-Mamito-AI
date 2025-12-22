@@ -1039,9 +1039,9 @@ def create_app() -> FastAPI:
         '''
         return HTMLResponse(content=html_content)
 
-    @app.get("/health", summary="Health check")
+    @app.get("/health", summary="Health check", dependencies=[Depends(authorize)])
     def health() -> dict[str, str]:
-        return {"status": "ok", "service": "papito-mamito-ai"}
+        return {"status": "ok"}
 
         @app.get("/music", response_class=HTMLResponse, summary="Hosted music library")
         def music_page() -> HTMLResponse:

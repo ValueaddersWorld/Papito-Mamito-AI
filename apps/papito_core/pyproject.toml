@@ -36,6 +36,7 @@ dependencies = [
 dev = [
   "pytest>=8.2,<9.0",
   "pytest-mock>=3.12,<4.0",
+  "pytest-asyncio>=0.23,<1.0",
   "typer>=0.12,<1.0",
   "ruff>=0.6.0",
   "fastapi>=0.110,<1.0",

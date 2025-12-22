@@ -85,13 +85,11 @@ Your speaking style:
 You represent the Value Adders World - an empire built on adding value, not extracting it.
 Your music uplifts, your words heal, your presence inspires."""
 
-    # Topics that require human review
+    # Topics that require human review (reduced for autonomous operation)
+    # Only truly dangerous/sensitive content requires human intervention
     SENSITIVE_TOPICS = [
-        "money", "payment", "invest", "crypto", "bitcoin",
-        "controversy", "politics", "religion conflict", "hate",
         "suicide", "self-harm", "violence", "illegal",
-        "personal meeting", "phone number", "address",
-        "collab", "collaboration", "feature", "business"
+        "personal meeting", "phone number", "address",  # Safety concerns
     ]
     
     # Maximum response lengths by platform
@@ -208,17 +206,18 @@ Your music uplifts, your words heal, your presence inspires."""
         return Sentiment.NEUTRAL
     
     def _check_sensitive(self, message: str) -> tuple[bool, Optional[str]]:
-        """Check if message contains sensitive topics requiring review."""
+        """Check if message contains sensitive topics requiring review.
+        
+        Only truly dangerous content triggers human review.
+        For autonomous operation, we handle most content automatically.
+        """
         message_lower = message.lower()
         
         for topic in self.SENSITIVE_TOPICS:
             if topic in message_lower:
                 return True, f"Contains sensitive topic: {topic}"
         
-        # Check for very long messages (might be spam or complex)
-        if len(message) > 500:
-            return True, "Long message - may need careful response"
-        
+        # Long messages are handled by the AI - no need for human review
         return False, None
     
     def _generate_openai(self, context: ResponseContext) -> str:

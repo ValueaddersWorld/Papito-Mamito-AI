@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from functools import lru_cache
+import os
 from typing import List, Optional
 
 from pydantic import Field
@@ -11,6 +12,23 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class PapitoSettings(BaseSettings):
     """Runtime configuration loaded from environment variables."""
+
+    @staticmethod
+    def _looks_like_placeholder(value: str | None) -> bool:
+        if value is None:
+            return True
+        cleaned = value.strip()
+        if not cleaned:
+            return True
+        lowered = cleaned.lower()
+        placeholder_markers = (
+            "your_",
+            "...",
+            "path/to/",
+            "changeme",
+            "todo",
+        )
+        return any(marker in lowered for marker in placeholder_markers)
 
     # ============== Public URLs ==============
     # Used for bios, press releases, and links shared in posts.
@@ -134,29 +152,77 @@ class PapitoSettings(BaseSettings):
 
     def has_instagram_credentials(self) -> bool:
         """Check if Instagram API credentials are configured."""
-        return bool(self.instagram_access_token and self.instagram_business_id)
+        return bool(
+            self.instagram_access_token
+            and self.instagram_business_id
+            and not self._looks_like_placeholder(self.instagram_access_token)
+            and not self._looks_like_placeholder(self.instagram_business_id)
+        )
 
     def has_x_credentials(self) -> bool:
         """Check if X/Twitter API credentials are configured."""
         return bool(
-            self.x_api_key and 
-            self.x_api_secret and 
-            self.x_access_token and 
-            self.x_access_token_secret
+            self.x_api_key
+            and self.x_api_secret
+            and self.x_access_token
+            and self.x_access_token_secret
+            and not self._looks_like_placeholder(self.x_api_key)
+            and not self._looks_like_placeholder(self.x_api_secret)
+            and not self._looks_like_placeholder(self.x_access_token)
+            and not self._looks_like_placeholder(self.x_access_token_secret)
         )
 
     def has_firebase_credentials(self) -> bool:
         """Check if Firebase credentials are configured."""
-        return bool(self.firebase_service_account_path or self.firebase_credentials_json)
+        return bool(
+            (
+                self.firebase_service_account_path
+                and not self._looks_like_placeholder(self.firebase_service_account_path)
+            )
+            or (
+                self.firebase_credentials_json
+                and not self._looks_like_placeholder(self.firebase_credentials_json)
+            )
+        )
 
     def has_ai_credentials(self) -> bool:
         """Check if any AI API credentials are configured."""
-        return bool(self.openai_api_key or self.anthropic_api_key)
+        return bool(
+            (self.openai_api_key and not self._looks_like_placeholder(self.openai_api_key))
+            or (self.anthropic_api_key and not self._looks_like_placeholder(self.anthropic_api_key))
+        )
+
+    def has_openai_credentials(self) -> bool:
+        return bool(self.openai_api_key and not self._looks_like_placeholder(self.openai_api_key))
+
+    def has_anthropic_credentials(self) -> bool:
+        return bool(self.anthropic_api_key and not self._looks_like_placeholder(self.anthropic_api_key))
+
+    def has_buffer_credentials(self) -> bool:
+        return bool(
+            (self.buffer_access_token and not self._looks_like_placeholder(self.buffer_access_token))
+            or (self.buffer_webhook_url and not self._looks_like_placeholder(self.buffer_webhook_url))
+        )
+
+    def has_telegram_credentials(self) -> bool:
+        return bool(
+            self.telegram_bot_token
+            and self.telegram_chat_id
+            and not self._looks_like_placeholder(self.telegram_bot_token)
+            and not self._looks_like_placeholder(self.telegram_chat_id)
+        )
+
+    def has_discord_credentials(self) -> bool:
+        return bool(self.discord_webhook_url and not self._looks_like_placeholder(self.discord_webhook_url))
 
 
 @lru_cache(maxsize=1)
 def get_settings() -> PapitoSettings:
     """Return cached settings instance."""
 
+    # Pytest sets PYTEST_CURRENT_TEST; avoid loading real .env during tests.
+    # Also allow explicit opt-out via PAPITO_DISABLE_ENV_FILE=1.
+    if os.getenv("PYTEST_CURRENT_TEST") or os.getenv("PAPITO_DISABLE_ENV_FILE") == "1":
+        return PapitoSettings(_env_file=None)
     return PapitoSettings()
 

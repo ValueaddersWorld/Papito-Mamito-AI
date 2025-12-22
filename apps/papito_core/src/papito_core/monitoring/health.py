@@ -328,7 +328,12 @@ class AlertManager:
         
         # Auto-notify for critical alerts
         if severity in (AlertSeverity.ERROR, AlertSeverity.CRITICAL):
-            asyncio.create_task(self.notify(alert))
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+            if loop is not None and not loop.is_closed():
+                loop.create_task(self.notify(alert))
         
         return alert
     

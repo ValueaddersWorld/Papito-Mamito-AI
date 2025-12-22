@@ -20,14 +20,16 @@ from ..database import get_firebase_client, ContentQueueItem
 class ContentCategory(str, Enum):
     """Categories of content with different approval requirements."""
     
-    # Auto-approve categories (80%)
+    # Auto-approve categories (now ~95% for full autonomy)
     DAILY_BLESSING = "daily_blessing"
     GRATITUDE = "gratitude"
     FAN_SHOUTOUT = "fan_shoutout"
     MUSIC_QUOTE = "music_quote"
     AFFIRMATION = "affirmation"
+    MUSIC_PROMOTION = "music_promotion"  # Auto-approve for autonomous operation
+    ENGAGEMENT = "engagement"  # Auto-approve for autonomous operation
     
-    # Manual review categories (20%)
+    # Manual review categories (minimal - only truly sensitive)
     NEW_RELEASE = "new_release"
     COLLABORATION = "collaboration"
     ANNOUNCEMENT = "announcement"
@@ -79,13 +81,15 @@ class ReviewQueue:
     Sends notifications via Telegram or Discord when manual review is needed.
     """
     
-    # Categories that auto-approve
+    # Categories that auto-approve (expanded for full autonomy)
     AUTO_APPROVE_CATEGORIES = {
         ContentCategory.DAILY_BLESSING,
         ContentCategory.GRATITUDE,
         ContentCategory.FAN_SHOUTOUT,
         ContentCategory.MUSIC_QUOTE,
         ContentCategory.AFFIRMATION,
+        ContentCategory.MUSIC_PROMOTION,  # Enable autonomous music content
+        ContentCategory.ENGAGEMENT,  # Enable autonomous engagement content
     }
     
     def __init__(self):
@@ -158,10 +162,14 @@ class ReviewQueue:
         return item_id
     
     def _should_auto_approve(self, category: Optional[ContentCategory]) -> bool:
-        """Determine if content should auto-approve."""
+        """Determine if content should auto-approve.
+        
+        For full autonomous operation, default to auto-approve unless
+        the category is explicitly in the manual review list.
+        """
         if category is None:
-            # Default to requiring review for unknown categories
-            return False
+            # Default to auto-approve for autonomous operation
+            return True
         
         return category in self.AUTO_APPROVE_CATEGORIES
     

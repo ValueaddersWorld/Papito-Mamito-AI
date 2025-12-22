@@ -705,6 +705,45 @@ app.add_typer(agent_app, name="agent")
 app.add_typer(queue_app, name="queue")
 
 
+@app.command("post-now")
+def post_now(
+    content_type: str = typer.Option(
+        "morning_blessing",
+        "--content-type",
+        help="Content type to generate and publish immediately (e.g. morning_blessing, music_wisdom, fan_appreciation).",
+    ),
+) -> None:
+    """Generate and publish one post immediately using the autonomous scheduler."""
+
+    try:
+        from .automation.autonomous_scheduler import get_scheduler
+    except ImportError as exc:
+        console.print(f"[red]Missing dependencies:[/red] {exc}")
+        raise typer.Exit(1)
+
+    async def _run() -> None:
+        scheduler = get_scheduler()
+        result = await scheduler.trigger_post_now(content_type)
+        if result.get("posted"):
+            console.print("[green]✓ Posted successfully[/green]")
+            tweet_url = result.get("tweet_url")
+            if tweet_url:
+                console.print(tweet_url)
+        else:
+            console.print("[yellow]Post generated but not published.[/yellow]")
+            error = result.get("error")
+            if error:
+                console.print(f"[red]{error}[/red]")
+
+    try:
+        import asyncio
+
+        asyncio.run(_run())
+    except Exception as exc:
+        console.print(f"[red]Post-now failed:[/red] {exc}")
+        raise typer.Exit(1)
+
+
 @agent_app.command("start")
 def agent_start(
     interval: int = typer.Option(60, help="Seconds between agent iterations."),
@@ -786,11 +825,11 @@ def agent_status() -> None:
         ("Firebase", settings.has_firebase_credentials()),
         ("Instagram", settings.has_instagram_credentials()),
         ("X / Twitter", settings.has_x_credentials()),
-        ("Buffer", bool(settings.buffer_access_token)),
-        ("OpenAI", bool(settings.openai_api_key)),
-        ("Anthropic", bool(settings.anthropic_api_key)),
-        ("Telegram", bool(settings.telegram_bot_token)),
-        ("Discord", bool(settings.discord_webhook_url)),
+        ("Buffer", settings.has_buffer_credentials()),
+        ("OpenAI", settings.has_openai_credentials()),
+        ("Anthropic", settings.has_anthropic_credentials()),
+        ("Telegram", settings.has_telegram_credentials()),
+        ("Discord", settings.has_discord_credentials()),
     ]
     
     for name, configured in checks:
