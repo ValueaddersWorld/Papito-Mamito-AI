@@ -51,6 +51,9 @@ api = [
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+"papito_core" = ["templates/*.html"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py310"
