@@ -204,7 +204,18 @@ def create_app() -> FastAPI:
 
     @app.get("/", response_class=HTMLResponse, summary="Welcome - Papito Mamito API")
     def root() -> HTMLResponse:
-        """Root endpoint showing beautiful landing page."""
+        """Root endpoint showing beautiful 3D animated landing page."""
+        # Try to load the 3D landing page template
+        template_path = Path(__file__).parent / "templates" / "landing_3d.html"
+        
+        try:
+            if template_path.exists():
+                html_content = template_path.read_text(encoding="utf-8")
+                return HTMLResponse(content=html_content)
+        except Exception as e:
+            logger.warning(f"Failed to load 3D template: {e}")
+        
+        # Fallback to inline HTML if template not found
         from datetime import datetime
         
         # Calculate album countdown
