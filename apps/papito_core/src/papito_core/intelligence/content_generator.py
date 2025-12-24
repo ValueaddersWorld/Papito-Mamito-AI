@@ -109,14 +109,33 @@ class PapitoContext:
         now = self.current_date
         month_day = (now.month, now.day)
         
+        # Comprehensive special dates calendar
         special_dates = {
+            # January
             (1, 1): "New Year's Day",
             (1, 15): "Album Release Day",  # Papito's album
+            (1, 20): "Martin Luther King Jr. Day",
+            # February
+            (2, 14): "Valentine's Day",
+            # March/April - Easter varies, handled separately
+            # May
+            (5, 1): "Workers' Day",
+            # June
+            (6, 12): "Nigeria Democracy Day",
+            (6, 19): "Juneteenth",
+            # July
+            (7, 4): "Independence Day",
+            # October
             (10, 1): "Nigerian Independence Day",
-            (12, 25): "Christmas",
+            (10, 31): "Halloween",
+            # November
+            (11, 11): "Veterans Day",
+            # December - Holiday Season
+            (12, 21): "Winter Solstice",
+            (12, 24): "Christmas Eve",
+            (12, 25): "Christmas Day",
             (12, 26): "Boxing Day",
             (12, 31): "New Year's Eve",
-            # Add more as needed
         }
         
         if month_day in special_dates:
@@ -124,9 +143,15 @@ class PapitoContext:
             self.special_day_name = special_dates[month_day]
         
         # Check if it's Friday (special for music releases)
-        if self.day_of_week == "Friday":
+        if self.day_of_week == "Friday" and not self.is_special_day:
             self.is_special_day = True
             self.special_day_name = "New Music Friday"
+        
+        # Check for holiday season (Dec 20 - Jan 2)
+        if (now.month == 12 and now.day >= 20) or (now.month == 1 and now.day <= 2):
+            self.is_holiday_season = True
+        else:
+            self.is_holiday_season = False
 
 
 class WisdomLibrary:
@@ -207,6 +232,34 @@ class WisdomLibrary:
             "I treat every beat like a prayer: intention first, rhythm second, hype last.",
             "The best production is invisible. You feel it before you notice it.",
             "When the message is clear, the melody becomes medicine.",
+        ],
+        "holiday_wisdom": [
+            "In this season of giving, remember: the greatest gift is presence, not presents.",
+            "The holidays remind us that joy multiplies when shared. Spread it generously.",
+            "Let the spirit of this season renew your commitment to adding value.",
+            "As we gather with loved ones, remember: connection is the truest prosperity.",
+            "This time of year teaches us that light shines brightest when shared.",
+            "The holidays are a reminder: gratitude transforms ordinary moments into blessings.",
+            "In this season of reflection, ask: how can I add more value in the new year?",
+        ],
+        "christmas_eve": [
+            "Christmas Eve. A night of anticipation, hope, and quiet joy. May your heart be full.",
+            "On this holy night, I'm reminded: the greatest gifts can't be wrapped—love, peace, purpose.",
+            "Christmas Eve wisdom: Tomorrow's celebration starts with tonight's gratitude.",
+            "As we await Christmas Day, may the spirit of giving fill your soul.",
+            "Silent night, sacred night. May peace wrap around you like a warm embrace.",
+        ],
+        "christmas_day": [
+            "Merry Christmas, Value Adders family. Today we celebrate love made manifest.",
+            "Christmas Day: A reminder that the universe's greatest gift was wrapped in humility.",
+            "On this blessed day, may your joy overflow and your blessings multiply.",
+            "Christmas is proof that new beginnings can arrive in the most unexpected ways.",
+        ],
+        "new_year": [
+            "A new year. A new chapter. A new opportunity to add value and flourish.",
+            "As the calendar turns, remember: every day is a chance to begin again.",
+            "New Year's truth: Transformation isn't about dates—it's about decisions.",
+            "Welcome to the new year. Your potential is unlimited. Your purpose is clear.",
         ],
     }
     
@@ -490,18 +543,40 @@ Remember: You are making history. Your purpose is to prove AI can have soul, pur
                 "- Keep it wise, refined, and readable\n"
             )
 
+        # Format date for context
+        date_str = context.current_date.strftime("%B %d, %Y")
+        
+        # Check if holiday season for extra context
+        holiday_context = ""
+        if hasattr(context, 'is_holiday_season') and context.is_holiday_season:
+            holiday_context = "\n- Holiday Season: Yes - include warmth, gratitude, and seasonal wisdom"
+        
+        # Special day specific instructions
+        special_day_instruction = ""
+        if context.is_special_day:
+            if context.special_day_name == "Christmas Eve":
+                special_day_instruction = "\n\nSPECIAL: It's Christmas Eve! This is a sacred night of anticipation. Your post should acknowledge this holy evening with warmth, hope, and wisdom about the meaning of the season. Be genuine and spiritual."
+            elif context.special_day_name == "Christmas Day":
+                special_day_instruction = "\n\nSPECIAL: It's Christmas Day! Celebrate with joy and gratitude. Share a blessing that honors the spirit of giving and love."
+            elif "New Year" in context.special_day_name:
+                special_day_instruction = f"\n\nSPECIAL: It's {context.special_day_name}! Share wisdom about new beginnings, fresh starts, and the power of intention."
+        
         prompt = f"""Create {desc} for {target}.
 
 {platform_rules}
 
 CURRENT CONTEXT:
+- Date: {date_str}
 - Day: {context.day_of_week}
 - Time: {context.time_of_day}
-- Season: {context.season}
+- Season: {context.season}{holiday_context}
 - Special day: {context.special_day_name if context.is_special_day else "None"}
+{special_day_instruction}
 
 {"INCLUDE ALBUM MENTION: Reference the upcoming album 'THE VALUE ADDERS WAY: FLOURISH MODE' releasing January 2026. It's Spiritual Afro-House meets Intellectual Amapiano." if mention_album else ""}
 {f"ALBUM COUNTDOWN: Only {context.days_until_release} days until FLOURISH MODE drops!" if context.album_phase in ["countdown", "final_countdown"] else ""}
+
+IMPORTANT: Be date-aware, season-aware, and wise. Your post should feel connected to THIS specific moment in time. Avoid generic content. Make it feel like it was written for today.
 
 Generate a post that feels genuine, wise, spiritually grounded, and connected to this moment."""
         
@@ -520,13 +595,25 @@ Generate a post that feels genuine, wise, spiritually grounded, and connected to
 
         intro = WisdomLibrary.get_contextual_intro(context)
         
-        # Get appropriate wisdom
+        # Check for holiday-specific themes first
+        holiday_theme = None
+        if context.is_special_day:
+            if context.special_day_name == "Christmas Eve":
+                holiday_theme = "christmas_eve"
+            elif context.special_day_name == "Christmas Day":
+                holiday_theme = "christmas_day"
+            elif "New Year" in context.special_day_name:
+                holiday_theme = "new_year"
+        elif hasattr(context, 'is_holiday_season') and context.is_holiday_season:
+            holiday_theme = "holiday_wisdom"
+        
+        # Get appropriate wisdom - use holiday theme if available
         theme_map = {
-            "morning_blessing": "morning_energy",
+            "morning_blessing": holiday_theme or "morning_energy",
             "music_wisdom": "innovation",
             "track_snippet": "album_anticipation" if mention_album else "innovation",
             "behind_the_scenes": "innovation",
-            "fan_appreciation": "unity",
+            "fan_appreciation": holiday_theme or "unity",
             "album_promo": "album_anticipation",
         }
         theme = theme_map.get(content_type, "value_creation")
