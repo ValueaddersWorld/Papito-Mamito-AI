@@ -225,58 +225,70 @@ class AutonomousScheduler:
         logger.info("🚀 Autonomous scheduler started - Papito is now FULLY AUTONOMOUS!")
         logger.info(f"📱 Twitter posting: {'ENABLED' if self._twitter_publisher and self._twitter_publisher.is_connected else 'DISABLED'}")
         
-        # === PHASE 1: Active Engagement Jobs ===
-        # Process mentions every 30 minutes
-        self.scheduler.add_job(
-            self._process_mentions,
-            CronTrigger(minute="0,30", timezone="Africa/Lagos"),
-            id="process_mentions",
-            replace_existing=True,
-            name="Process Twitter Mentions"
-        )
-        logger.info("📬 Scheduled: Mention monitoring every 30 minutes")
+        # Check if engagement features should be enabled (default: OFF to conserve API quota)
+        import os
+        enable_engagement_raw = os.getenv("PAPITO_ENABLE_ENGAGEMENT", "false")
+        enable_engagement = enable_engagement_raw.strip().lower() in {"1", "true", "yes", "y", "on"}
         
-        # Engage with Afrobeat content 3x daily
-        self.scheduler.add_job(
-            self._afrobeat_engagement,
-            CronTrigger(hour="8,14,19", minute=15, timezone="Africa/Lagos"),
-            id="afrobeat_engagement",
-            replace_existing=True,
-            name="Afrobeat Community Engagement"
-        )
-        logger.info("🎵 Scheduled: Afrobeat engagement at 8:15, 14:15, 19:15 WAT")
-        
-        # === PHASE 2: Fan Interaction Jobs ===
-        # Welcome new followers 2x daily
-        self.scheduler.add_job(
-            self._welcome_followers,
-            CronTrigger(hour="11,22", minute=0, timezone="Africa/Lagos"),
-            id="welcome_followers",
-            replace_existing=True,
-            name="Welcome New Followers"
-        )
-        logger.info("👋 Scheduled: Follower welcoming at 11:00, 22:00 WAT")
-        
-        # Fan recognition session once daily (before evening post)
-        self.scheduler.add_job(
-            self._fan_recognition,
-            CronTrigger(hour=17, minute=30, timezone="Africa/Lagos"),
-            id="fan_recognition",
-            replace_existing=True,
-            name="Fan Recognition Session"
-        )
-        logger.info("⭐ Scheduled: Fan recognition at 17:30 WAT")
-        
-        # === PHASE 3: Growth Blitz - Aggressive Follower Growth ===
-        # "Hand-to-Hand Combat" protocol: 3x daily at peak engagement times
-        self.scheduler.add_job(
-            self._growth_blitz,
-            CronTrigger(hour="9,14,20", minute=0, timezone="Africa/Lagos"),
-            id="growth_blitz",
-            replace_existing=True,
-            name="🚀 Growth Blitz Session"
-        )
-        logger.info("🚀 Scheduled: Growth Blitz at 9:00, 14:00, 20:00 WAT")
+        if enable_engagement:
+            logger.info("⚡ Engagement features ENABLED (PAPITO_ENABLE_ENGAGEMENT=true)")
+            
+            # === PHASE 1: Active Engagement Jobs ===
+            # Process mentions every 30 minutes
+            self.scheduler.add_job(
+                self._process_mentions,
+                CronTrigger(minute="0,30", timezone="Africa/Lagos"),
+                id="process_mentions",
+                replace_existing=True,
+                name="Process Twitter Mentions"
+            )
+            logger.info("📬 Scheduled: Mention monitoring every 30 minutes")
+            
+            # Engage with Afrobeat content 3x daily
+            self.scheduler.add_job(
+                self._afrobeat_engagement,
+                CronTrigger(hour="8,14,19", minute=15, timezone="Africa/Lagos"),
+                id="afrobeat_engagement",
+                replace_existing=True,
+                name="Afrobeat Community Engagement"
+            )
+            logger.info("🎵 Scheduled: Afrobeat engagement at 8:15, 14:15, 19:15 WAT")
+            
+            # === PHASE 2: Fan Interaction Jobs ===
+            # Welcome new followers 2x daily
+            self.scheduler.add_job(
+                self._welcome_followers,
+                CronTrigger(hour="11,22", minute=0, timezone="Africa/Lagos"),
+                id="welcome_followers",
+                replace_existing=True,
+                name="Welcome New Followers"
+            )
+            logger.info("👋 Scheduled: Follower welcoming at 11:00, 22:00 WAT")
+            
+            # Fan recognition session once daily (before evening post)
+            self.scheduler.add_job(
+                self._fan_recognition,
+                CronTrigger(hour=17, minute=30, timezone="Africa/Lagos"),
+                id="fan_recognition",
+                replace_existing=True,
+                name="Fan Recognition Session"
+            )
+            logger.info("⭐ Scheduled: Fan recognition at 17:30 WAT")
+            
+            # === PHASE 3: Growth Blitz - Aggressive Follower Growth ===
+            # "Hand-to-Hand Combat" protocol: 3x daily at peak engagement times
+            self.scheduler.add_job(
+                self._growth_blitz,
+                CronTrigger(hour="9,14,20", minute=0, timezone="Africa/Lagos"),
+                id="growth_blitz",
+                replace_existing=True,
+                name="🚀 Growth Blitz Session"
+            )
+            logger.info("🚀 Scheduled: Growth Blitz at 9:00, 14:00, 20:00 WAT")
+        else:
+            logger.info("💤 Engagement features DISABLED (set PAPITO_ENABLE_ENGAGEMENT=true to enable)")
+            logger.info("   → Skipped: Mention monitoring, Afrobeat engagement, Follower welcome, Fan recognition, Growth Blitz")
+            logger.info("   → This preserves API quota for core scheduled posts")
         
     async def _growth_blitz(self) -> Dict[str, Any]:
         """Run aggressive Growth Blitz for follower growth.
