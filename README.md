@@ -16,7 +16,7 @@
 Papito Mamito AI is the **autonomous creative engine** behind **Papito Mamito - the Voice of Afrobeat Empowerment**.  
 This repository powers Papito's evolution as a lifelong AI artist, operating 24/7 across multiple social platforms.
 
-## 🌟 What's New: 24/7 Autonomous System
+##  What's New: 24/7 Autonomous System
 
 Papito now operates fully autonomously with:
 
@@ -26,31 +26,31 @@ Papito now operates fully autonomously with:
 | **Phase 2** | FanEngagementManager (4 tiers), SentimentAnalyzer, Personalized responses |
 | **Phase 3** | EngagementTracker, A/B Testing, ContentStrategyOptimizer |
 | **Phase 4** | HealthChecker, AlertManager, EscalationManager, Webhooks |
-| **Phase 5** | 🆕 MediaOrchestrator (Imagen/NanoBanana/Veo 3), IntelligentContentGenerator, Album Countdown |
+| **Phase 5** |  MediaOrchestrator (Imagen/NanoBanana/Veo 3), IntelligentContentGenerator, Album Countdown |
 
-### 🎬 New: Autonomous Media Generation
+###  New: Autonomous Media Generation
 
 Papito now creates images and videos automatically using:
 - **Google Imagen 3** - AI image generation with Afrobeat aesthetics
 - **NanoBanana** - Alternative image generation API
 - **Google Veo 3** - AI video generation for Reels/Stories
 
-### 🧠 New: Intelligent Content System
+###  New: Intelligent Content System
 
 Context-aware content with:
 - **Album Countdown** - Building hype for "THE VALUE ADDERS WAY: FLOURISH MODE" (January 2026)
 - **Wisdom Library** - Curated quotes and insights by theme
 - **Contextual Generation** - Posts aware of time, day, season, and events
 
-### 👤 New: Identity & Profile Management
+###  New: Identity & Profile Management
 
 Centralized management of Papito's online presence across:
-- 📸 [Instagram](https://www.instagram.com/papitomamito_ai/)
-- ☕ [Buy Me a Coffee](https://buymeacoffee.com/papitomamito_ai)
-- 🎵 [DistroKid/Streaming](https://distrokid.com/hyperfollow/papitomamito/we-rise-wealth-beyond-money)
-- 🤖 [Suno AI](https://suno.com/@papitomamito)
+-  [Instagram](https://www.instagram.com/papitomamito_ai/)
+-  [Buy Me a Coffee](https://buymeacoffee.com/papitomamito_ai)
+-  [DistroKid/Streaming](https://distrokid.com/hyperfollow/papitomamito/we-rise-wealth-beyond-money)
+-  [Suno AI](https://suno.com/@papitomamito)
 
-## 🎤 Papito at a Glance
+##  Papito at a Glance
 
 | | |
 |---|---|
@@ -63,7 +63,7 @@ Centralized management of Papito's online presence across:
 | **Support** | [buymeacoffee.com/papitomamito_ai](https://buymeacoffee.com/papitomamito_ai) |
 | **Live API** | Set `PAPITO_PUBLIC_BASE_URL` after deployment (see `docs/DEPLOYMENT.md`). |
 
-## 🎶 THE VALUE ADDERS WAY: FLOURISH MODE
+##  THE VALUE ADDERS WAY: FLOURISH MODE
 
 **Upcoming Album - January 2026**
 
@@ -92,7 +92,7 @@ Centralized management of Papito's online presence across:
 └── firebase/                  # Firestore schema & rules
 ```
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### Installation
 
@@ -137,7 +137,7 @@ docker build -t papito-api .
 docker run -p 8000:8000 --env-file .env papito-api
 ```
 
-## 🚂 Railway (Recommended 24/7 Setup)
+##  Railway (Recommended 24/7 Setup)
 
 To run Papito truly 24/7 on Railway (like automated accounts on X), use **two Railway services** from the same repo/image:
 
@@ -157,7 +157,7 @@ Notes:
 - Ensure your X Developer App permissions are **Read and Write** and you regenerated tokens after changing permissions.
 - Railway restarts are fine; state is persisted under `data/` JSON files inside the container filesystem.
 
-## 🎵 CLI Commands
+##  CLI Commands
 
 ### Content Calendar
 
@@ -195,7 +195,7 @@ papito fan add --name "Ada Obi" --support-level core
 papito doctor
 ```
 
-## 🤖 Autonomous Features
+##  Autonomous Features
 
 ### Content Scheduler (Phase 1)
 
@@ -228,7 +228,7 @@ papito doctor
 - **AlertManager**: Telegram/Discord notifications
 - **EscalationManager**: Human-in-the-loop for critical issues
 
-## 🧪 Testing
+##  Testing
 
 ```bash
 cd apps/papito_core
@@ -243,7 +243,7 @@ pytest tests/test_monitoring.py
 
 **Current Status**: 95+ tests passing ✅
 
-## 🌍 Deployment
+##  Deployment
 
 The API is deployed on Railway:
 
@@ -253,21 +253,21 @@ The API is deployed on Railway:
 
 Auto-deploys on push to `main` branch.
 
-## 🎯 Guiding Principles
+##  Guiding Principles
 
 - **Autonomy**: Every process runs 24/7 without human babysitting
 - **Cultural Authenticity**: Afrobeat, Highlife, and Afrofusion drive decisions
 - **Value Above Hype**: Content reinforces empowerment, gratitude, unity
 - **Fan-First**: Personalized engagement based on relationship tier
 
-## 🤝 Contributing
+##  Contributing
 
 1. Fork the repository and create a feature branch
 2. Add tests alongside code changes
 3. Ensure tests pass (`pytest`)
 4. Submit a pull request
 
-## 📜 License
+##  License
 
 Proprietary - Value Adders World
 
