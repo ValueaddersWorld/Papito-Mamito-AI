@@ -10,7 +10,7 @@ from collections import deque
 from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 from fastapi import (
     BackgroundTasks,
@@ -948,18 +948,18 @@ def create_app() -> FastAPI:
             </div>
             <div class="feature-card">
                 <div class="feature-icon">📊</div>
-                <h3 class="feature-title">Analytics & A/B Testing</h3>
-                <p class="feature-desc">Engagement tracking with predictive optimization</p>
+                <h3 class="feature-title">Analytics & Insights</h3>
+                <p class="feature-desc">Engagement tracking via streaming platforms</p>
             </div>
             <div class="feature-card">
                 <div class="feature-icon">🎨</div>
                 <h3 class="feature-title">Media Generation</h3>
-                <p class="feature-desc">Imagen 3, NanoBanana & Veo 3 for visuals</p>
+                <p class="feature-desc">AI-generated visuals for albums & social</p>
             </div>
             <div class="feature-card">
                 <div class="feature-icon">🔔</div>
                 <h3 class="feature-title">Health Monitoring</h3>
-                <p class="feature-desc">24/7 health checks with Telegram/Discord alerts</p>
+                <p class="feature-desc">System health checks & status endpoints</p>
             </div>
         </section>
         
