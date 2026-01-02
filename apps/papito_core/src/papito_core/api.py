@@ -901,7 +901,7 @@ def create_app() -> FastAPI:
                     <div class="stream-icon">🟢</div>
                     <div class="stream-name">Spotify</div>
                 </a>
-                <a href="https://www.youtube.com/watch?v=F0S12Uq_vG0" target="_blank" class="stream-card youtube">
+                <a href="https://www.youtube.com/channel/UC1E-YTiJqq7xKxi_rh-vw4A" target="_blank" class="stream-card youtube">
                     <div class="stream-icon">▶️</div>
                     <div class="stream-name">YouTube</div>
                 </a>
@@ -1710,6 +1710,44 @@ def create_app() -> FastAPI:
                     "album_countdown": context.days_until_release,
                 }
             
+            if content_type == "album_tracklist":
+                # Generate complete tracklist post with image info
+                tracklist_text = (
+                    "📀 THE VALUE ADDERS WAY: FLOURISH MODE\n\n"
+                    "Complete Tracklist:\n\n"
+                    "1️⃣ THE FORGE (6000 HOURS)\n"
+                    "2️⃣ BREATHWORK RIDDIM\n"
+                    "3️⃣ CLEAN MONEY ONLY\n"
+                    "4️⃣ OS OF LOVE\n"
+                    "5️⃣ IKUKU (THE ALMIGHTY FLOW)\n"
+                    "6️⃣ JUDAS (BETRAYAL)\n"
+                    "7️⃣ DELAYED GRATIFICATION\n"
+                    "8️⃣ 8 YEARS, ONE STORY\n"
+                    "9️⃣ THE VALUE ADDERS WAY\n"
+                    "🔟 HLS MIRROR CHECK\n"
+                    "1️⃣1️⃣ THE FIVE ALLIES\n"
+                    "1️⃣2️⃣ (H.O.S.) HUMAN OPERATING SYSTEM\n"
+                    "1️⃣3️⃣ WIND OF PURGE (2026-2030)\n"
+                    "1️⃣4️⃣ GLOBAL GRATITUDE PULSE\n\n"
+                    "🗓️ Release Date: January 15, 2026\n"
+                    "🎵 Pre-order on iTunes & Amazon Music: December 10, 2025\n\n"
+                    "🔗 Watch on YouTube: youtube.com/channel/UC1E-YTiJqq7xKxi_rh-vw4A\n"
+                    "🎧 Stream debut album on Spotify & Apple Music!\n\n"
+                    "Add Value. We Flourish & Prosper. 🙏✨"
+                )
+                return {
+                    "success": True,
+                    "text": tracklist_text,
+                    "hashtags": "#PapitoMamito #FlourishMode #TheValueAddersWay #AfroFuturism #Afrobeat #AIArtist #NewAlbum #Tracklist",
+                    "content_type": content_type,
+                    "platform": platform,
+                    "generated_at": datetime.now().isoformat(),
+                    "album_countdown": context.days_until_release,
+                    "include_image": True,
+                    "image_prompt": "Afrofuturistic album cover art for 'The Value Adders Way: Flourish Mode' featuring golden geometric patterns, glowing music notes, and ethereal spiritual imagery with African elements, dark cosmic background with gold and orange accents",
+                    "youtube_channel": "https://www.youtube.com/channel/UC1E-YTiJqq7xKxi_rh-vw4A",
+                }
+            
             # Generate intelligent content (already in async context)
             result = await generator.generate_post(
                 content_type=content_type,
@@ -1760,6 +1798,7 @@ def create_app() -> FastAPI:
                 {"value": "challenge_promo", "label": "✈️ #FlightMode6000 Challenge"},
                 {"value": "album_announcement", "label": "📢 Album Announcement"},
                 {"value": "flourish_index", "label": "📊 Flourish Index"},
+                {"value": "album_tracklist", "label": "📀 Album Tracklist (with image)"},
             ],
             "platforms": [
                 {"value": "instagram", "label": "Instagram"},

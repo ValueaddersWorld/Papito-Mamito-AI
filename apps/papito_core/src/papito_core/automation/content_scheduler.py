@@ -28,6 +28,7 @@ class ContentType(str, Enum):
     TRENDING_TOPIC = "trending_topic"
     MUSIC_WISDOM = "music_wisdom"
     STUDIO_UPDATE = "studio_update"
+    ALBUM_TRACKLIST = "album_tracklist"  # Complete tracklist with album artwork
 
 
 @dataclass
@@ -304,6 +305,35 @@ class ContentScheduler:
                 "elements": ["current work", "progress", "teaser"],
                 "length": "short",
                 "include_image_suggestion": True,
+            },
+            ContentType.ALBUM_TRACKLIST: {
+                "style": "promotional, celebratory",
+                "tone": "excited, proud, anticipatory",
+                "elements": ["full tracklist", "album artwork", "release date", "streaming links"],
+                "length": "long",
+                "include_image": True,
+                "include_all_tracks": True,
+                "album_info": {
+                    "title": "THE VALUE ADDERS WAY: FLOURISH MODE",
+                    "release_date": "January 15, 2026",
+                    "tracks": [
+                        "1. THE FORGE (6000 HOURS)",
+                        "2. BREATHWORK RIDDIM",
+                        "3. CLEAN MONEY ONLY",
+                        "4. OS OF LOVE",
+                        "5. IKUKU (THE ALMIGHTY FLOW)",
+                        "6. JUDAS (BETRAYAL)",
+                        "7. DELAYED GRATIFICATION",
+                        "8. 8 YEARS, ONE STORY",
+                        "9. THE VALUE ADDERS WAY",
+                        "10. HLS MIRROR CHECK",
+                        "11. THE FIVE ALLIES",
+                        "12. (H.O.S.) HUMAN OPERATING SYSTEM",
+                        "13. WIND OF PURGE (2026-2030)",
+                        "14. GLOBAL GRATITUDE PULSE"
+                    ],
+                    "youtube_channel": "https://www.youtube.com/channel/UC1E-YTiJqq7xKxi_rh-vw4A"
+                },
             },
         }
         
