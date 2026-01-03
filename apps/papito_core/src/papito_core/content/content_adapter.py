@@ -286,17 +286,17 @@ class ContentAdapter:
         if hook_lyrics:
             lyrics_tease = f'\n\n🎤 "{hook_lyrics[0]}"'
         
-        base_caption = f"""🔥 NEW MUSIC INCOMING! 🔥
-
+        base_caption = f"""NEW MUSIC INCOMING
+        
 "{title}"
 
-Mood: {mood.title()} ✨
-Theme: {theme.title()} 💫
+Mood: {mood.title()}
+Theme: {theme.title()}
 {lyrics_tease}
 
 🎧 Coming soon to all platforms!
 
-Who's ready to add value through music? 🙌"""
+Who's ready to add value through music?"""
         
         # Instagram version
         instagram = InstagramContent(
@@ -309,14 +309,14 @@ Who's ready to add value through music? 🙌"""
         )
         
         # X version - shorter
-        x_caption = f"""🔥 NEW TRACK DROP INCOMING!
+        x_caption = f"""NEW TRACK DROP INCOMING
 
 "{title}"
 
-{mood.title()} vibes for the {theme} in you! ✨
+{mood.title()} vibes for the {theme} in you.
 {lyrics_tease}
 
-🎧 Stay tuned!
+🎧 Stay tuned.
 
 #PapitoMamito #NewMusic #Afrobeat"""
         
@@ -368,26 +368,26 @@ Who's ready to add value through music? 🙌"""
         
         reason = appreciation_texts.get(support_type, "for being amazing")
         
-        base = f"""🙏 GRATITUDE ROLL CALL 🙏
+        base = f"""GRATITUDE ROLL CALL
 
 Massive love to {handle_text} {reason}! 
 
 {f'"{message}"' if message else ''}
 
-You are what makes this journey meaningful. Every stream, every share, every kind word adds to the empire of value we're building together! 💫
+You are what makes this journey meaningful. Every stream, every share, every kind word adds to the empire of value we're building together.
 
-Who else is part of the Value Adders family? Tag yourself! 👇"""
+Who else is part of the Value Adders family? Tag yourself!"""
         
         instagram = InstagramContent(
             caption=base,
             hashtags=self.DEFAULT_HASHTAGS + ["GratitudeRollCall", "FanLove", "Community"]
         )
         
-        x_text = f"""🙏 Shoutout to {handle_text} {reason}!
+        x_text = f"""Shoutout to {handle_text} {reason}!
 
-You're what makes this journey worthwhile! 💫
+You're what makes this journey worthwhile.
 
-Who else is part of the Value Adders family? 🎵
+Who else is part of the Value Adders family?
 
 #PapitoMamito #FanLove"""
         
@@ -413,27 +413,25 @@ Who else is part of the Value Adders family? 🎵
             Dict with platform-specific content
         """
         blessings = {
-            "gratitude": "May your day overflow with reasons to be thankful! 🙏",
-            "abundance": "Abundance flows to you from expected and unexpected sources! 💰",
-            "love": "May love find you and flow through you today! ❤️",
-            "wisdom": "May wisdom guide your steps and decisions today! 📖",
-            "peace": "May peace fill your heart and calm every storm! 🕊️",
-            "strength": "You are stronger than you know! Rise and conquer! 💪",
+            "gratitude": "May your day overflow with reasons to be thankful.",
+            "abundance": "Abundance flows to you from expected and unexpected sources.",
+            "love": "May love find you and flow through you today.",
+            "wisdom": "May wisdom guide your steps and decisions today.",
+            "peace": "May peace fill your heart and calm every storm.",
+            "strength": "You are stronger than you know. Rise and conquer.",
         }
         
         blessing = custom_message or blessings.get(theme, 
-            "May today bring you one step closer to your dreams! ✨"
+            "May today bring you one step closer to your dreams."
         )
         
-        caption = f"""☀️ MORNING BLESSING ☀️
+        caption = f"""MORNING BLESSING
 
 {blessing}
 
 Remember: You are valuable. You are capable. You are worthy.
 
-Start your day with this energy and watch magic happen! 
-
-Drop a 🙏 if you receive this blessing!
+Start your day with this energy and watch magic happen. 
 
 #MorningBlessing #DailyAffirmation #PapitoMamito #ValueAdders #Motivation"""
         
@@ -443,13 +441,11 @@ Drop a 🙏 if you receive this blessing!
         )
         
         x = XContent(
-            tweets=[f"""☀️ MORNING BLESSING ☀️
+            tweets=[f"""MORNING BLESSING
 
 {blessing}
 
-You are valuable. You are capable. You are worthy! ✨
-
-Drop a 🙏 if you claim it!
+You are valuable. You are capable. You are worthy.
 
 #MorningBlessing #PapitoMamito"""],
             hashtags=["MorningBlessing", "PapitoMamito"]
