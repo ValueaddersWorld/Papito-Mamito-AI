@@ -500,7 +500,8 @@ class FirebaseClient:
         query = (
             self.db.collection("fan_interactions")
             .where("status", "==", "pending")
-            .order_by("received_at")
+            # Moved sorting to memory to avoid needing a composite index
+            # .order_by("received_at") 
             .limit(limit)
         )
         
@@ -509,6 +510,9 @@ class FirebaseClient:
             data = doc.to_dict()
             data["id"] = doc.id
             items.append(FanInteraction(**data))
+        
+        # Sort in memory by received_at (oldest first)
+        items.sort(key=lambda x: x.received_at or datetime.min)
         
         return items
     
