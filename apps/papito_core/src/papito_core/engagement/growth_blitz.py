@@ -205,7 +205,7 @@ class GrowthBlitz:
                 access_token=self.access_token,
                 access_token_secret=self.access_token_secret,
                 bearer_token=self.bearer_token,
-                wait_on_rate_limit=True,
+                wait_on_rate_limit=False,
             )
             
             # Create v1.1 API for some operations
@@ -215,7 +215,7 @@ class GrowthBlitz:
                 self.access_token,
                 self.access_token_secret,
             )
-            self.api = tweepy.API(auth, wait_on_rate_limit=True)
+            self.api = tweepy.API(auth, wait_on_rate_limit=False)
             
             # Verify credentials
             me = self.client.get_me()

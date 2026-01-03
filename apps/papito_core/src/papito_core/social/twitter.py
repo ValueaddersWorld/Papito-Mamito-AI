@@ -111,6 +111,7 @@ class TwitterPublisher:
                 access_token=self.access_token,
                 access_token_secret=self.access_token_secret,
                 bearer_token=self.bearer_token,
+                wait_on_rate_limit=False,
             )
             
             # Verify credentials
