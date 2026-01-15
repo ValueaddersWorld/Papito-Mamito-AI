@@ -120,8 +120,8 @@ class TestReviewQueue:
         assert queue._should_auto_approve(ContentCategory.ANNOUNCEMENT) is False
     
     @patch("papito_core.queue.review_queue.get_settings")
-    def test_should_not_auto_approve_none(self, mock_settings):
-        """Test that None category requires manual review."""
+    def test_should_auto_approve_none_for_autonomy(self, mock_settings):
+        """Test that None category auto-approves for autonomous operation."""
         mock_settings.return_value = MagicMock(
             telegram_bot_token=None,
             telegram_chat_id=None,
@@ -132,7 +132,8 @@ class TestReviewQueue:
         
         queue = ReviewQueue()
         
-        assert queue._should_auto_approve(None) is False
+        # For autonomous operation, None defaults to auto-approve
+        assert queue._should_auto_approve(None) is True
     
     @patch("papito_core.queue.review_queue.get_settings")
     @patch("papito_core.queue.review_queue.get_firebase_client")

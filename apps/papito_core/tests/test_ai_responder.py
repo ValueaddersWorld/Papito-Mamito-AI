@@ -134,7 +134,7 @@ class TestAIResponder:
     
     @patch("papito_core.content.ai_responder.get_settings")
     def test_check_sensitive_money(self, mock_settings):
-        """Test sensitive topic detection for money."""
+        """Test that generic financial terms don't trigger review (autonomous operation)."""
         mock_settings.return_value = MagicMock(
             openai_api_key=None,
             anthropic_api_key=None,
@@ -146,14 +146,15 @@ class TestAIResponder:
         
         responder = AIResponder()
         
+        # Generic invest/money terms don't trigger review for autonomous operation
         requires_review, reason = responder._check_sensitive("Can I invest in your project?")
         
-        assert requires_review is True
-        assert "invest" in reason
+        assert requires_review is False
+        assert reason is None
     
     @patch("papito_core.content.ai_responder.get_settings")
     def test_check_sensitive_collab(self, mock_settings):
-        """Test sensitive topic detection for collaboration."""
+        """Test that generic collab terms don't trigger review (autonomous operation)."""
         mock_settings.return_value = MagicMock(
             openai_api_key=None,
             anthropic_api_key=None,
@@ -165,10 +166,11 @@ class TestAIResponder:
         
         responder = AIResponder()
         
+        # Generic collab terms don't trigger review for autonomous operation
         requires_review, reason = responder._check_sensitive("Let's do a collab!")
         
-        assert requires_review is True
-        assert "collab" in reason
+        assert requires_review is False
+        assert reason is None
     
     @patch("papito_core.content.ai_responder.get_settings")
     def test_generate_template_response(self, mock_settings):
