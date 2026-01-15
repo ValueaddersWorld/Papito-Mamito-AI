@@ -1,0 +1,124 @@
+{
+    "release_title": "THE VALUE ADDERS WAY: FLOURISH MODE",
+    "release_date": "2026-01-15",
+    "release_type": "album",
+    "release_status": "released",
+    "tracks": [
+        {
+            "number": 1,
+            "title": "THE FORGE (6000 HOURS)",
+            "mood": "determined",
+            "theme": "discipline and mastery",
+            "hook_concept": "6000 hours of focused work shapes greatness"
+        },
+        {
+            "number": 2,
+            "title": "BREATHWORK RIDDIM",
+            "mood": "meditative",
+            "theme": "mindfulness and calm",
+            "hook_concept": "Breathe in value, exhale doubt"
+        },
+        {
+            "number": 3,
+            "title": "CLEAN MONEY ONLY",
+            "mood": "confident",
+            "theme": "integrity in wealth",
+            "hook_concept": "Wealth that adds value, not extracts it"
+        },
+        {
+            "number": 4,
+            "title": "OS OF LOVE",
+            "mood": "warm",
+            "theme": "love as foundation",
+            "hook_concept": "Love is the operating system of flourishing"
+        },
+        {
+            "number": 5,
+            "title": "IKUKU (THE ALMIGHTY FLOW)",
+            "mood": "spiritual",
+            "theme": "divine alignment",
+            "hook_concept": "Surrender to purpose and flow"
+        },
+        {
+            "number": 6,
+            "title": "JUDAS (BETRAYAL)",
+            "mood": "reflective",
+            "theme": "transforming betrayal",
+            "hook_concept": "Betrayal is data, not destiny"
+        },
+        {
+            "number": 7,
+            "title": "DELAYED GRATIFICATION",
+            "mood": "patient",
+            "theme": "patience as power",
+            "hook_concept": "The harvest honors those who wait"
+        },
+        {
+            "number": 8,
+            "title": "8 YEARS, ONE STORY",
+            "mood": "triumphant",
+            "theme": "perseverance",
+            "hook_concept": "Every setback was a setup"
+        },
+        {
+            "number": 9,
+            "title": "THE VALUE ADDERS WAY",
+            "mood": "anthemic",
+            "theme": "core philosophy",
+            "hook_concept": "Add value or don't act",
+            "is_title_track": true
+        },
+        {
+            "number": 10,
+            "title": "HLS MIRROR CHECK",
+            "mood": "introspective",
+            "theme": "self-reflection",
+            "hook_concept": "The Holy Living Spirit as your mirror"
+        },
+        {
+            "number": 11,
+            "title": "THE FIVE ALLIES",
+            "mood": "uplifting",
+            "theme": "core values",
+            "hook_concept": "Gratitude, Discipline, Service, Integrity, Faith"
+        },
+        {
+            "number": 12,
+            "title": "(H.O.S.) HUMAN OPERATING SYSTEM",
+            "mood": "innovative",
+            "theme": "mental upgrade",
+            "hook_concept": "Update your internal software"
+        },
+        {
+            "number": 13,
+            "title": "WIND OF PURGE (2026-2030)",
+            "mood": "prophetic",
+            "theme": "future vision",
+            "hook_concept": "The next chapter is being written"
+        },
+        {
+            "number": 14,
+            "title": "GLOBAL GRATITUDE PULSE",
+            "mood": "grateful",
+            "theme": "universal thanks",
+            "hook_concept": "A heartbeat of thanks to every Value Adder"
+        }
+    ],
+    "streaming_links": {
+        "spotify": "https://open.spotify.com/album/flourish-mode",
+        "apple_music": "https://music.apple.com/album/flourish-mode",
+        "youtube_music": "https://www.youtube.com/results?search_query=Papito+Mamito+Flourish+Mode",
+        "deezer": "https://www.deezer.com/search/Papito%20Mamito%20Flourish%20Mode",
+        "tidal": "https://tidal.com/search?q=Papito+Mamito+Flourish+Mode"
+    },
+    "promotional_hashtags": [
+        "FlourishMode",
+        "TheValueAddersWay",
+        "PapitoMamito",
+        "AfroHouse",
+        "ConsciousMusic",
+        "AIArtist",
+        "AddValue"
+    ],
+    "creation_timestamp": "2026-01-15T00:00:00"
+}

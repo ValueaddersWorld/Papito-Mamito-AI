@@ -827,30 +827,53 @@
             <div class="visualizer-container" id="visualizer"></div>
         </section>
 
-        <section class="album-card">
-            <div class="album-label">🔥 Second Album • Coming January 2026</div>
+        <section class="album-card"
+            style="background: linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, rgba(255, 107, 53, 0.1) 100%); border-color: rgba(255, 215, 0, 0.4);">
+            <div class="album-label"
+                style="background: rgba(255, 215, 0, 0.25); color: var(--primary); animation: glow-pulse 2s ease-in-out infinite;">
+                🎉 NEW ALBUM • OUT NOW • STREAM IT</div>
             <h2 class="album-title">THE VALUE ADDERS WAY: FLOURISH MODE</h2>
             <p style="color: var(--text-muted); margin-bottom: 10px;">
-                Executive Producer: Papito Mamito AI & Value Adders World
+                Executive Producer: Papito Mamito AI & The Holy Living Spirit (HLS)
             </p>
-            <div class="countdown" id="countdown">
-                <div class="countdown-item">
-                    <div class="countdown-number" id="days">--</div>
-                    <div class="countdown-label">Days</div>
-                </div>
-                <div class="countdown-item">
-                    <div class="countdown-number" id="hours" style="color: var(--accent);">--</div>
-                    <div class="countdown-label">Hours</div>
-                </div>
-                <div class="countdown-item">
-                    <div class="countdown-number" id="minutes">--</div>
-                    <div class="countdown-label">Minutes</div>
-                </div>
-                <div class="countdown-item">
-                    <div class="countdown-number" id="seconds" style="color: var(--accent);">--</div>
-                    <div class="countdown-label">Seconds</div>
-                </div>
+
+            <!-- STREAMING BUTTONS - PROMINENT -->
+            <div style="display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin: 30px 0;">
+                <a href="https://open.spotify.com/album/flourish-mode" target="_blank"
+                    style="display: inline-flex; align-items: center; gap: 10px; background: #1DB954; color: white; padding: 16px 32px; border-radius: 30px; text-decoration: none; font-weight: 600; font-size: 1rem; transition: transform 0.3s, box-shadow 0.3s; box-shadow: 0 4px 20px rgba(29, 185, 84, 0.4);"
+                    onmouseover="this.style.transform='translateY(-3px) scale(1.02)'; this.style.boxShadow='0 8px 30px rgba(29, 185, 84, 0.5)';"
+                    onmouseout="this.style.transform=''; this.style.boxShadow='0 4px 20px rgba(29, 185, 84, 0.4)';">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
+                    </svg>
+                    Stream on Spotify
+                </a>
+                <a href="https://music.apple.com/album/flourish-mode" target="_blank"
+                    style="display: inline-flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #FA57C1, #FC5D5D, #FA8E3C); color: white; padding: 16px 32px; border-radius: 30px; text-decoration: none; font-weight: 600; font-size: 1rem; transition: transform 0.3s, box-shadow 0.3s; box-shadow: 0 4px 20px rgba(250, 87, 193, 0.4);"
+                    onmouseover="this.style.transform='translateY(-3px) scale(1.02)'; this.style.boxShadow='0 8px 30px rgba(250, 87, 193, 0.5)';"
+                    onmouseout="this.style.transform=''; this.style.boxShadow='0 4px 20px rgba(250, 87, 193, 0.4)';">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M23.994 6.124a9.23 9.23 0 0 0-.24-2.19c-.317-1.31-1.062-2.31-2.18-3.043a5.022 5.022 0 0 0-1.877-.726 10.496 10.496 0 0 0-1.564-.15c-.04-.003-.083-.01-.124-.013H5.99c-.042.003-.083.01-.124.013-.503.03-1.005.074-1.504.15a5.022 5.022 0 0 0-2.158.89C1.1 2.02.387 3.018.112 4.264A9.194 9.194 0 0 0 0 6.196v11.608c.033.48.087.958.179 1.433.307 1.284 1.05 2.273 2.16 3.002a5.023 5.023 0 0 0 1.877.726c.504.076 1.006.13 1.508.15.042.003.083.01.124.013h12.02c.042-.003.083-.01.124-.013.503-.03 1.004-.074 1.504-.15a5.023 5.023 0 0 0 2.158-.89c1.104-.963 1.817-1.96 2.092-3.206.097-.448.157-.9.179-1.353V6.124zM12 19.5a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15zm0-12.75a5.25 5.25 0 1 0 0 10.5 5.25 5.25 0 0 0 0-10.5z" />
+                    </svg>
+                    Apple Music
+                </a>
+                <a href="https://www.youtube.com/results?search_query=Papito+Mamito+Flourish+Mode" target="_blank"
+                    style="display: inline-flex; align-items: center; gap: 10px; background: #FF0000; color: white; padding: 16px 32px; border-radius: 30px; text-decoration: none; font-weight: 600; font-size: 1rem; transition: transform 0.3s, box-shadow 0.3s; box-shadow: 0 4px 20px rgba(255, 0, 0, 0.4);"
+                    onmouseover="this.style.transform='translateY(-3px) scale(1.02)'; this.style.boxShadow='0 8px 30px rgba(255, 0, 0, 0.5)';"
+                    onmouseout="this.style.transform=''; this.style.boxShadow='0 4px 20px rgba(255, 0, 0, 0.4)';">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+                    </svg>
+                    YouTube Music
+                </a>
             </div>
+
+            <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 25px;">🌍 Available on ALL major
+                streaming platforms worldwide!</p>
+
             <div class="genre-tags">
                 <span class="genre-tag">Spiritual Afro-House</span>
                 <span class="genre-tag">Afro-Futurism</span>
@@ -859,11 +882,11 @@
             </div>
 
             <div class="track-list">
-                <h3 class="track-list-title">📀 Complete Track List</h3>
+                <h3 class="track-list-title">📀 14 Tracks of Pure Value</h3>
                 <div class="track-item"><span class="track-number">1</span><span>THE FORGE (6000 HOURS)</span></div>
                 <div class="track-item"><span class="track-number">2</span><span>BREATHWORK RIDDIM</span></div>
                 <div class="track-item"><span class="track-number">3</span><span>CLEAN MONEY ONLY</span><span
-                        class="track-badge">SINGLE</span></div>
+                        class="track-badge">HIT</span></div>
                 <div class="track-item"><span class="track-number">4</span><span>OS OF LOVE</span></div>
                 <div class="track-item"><span class="track-number">5</span><span>IKUKU (THE ALMIGHTY FLOW)</span></div>
                 <div class="track-item"><span class="track-number">6</span><span>JUDAS (BETRAYAL)</span></div>
@@ -878,13 +901,6 @@
                 </div>
                 <div class="track-item"><span class="track-number">13</span><span>WIND OF PURGE (2026-2030)</span></div>
                 <div class="track-item"><span class="track-number">14</span><span>GLOBAL GRATITUDE PULSE</span></div>
-
-                <div
-                    style="margin-top: 25px; text-align: center; padding: 15px; background: rgba(255,215,0,0.1); border-radius: 12px; border: 1px solid rgba(255,215,0,0.2);">
-                    <p style="color: var(--primary); font-weight: 600; margin-bottom: 5px;">🛒 Pre-order Available
-                        December 10, 2025</p>
-                    <p style="color: var(--text-muted); font-size: 0.9rem;">iTunes & Amazon Music</p>
-                </div>
             </div>
         </section>
 
@@ -1304,28 +1320,9 @@
         createVisualizer();
 
         // ============================================
-        // COUNTDOWN TIMER
+        // ALBUM RELEASED - FLOURISH MODE IS OUT NOW!
         // ============================================
-
-        const releaseDate = new Date('January 15, 2026 00:00:00').getTime();
-
-        function updateCountdown() {
-            const now = new Date().getTime();
-            const distance = releaseDate - now;
-
-            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-            document.getElementById('days').textContent = days;
-            document.getElementById('hours').textContent = hours.toString().padStart(2, '0');
-            document.getElementById('minutes').textContent = minutes.toString().padStart(2, '0');
-            document.getElementById('seconds').textContent = seconds.toString().padStart(2, '0');
-        }
-
-        updateCountdown();
-        setInterval(updateCountdown, 1000);
+        console.log('🎉 THE VALUE ADDERS WAY: FLOURISH MODE is OUT NOW! Stream it everywhere!');
     </script>
 </body>
 
