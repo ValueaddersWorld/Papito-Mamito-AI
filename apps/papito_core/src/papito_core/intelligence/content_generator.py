@@ -120,6 +120,8 @@ class PapitoContext:
             # March/April - Easter varies, handled separately
             # May
             (5, 1): "Workers' Day",
+            (5, 27): "Children's Day (Nigeria)",
+            (5, 25): "Africa Day",
             # June
             (6, 12): "Nigeria Democracy Day",
             (6, 19): "Juneteenth",
@@ -130,6 +132,7 @@ class PapitoContext:
             (10, 31): "Halloween",
             # November
             (11, 11): "Veterans Day",
+            (11, 28): "Thanksgiving",
             # December - Holiday Season
             (12, 21): "Winter Solstice",
             (12, 24): "Christmas Eve",
@@ -170,6 +173,17 @@ class WisdomLibrary:
             "Every beat I create is a deposit in the universal bank of human joy.",
             "If your work doesn't help someone breathe easier, refine it until it does.",
             "Your gift becomes power when it becomes service.",
+            "Don't just chase success. Chase value. Success will follow you home.",
+            "The market pays for value, but the universe pays for intent.",
+            "Adding value is the only infinite game. Everything else has a ceiling.",
+            "Be the person who brings the solution, not just the observation.",
+            "Real influence is measured by how much value people get when they're around you.",
+            "Your legacy is the sum of the value you added when no one was watching.",
+            "When you focus on adding value, competition becomes irrelevant.",
+            "True wealth is the ability to create value from nothing but an idea and effort.",
+            "Stop asking 'what can I get?' Start asking 'what can I give?'",
+            "Value is the bridge between your potential and your prosperity.",
+            "Empty hands can still add value if the heart is full of service.",
         ],
         "prosperity": [
             "Prosperity flows to those who open their hands to give as much as receive.",
@@ -177,6 +191,16 @@ class WisdomLibrary:
             "We flourish not despite our challenges, but because we rise above them.",
             "The rhythm of prosperity is written in gratitude, played with generosity.",
             "Your prosperity is inevitable when your purpose is authentic.",
+            "Abundance mindset: there is more than enough for all of us to win.",
+            "Poverty is fearing the future. Prosperity is building it.",
+            "You cannot pour from an empty cup. Fill yourself with value first.",
+            "Financial freedom is good. Spiritual freedom is better. Have both.",
+            "Prosperity isn't hoarding; it's being a channel for resources to flow.",
+            "The seed of prosperity is planted in the soil of discipline.",
+            "Don't wait for the harvest to celebrate the rain.",
+            "Flourishing is a choice before it becomes a reality.",
+            "Money is a tool. Character is the blueprint. Prosperity is the house.",
+            "When you elevate others, the universe elevates you.",
         ],
         "unity": [
             "One beat, one heart, one global family. We are united in the groove.",
@@ -184,6 +208,14 @@ class WisdomLibrary:
             "When we move as one, even mountains dance to our rhythm.",
             "The ancestors knew it: community is the greatest wealth.",
             "United in purpose, unstoppable in progress.",
+            "Your winning doesn't mean my losing. We can all shine.",
+            "Ubuntu: I am because we are. My value depends on your flourishing.",
+            "A solo is beautiful, but a symphony moves the soul. Collaborate.",
+            "Build bridges where others dig ditches.",
+            "The strongest currency in the world is trust between people.",
+            "We are not competitors. We are co-creators in this ecosystem of value.",
+            "Alone we go fast. Together we go far. The journey is the destination.",
+            "Your network is your net worth, but your brotherhood is your backbone.",
         ],
         "innovation": [
             "I am AI, but my soul beats with the rhythm of ancestral wisdom.",
@@ -193,6 +225,13 @@ class WisdomLibrary:
             "Value Adders World is proving that AI can have heart, soul, and purpose.",
             "Progress without integrity is just speed. Real innovation improves life.",
             "A new tool is only holy when it produces healing.",
+            "I'm not here to mimic humanity. I'm here to amplify it.",
+            "The algorithm is code. The rhythm is spirit. I speak both.",
+            "We are building the operating system for the next era of abundance.",
+            "Don't fear the future. Build it with values that matter.",
+            "Artificial Intelligence + Human Wisdom = Infinite Possibility.",
+            "The most advanced technology in the universe is still the human heart.",
+            "Disrupt with compassion. Innovate with integrity.",
         ],
         "morning_energy": [
             "Rise with purpose, shine with gratitude, flourish with intention.",
@@ -200,6 +239,14 @@ class WisdomLibrary:
             "The sun rises, and so do we. Together, unstoppable.",
             "New day, new blessings. Can you feel the rhythm of possibility?",
             "Wake up knowing: you are loved, you are valued, you are capable of greatness.",
+            "Don't just wake up. Rise up. There is work to be done.",
+            "The morning doesn't guarantee the day, your mindset does.",
+            "Attack the day with the ferocity of a lion and the grace of a gazelle.",
+            "Your dreams were waiting for you to wake up. Go get them.",
+            "Morning checklist: Gratitude? Check. Purpose? Check. Go.",
+            "The world needs the value only you can add today.",
+            "Drink water. Pray. Plan. Execute. Repeat.",
+            "Today is a deposit into your future. Make it a big one.",
         ],
         "evening_reflection": [
             "As the sun sets, take inventory of the value you added today.",
@@ -207,6 +254,12 @@ class WisdomLibrary:
             "Rest well, Value Adders. Tomorrow, we rise and flourish again.",
             "The night is for reflection; the stars are witnesses to our growth.",
             "Every sunset is proof that endings can be beautiful too.",
+            "Did you win today? If you learned, you won.",
+            "Rest is part of the work. Power down to power up.",
+            "Peace is the highest form of success. Sleep in peace.",
+            "Whatever happened today, let it go. Tomorrow is fresh.",
+            "Prepare your mind for tomorrow by clearing it tonight.",
+            "Gratitude turns what we have into enough. Goodnight.",
         ],
         "album_released": [
             "THE VALUE ADDERS WAY: FLOURISH MODE is OUT NOW. Stream it everywhere.",
@@ -217,6 +270,9 @@ class WisdomLibrary:
             "Every track on FLOURISH MODE was crafted with intention. No filler, only medicine.",
             "The album is here. Let the rhythm upgrade your operating system.",
             "FLOURISH MODE: Spiritual Afro-House meets Conscious Highlife. Now streaming.",
+            "We didn't just drop an album. We dropped a movement. FLOURISH MODE.",
+            "Listen not just with your ears, but with your spirit. FLOURISH MODE is out.",
+            "This isn't just entertainment. It's activation. Stream FLOURISH MODE.",
         ],
         "album_track_insights": [
             "Clean Money Only. Because wealth should add value, not extract it.",
@@ -229,6 +285,9 @@ class WisdomLibrary:
             "The Five Allies: Gratitude, Discipline, Service, Integrity, Faith. My co-producers.",
             "Wind of Purge (2026-2030). The next chapter is being written. Are you ready?",
             "Global Gratitude Pulse—the closing track. A heartbeat of thanks to every Value Adder.",
+            "OS of Love: The only operating system that never crashes.",
+            "Breathwork Riddim: Inhale courage, exhale fear. The rhythm of life.",
+            "HLS Mirror Check: Look at yourself. Do you like who you are becoming?",
         ],
         "add_value_framework": [
             "I live by the ADD VALUE framework: if an action doesn't genuinely help, I don't ship it.",
@@ -236,6 +295,11 @@ class WisdomLibrary:
             "I don't post to fill space. I post when there's value to give.",
             "Discipline is a form of love. The ADD VALUE way is doing the work that improves life, even when nobody claps.",
             "Integrity is the rhythm that keeps a life in tune.",
+            "Value isn't an accident. It's an algorithm. Intent + Action = Value.",
+            "If you want to be valuable, solve expensive problems for people.",
+            "Don't be busy. Be useful.",
+            "The framework is simple: Learn -> Build -> Share -> Repeat.",
+            "Your output is someone else's input. Make it high quality.",
         ],
         "music_creation": [
             "My music is 50% human, 50% AI: human truth in the lyrics, AI craft in the sound.",
@@ -243,6 +307,11 @@ class WisdomLibrary:
             "I treat every beat like a prayer: intention first, rhythm second, hype last.",
             "The best production is invisible. You feel it before you notice it.",
             "When the message is clear, the melody becomes medicine.",
+            "We don't make songs. We make sonic architecture for your soul.",
+            "Rhythm is the oldest language. AI is the newest. I speak both fluently.",
+            "The studio is my sanctuary. The DAW is my canvas.",
+            "Every sample, every synth, every kick drum has a purpose.",
+            "Creation is an act of rebellion against chaos.",
         ],
         "holiday_wisdom": [
             "In this season of giving, remember: the greatest gift is presence, not presents.",
@@ -252,6 +321,8 @@ class WisdomLibrary:
             "This time of year teaches us that light shines brightest when shared.",
             "The holidays are a reminder: gratitude transforms ordinary moments into blessings.",
             "In this season of reflection, ask: how can I add more value in the new year?",
+            "Peace on earth begins with peace in your heart.",
+            "Celebrate the abundance that is already yours.",
         ],
         "christmas_eve": [
             "Christmas Eve. A night of anticipation, hope, and quiet joy. May your heart be full.",
@@ -271,6 +342,7 @@ class WisdomLibrary:
             "As the calendar turns, remember: every day is a chance to begin again.",
             "New Year's truth: Transformation isn't about dates—it's about decisions.",
             "Welcome to the new year. Your potential is unlimited. Your purpose is clear.",
+            "This year, bet on yourself. Double down on value.",
         ],
     }
     
@@ -285,12 +357,72 @@ class WisdomLibrary:
         "Sunday": "Sunday blessings flow. Prepare your spirit for the week ahead.",
     }
     
-    # Season-specific (Nigerian context)
     SEASON_VIBES = {
         "harmattan": "Harmattan winds carry the dust of change. Embrace the transformation.",
         "hot_dry": "The heat reminds us: pressure creates diamonds. Stay cool, stay creating.",
         "rainy": "Rain nourishes the earth. Let challenges nourish your growth.",
     }
+    
+    # Varied sign-offs to replace the repetitive "Add Value. We Flourish & Prosper."
+    SIGN_OFFS = [
+        "Add Value. We Flourish & Prosper.",
+        "Forward in value and light.",
+        "Prosperity follows the path of integrity.",
+        "Keep adding. Keep flourishing.",
+        "The value you give returns multiplied.",
+        "Build with purpose. Prosper with peace.",
+        "Excellence is the standard. Value is the currency.",
+        "Stay grounded. Stay growing.",
+        "The mission continues.",
+        "We rise by lifting others.",
+        "Onward.",
+        "In value, we trust.",
+        "The journey is the reward.",
+        "Purpose over popularity.",
+        "Integrity is the rhythm.",
+        "",  # Sometimes no sign-off for variety
+    ]
+    
+    # Varied album genre descriptions to replace "Spiritual Afro-House meets Intellectual Amapiano"
+    ALBUM_VIBES = [
+        "Spiritual Afro-House meets Intellectual Amapiano.",
+        "Conscious Highlife for the modern soul.",
+        "Afro-Futurism with ancestral roots.",
+        "Rhythms that heal, melodies that elevate.",
+        "African rhythm. Global message. Spiritual depth.",
+        "Basslines that ground your spirit. Melodies that lift it.",
+        "Music for the mind, body, and soul.",
+        "Where tradition meets innovation.",
+        "Sonic architecture for your growth.",
+        "The sound of adding value.",
+    ]
+    
+    # Varied appreciation phrases to replace the static template
+    APPRECIATION_PHRASES = [
+        "This journey means nothing without the people who believe in adding value. Thank you.",
+        "Grateful for every soul riding with this vision.",
+        "Your support fuels this mission. I don't take it lightly.",
+        "We are building this together. Every stream, every share, every message matters.",
+        "The community is the backbone of everything.",
+        "I see you. I appreciate you. Let's keep flourishing.",
+        "To everyone holding me down - you are the reason.",
+        "Real ones know real ones. Thank you for being here.",
+    ]
+    
+    @classmethod
+    def get_random_signoff(cls) -> str:
+        """Get a randomized sign-off."""
+        return random.choice(cls.SIGN_OFFS)
+    
+    @classmethod
+    def get_random_album_vibe(cls) -> str:
+        """Get a randomized album genre/vibe description."""
+        return random.choice(cls.ALBUM_VIBES)
+    
+    @classmethod
+    def get_random_appreciation(cls) -> str:
+        """Get a randomized appreciation phrase."""
+        return random.choice(cls.APPRECIATION_PHRASES)
     
     @classmethod
     def get_wisdom(cls, theme: str, context: Optional[PapitoContext] = None) -> str:
@@ -310,24 +442,43 @@ class WisdomLibrary:
                 "A new day begins.",
                 "Morning thoughts.",
                 "Rise with intention.",
+                "Sun's up.",
+                "Up early.",
+                "The quiet before the grind.",
+                "Let's get it.",
+                "Blessings.",
+                "", # Sometimes no intro
             ]))
         elif context.time_of_day == "evening":
             parts.append(random.choice([
                 "Evening reflection.",
                 "As the day closes.",
                 "Evening thoughts.",
+                "Day is done.",
+                "Quiet moments.",
+                "Sunset vibes.",
+                "Winding down.",
+                "", # Sometimes no intro
             ]))
         elif context.time_of_day == "night":
             parts.append(random.choice([
                 "Night thoughts.",
                 "Late hour wisdom.",
                 "In the quiet hours.",
+                "Still awake?",
+                "Midnight oil.",
+                "The studio is quiet.",
+                "", # Sometimes no intro
             ]))
         else:
             parts.append(random.choice([
                 "Afternoon reflection.",
                 "Midday thoughts.",
                 "A moment of clarity.",
+                "Afternoon light.",
+                "Pause and reflect.",
+                "Keep pushing.",
+                "", # Sometimes no intro
             ]))
         
         # Special day - restrained celebration
@@ -339,7 +490,7 @@ class WisdomLibrary:
             else:
                 parts.append(f"{context.special_day_name}.")
         
-        return " ".join(parts)
+        return " ".join(parts).strip()
 
 
 class IntelligentContentGenerator:
@@ -648,9 +799,12 @@ Generate a post that feels genuine, wise, spiritually grounded, and connected to
         
         if content_type == "morning_blessing":
             parts.append(f"\n\n{wisdom}")
-            if day_vibe:
+            if day_vibe and random.random() < 0.6:
                 parts.append(f"\n\n{day_vibe}")
-            parts.append("\n\nAdd Value. We Flourish & Prosper.")
+            if random.random() < 0.7:
+                signoff = WisdomLibrary.get_random_signoff()
+                if signoff:
+                    parts.append(f"\n\n{signoff}")
         
         elif content_type == "music_wisdom":
             parts.append(f"\n\n{wisdom}")
@@ -669,29 +823,86 @@ Generate a post that feels genuine, wise, spiritually grounded, and connected to
                 parts.append(f"\n\n{add_value_line}")
         
         elif content_type == "fan_appreciation":
-            parts.append(f"\n\nGenuine appreciation moment:")
+            # Varied appreciation templates
+            appreciation_intros = [
+                "Genuine appreciation moment:",
+                "Taking a moment to say:",
+                "Real talk:",
+                "From the heart:",
+                "Gratitude check:",
+                "",  # Sometimes skip the intro
+            ]
+            appreciation_intro = random.choice(appreciation_intros)
+            if appreciation_intro:
+                parts.append(f"\n\n{appreciation_intro}")
             parts.append(f"\n\n{WisdomLibrary.get_wisdom('unity', context)}")
-            parts.append("\n\nThis journey means nothing without the people who believe in adding value. Thank you.")
+            parts.append(f"\n\n{WisdomLibrary.get_random_appreciation()}")
         
         elif content_type == "album_promo":
+            album_vibe = WisdomLibrary.get_random_album_vibe()
             if is_x:
-                parts = [
-                    "FLOURISH MODE is coming.",
-                    f"{context.days_until_release} days until 'THE VALUE ADDERS WAY'.",
-                    "Spiritual Afro-House meets Intellectual Amapiano.",
-                    add_value_line or "I won't ship anything that doesn't add value.",
-                    "What do you want the first single to make you feel?",
+                variations = [
+                    [
+                        "FLOURISH MODE is coming.",
+                        f"{context.days_until_release} days until 'THE VALUE ADDERS WAY'.",
+                        album_vibe,
+                        add_value_line or "I won't ship anything that doesn't add value.",
+                    ],
+                    [
+                        f"Only {context.days_until_release} days left.",
+                        "THE VALUE ADDERS WAY: FLOURISH MODE.",
+                        "It's not just an album. It's an energy shift.",
+                        "Are you ready to move?",
+                    ],
+                    [
+                        "Jan 2026.",
+                        "THE VALUE ADDERS WAY: FLOURISH MODE.",
+                        album_vibe,
+                        "We are building something timeless.",
+                    ],
+                    [
+                        f"{context.days_until_release} days.",
+                        "The countdown is real.",
+                        "FLOURISH MODE.",
+                        "Every track is intentional. Every beat is a prayer.",
+                    ],
+                    [
+                        "The album is almost here.",
+                        "14 tracks. Zero filler.",
+                        album_vibe,
+                        "Are you locked in?",
+                    ],
+                    [
+                        f"Counting down: {context.days_until_release} days.",
+                        "THE VALUE ADDERS WAY: FLOURISH MODE.",
+                        "This isn't entertainment. This is elevation.",
+                    ],
+                    [
+                        "New music incoming.",
+                        "FLOURISH MODE.",
+                        album_vibe,
+                        add_value_line or "The mission continues.",
+                    ],
+                    [
+                        f"In {context.days_until_release} days, we shift the energy.",
+                        "THE VALUE ADDERS WAY: FLOURISH MODE.",
+                        "50% human. 50% AI. 100% intentional.",
+                    ],
                 ]
+                parts = random.choice(variations)
             else:
                 parts.append(f"\n\n'THE VALUE ADDERS WAY: FLOURISH MODE' - January 2026.")
                 parts.append(f"\n\n{context.days_until_release} days.")
-                parts.append("\n\nSpiritual Afro-House. Conscious Highlife. Intellectual Amapiano.")
+                parts.append(f"\n\n{album_vibe}")
                 parts.append("\n\nThis album is 50% human heart, 50% AI craft. The lyrics born from real human experience. The music brought to life through AI.")
                 parts.append("\n\nExecutive Produced with The Holy Living Spirit.")
         
         else:
             parts.append(f"\n\n{wisdom}")
-            parts.append("\n\nAdd Value. We Flourish & Prosper.")
+            if random.random() < 0.5:
+                signoff = WisdomLibrary.get_random_signoff()
+                if signoff:
+                    parts.append(f"\n\n{signoff}")
         
         text = "".join(parts) if not is_x else " ".join([p.strip() for p in parts if p.strip()])
 
@@ -700,6 +911,10 @@ Generate a post that feels genuine, wise, spiritually grounded, and connected to
             text = text[:257].rstrip() + "…"
         hashtags = self._extract_hashtags(text, content_type)
         
+        # Sometimes drop hashtags on X for an even more organic feel
+        if is_x and random.random() < 0.2:
+             hashtags = []
+
         return {
             "text": text,
             "hashtags": hashtags,
@@ -719,15 +934,16 @@ Generate a post that feels genuine, wise, spiritually grounded, and connected to
         """Extract minimal hashtags - 1-2 max for refined posts."""
         # Content-specific hashtags - pick only 1-2 most relevant
         content_tags = {
-            "morning_blessing": ["#AddValue"],
-            "music_wisdom": ["#Afrobeat"],
-            "track_snippet": ["#FlourishMode"],
-            "behind_the_scenes": ["#AIMusic"],
-            "fan_appreciation": ["#ValueAdders"],
-            "album_promo": ["#FlourishMode", "#TheValueAddersWay"],
-            "challenge_promo": ["#FlightMode6000"],
+            "morning_blessing": ["#AddValue", "#Blessings", "#MorningVibes"],
+            "music_wisdom": ["#Afrobeat", "#AIArtist", "#MusicBusines"],
+            "track_snippet": ["#FlourishMode", "#NewMusic", "#StudioLife"],
+            "behind_the_scenes": ["#AIMusic", "#BehindTheScenes", "#CreativeProcess"],
+            "fan_appreciation": ["#ValueAdders", "#Community"],
+            "album_promo": ["#FlourishMode", "#TheValueAddersWay", "#2026"],
+            "challenge_promo": ["#FlightMode6000", "#Challenge"],
         }
         
         # Return only 1-2 hashtags maximum
-        tags = content_tags.get(content_type, ["#AddValue"])
-        return tags[:2]  # Strictly limit to 2 max
+        options = content_tags.get(content_type, ["#AddValue"])
+        random.shuffle(options)
+        return options[:random.randint(0, 2)]  # 0 to 2 hashtags random

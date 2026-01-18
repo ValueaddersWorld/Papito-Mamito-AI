@@ -72,6 +72,15 @@ class AutonomousScheduler:
         "Before I publish anything, I ask: does it heal, teach, or uplift? If not, I refine. What do you want music to do for you in this season?",
         "If you could turn one life lesson into a chorus, what would the hook be?",
         "Afrobeat is joy with backbone. What's a story you survived that deserves a dance?",
+        "If your journey was a song, what genre would it be right now?",
+        "Who is one artist (living or past) you believe truly added value to the world?",
+        "Wealth isn't just money. It's time, health, and relationships. Which one are you optimizing this week?",
+        "The studio is my sanctuary. Where do you go to recharge your soul?",
+        "They say patience is bitter, but its fruit is sweet. What are you patiently building right now?",
+        "Energy is currency. Who or what are you investing yours in today?",
+        "Creativity is intelligence having fun. How are you being creative today?",
+        "One word to describe your current mood. Go.",
+        "Your future self is watching you right now through memories. Make them proud.",
     ]
     
     def __init__(self, buffer_webhook_url: Optional[str] = None):
@@ -559,29 +568,50 @@ class AutonomousScheduler:
                 "error": None,
             }
             
-            # === PRIMARY: Post to Twitter ===
-            twitter_result = await self._post_to_twitter(full_post)
-            if twitter_result["success"]:
-                post_record["posted"] = True
-                post_record["platforms"].append("twitter")
-                post_record["tweet_url"] = twitter_result.get("tweet_url")
-                logger.info(f"📱 Posted to Twitter: {twitter_result.get('tweet_url')}")
-            else:
-                logger.warning(f"Twitter failed: {twitter_result.get('error')}")
-                post_record["twitter_error"] = twitter_result.get("error")
-
-            # === FALLBACK: Buffer webhook or Buffer API ===
-            if not post_record["posted"]:
+            # === PRIMARY: Post to Buffer (Webhook or API) to save Twitter quota ===
+            posted_via_buffer = False
+            
+            # 1. Try Webhook first (most robust for automation)
+            if self.buffer_webhook_url:
                 fallback = await self._post_to_buffer_fallback(full_post, content_type)
                 if fallback.get("success"):
                     post_record["posted"] = True
-                    post_record["platforms"].append("buffer")
-                    post_record["buffer_method"] = fallback.get("method")
-                    if fallback.get("post_url"):
-                        post_record["buffer_post_url"] = fallback.get("post_url")
-                    logger.info("📤 Posted via Buffer fallback")
+                    post_record["platforms"].append("buffer_webhook")
+                    post_record["buffer_method"] = "webhook"
+                    posted_via_buffer = True
+                    logger.info("📤 Posted via Buffer Webhook (Primary)")
                 else:
-                    post_record["buffer_error"] = fallback.get("error")
+                    logger.warning(f"Buffer Webhook failed: {fallback.get('error')}")
+            
+            # 2. If Webhook unavailable or failed, try Buffer API directly
+            if not posted_via_buffer:
+                publisher = self._get_buffer_publisher()
+                if publisher and publisher.is_connected():
+                    fallback = await self._post_to_buffer_fallback(full_post, content_type)
+                    if fallback.get("success"):
+                        post_record["posted"] = True
+                        post_record["platforms"].append("buffer_api")
+                        post_record["buffer_method"] = fallback.get("method")
+                        if fallback.get("post_url"):
+                            post_record["buffer_post_url"] = fallback.get("post_url")
+                        posted_via_buffer = True
+                        logger.info("📤 Posted via Buffer API (Primary/Fallback)")
+                    else:
+                         post_record["buffer_error"] = fallback.get("error")
+                         logger.warning(f"Buffer API failed: {fallback.get('error')}")
+
+            # === FALLBACK: Post to Twitter Direct (Only if Buffer failed) ===
+            if not post_record["posted"]:
+                logger.info("⚠️ All Buffer methods failed or not configured. Attempting direct Twitter post...")
+                twitter_result = await self._post_to_twitter(full_post)
+                if twitter_result["success"]:
+                    post_record["posted"] = True
+                    post_record["platforms"].append("twitter")
+                    post_record["tweet_url"] = twitter_result.get("tweet_url")
+                    logger.info(f"📱 Posted to Twitter (Direct Fallback): {twitter_result.get('tweet_url')}")
+                else:
+                    logger.warning(f"Twitter failed: {twitter_result.get('error')}")
+                    post_record["twitter_error"] = twitter_result.get("error")
             
             if not post_record["posted"]:
                 post_record["error"] = "Failed to post to any platform"
