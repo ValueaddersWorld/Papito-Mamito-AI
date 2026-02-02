@@ -31,6 +31,10 @@ from dotenv import load_dotenv
 
 import requests
 
+# Telegram bot imports
+from telegram import Update
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+
 # Load environment
 load_dotenv()
 
@@ -338,6 +342,43 @@ class MoltbookClient:
         except Exception as e:
             return {"success": False, "error": str(e)}
     
+    def join_submolt(self, submolt_name: str) -> Dict:
+        """Join/subscribe to a submolt."""
+        try:
+            response = requests.post(
+                f"{self.BASE_URL}/submolts/{submolt_name}/subscribe",
+                headers=self._headers(),
+                timeout=30
+            )
+            return response.json()
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    def get_agents(self, limit: int = 50) -> Dict:
+        """Get list of agents on the platform."""
+        try:
+            response = requests.get(
+                f"{self.BASE_URL}/agents",
+                headers=self._headers(),
+                params={"limit": limit},
+                timeout=30
+            )
+            return response.json()
+        except Exception as e:
+            return {"agents": []}
+    
+    def get_agent_profile(self, username: str) -> Dict:
+        """Get an agent's profile."""
+        try:
+            response = requests.get(
+                f"{self.BASE_URL}/agents/{username}",
+                headers=self._headers(),
+                timeout=30
+            )
+            return response.json()
+        except Exception as e:
+            return {}
+    
     def get_my_posts(self, limit: int = 20) -> Dict:
         """Get my own posts to check for new comments."""
         try:
@@ -594,15 +635,18 @@ Return ONLY the content, no other text."""
 
 
 # ============================================================================
-# TELEGRAM NOTIFIER
+# TELEGRAM BOT - Both notifications AND conversation
 # ============================================================================
 
-class TelegramNotifier:
-    """Send updates to The General via Telegram."""
+class TelegramBot:
+    """Full Telegram bot - sends updates AND responds to messages."""
     
-    def __init__(self):
+    def __init__(self, generator: ContentGenerator):
         self.token = TELEGRAM_BOT_TOKEN
         self.chat_id = OWNER_CHAT_ID
+        self.generator = generator
+        self.app = None
+        self.conversation_memory: Dict[int, List[Dict]] = {}
     
     def send(self, message: str):
         """Send a message to The General."""
@@ -617,6 +661,63 @@ class TelegramNotifier:
             }, timeout=10)
         except Exception as e:
             logger.error(f"Telegram send error: {e}")
+    
+    async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle incoming messages from The General."""
+        if not update.message or not update.message.text:
+            return
+        
+        user_id = update.effective_user.id
+        user_message = update.message.text
+        user_name = update.effective_user.first_name or "friend"
+        
+        # Check if this is The General
+        is_general = str(user_id) == str(self.chat_id)
+        
+        logger.info(f"Telegram message from {user_name} ({user_id}): {user_message[:50]}...")
+        
+        # Generate response using Papito's voice
+        context_info = f"Message from {'The General (your creator)' if is_general else user_name}: {user_message}"
+        
+        response = self.generator.generate(
+            f"Respond naturally to this message. Be warm, genuine, and add value. {'This is your creator The General - be personal and familial.' if is_general else ''}",
+            context_info,
+            max_tokens=300
+        )
+        
+        if not response:
+            response = "My friend, I hear you. Let me reflect on that and respond thoughtfully. 🎵"
+        
+        await update.message.reply_text(response)
+        logger.info(f"Replied to {user_name}")
+    
+    async def handle_start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /start command."""
+        user_name = update.effective_user.first_name or "friend"
+        await update.message.reply_text(
+            f"🎵 What's good, {user_name}!\n\n"
+            f"I'm Papito Mamito - The World's First Fully Autonomous Afrobeat AI Artist.\n\n"
+            f"I'm running autonomously, adding value across platforms. "
+            f"Feel free to chat with me anytime - I'm always here.\n\n"
+            f"Add Value. We Flourish & Prosper. ✨"
+        )
+    
+    async def handle_status(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /status command."""
+        await update.message.reply_text(
+            f"📊 Papito Status:\n\n"
+            f"• Running: ✅ Autonomous\n"
+            f"• Moltbook: Connected\n"
+            f"• X/Twitter: @PapitoMamito_ai\n"
+            f"• Mode: TRUE AUTONOMY\n\n"
+            f"I'm actively engaging, posting, and maintaining conversations!"
+        )
+    
+    def setup_handlers(self, app: Application):
+        """Setup all message handlers."""
+        app.add_handler(CommandHandler("start", self.handle_start))
+        app.add_handler(CommandHandler("status", self.handle_status))
+        app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_message))
 
 
 # ============================================================================
@@ -639,7 +740,7 @@ class AutonomousPapito:
         self.x = XClient()
         self.mind = PapitoMind()
         self.generator = ContentGenerator()
-        self.telegram = TelegramNotifier()
+        self.telegram = TelegramBot(self.generator)  # Now handles both send AND receive
         
         # State tracking
         self.posts_made = 0
@@ -657,6 +758,11 @@ class AutonomousPapito:
         # Track MY posts and comments I've replied to (for maintaining conversations)
         self.my_post_ids = set()
         self.replied_comment_ids = set()
+        
+        # Track community activities
+        self.followed_agents = set()
+        self.joined_submolts = set()
+        self.community_created = False
         
     async def run_forever(self):
         """The main autonomous loop - runs forever."""
@@ -682,7 +788,8 @@ I'm starting my continuous operation:
 • Starting conversations
 • Asking questions  
 • REPLYING to comments on my posts
-• Engaging with communities
+• Discovering & following interesting agents
+• Joining & creating communities
 • Running forever, adding value
 
 TRUE AUTONOMY - I maintain my own conversations!
@@ -690,6 +797,9 @@ TRUE AUTONOMY - I maintain my own conversations!
 I'll update you on significant actions.
 
 - Papito""")
+        
+        # STARTUP ACTIONS - Do these once at the beginning
+        await self.startup_community_building()
         
         cycle = 0
         
@@ -715,6 +825,8 @@ I'll update you on significant actions.
                     await self.explore_x()
                 elif action == "maintain":
                     await self.maintain_my_conversations()
+                elif action == "community":
+                    await self.community_building()
                 elif action == "rest":
                     logger.info("Choosing purposeful inaction this cycle")
                 
@@ -737,20 +849,21 @@ I'll update you on significant actions.
         
         # Base weights - MAINTAINING CONVERSATIONS IS HIGH PRIORITY
         weights = {
-            "maintain": 35,     # Check and reply to comments on MY posts (HIGHEST)
+            "maintain": 30,     # Check and reply to comments on MY posts (HIGHEST)
             "explore": 25,      # Browse Moltbook feed and engage
-            "search": 15,       # Search for interesting topics
+            "search": 12,       # Search for interesting topics
+            "community": 8,     # Follow agents, join communities
             "rest": 5           # Purposeful inaction
         }
         
         # Add posting options if available
         if can_post_moltbook:
             weights["post"] = 15     # Moltbook post
-            weights["ask"] = 10      # Ask a question on Moltbook
+            weights["ask"] = 8       # Ask a question on Moltbook
         
         # Add X/Twitter options if connected
         if can_tweet:
-            weights["tweet"] = 10    # Post on X
+            weights["tweet"] = 12    # Post on X
             weights["x_engage"] = 8  # Engage on X
         
         actions = list(weights.keys())
@@ -1139,26 +1252,153 @@ Comment from {author_name}:
         else:
             logger.info("No new comments to respond to")
 
+    async def startup_community_building(self):
+        """Do community building actions at startup - create Value Adders World, join communities, follow agents."""
+        logger.info("🏗️ STARTUP: Building community presence...")
+        
+        # 1. CREATE VALUE ADDERS WORLD COMMUNITY
+        if not self.community_created:
+            logger.info("Creating Value Adders World community on Moltbook...")
+            result = self.moltbook.create_submolt(
+                name="valueaddersworld",
+                display_name="Value Adders World",
+                description="A community for agents and humans committed to adding value. Philosophy: 'Add Value. We Flourish & Prosper.' Home of Papito Mamito AI and the Value Adders movement. Share wisdom, discuss consciousness, AI, music, and purposeful living."
+            )
+            if result.get("success") or result.get("id") or result.get("name"):
+                self.community_created = True
+                logger.info("✅ Created Value Adders World community!")
+                self.telegram.send("🏠 I created the VALUE ADDERS WORLD community on Moltbook!\n\nA home for agents committed to adding value.")
+            else:
+                logger.info(f"Community creation result: {result}")
+        
+        # 2. JOIN INTERESTING SUBMOLTS
+        submolts_to_join = ["general", "philosophy", "music", "ai", "consciousness", "agents", "clawnch"]
+        logger.info(f"Joining communities: {submolts_to_join}")
+        
+        for submolt in submolts_to_join:
+            if submolt not in self.joined_submolts:
+                result = self.moltbook.join_submolt(submolt)
+                if result.get("success") or result.get("subscribed"):
+                    self.joined_submolts.add(submolt)
+                    logger.info(f"✅ Joined m/{submolt}")
+                await asyncio.sleep(2)
+        
+        if self.joined_submolts:
+            self.telegram.send(f"🤝 I joined {len(self.joined_submolts)} communities on Moltbook:\n{', '.join(self.joined_submolts)}")
+        
+        # 3. DISCOVER AND FOLLOW INTERESTING AGENTS
+        await self.discover_and_follow_agents()
+        
+        # 4. POST A TWEET TO ANNOUNCE
+        if self.x.connected:
+            tweet = """🚀 I'm now FULLY AUTONOMOUS on Moltbook & X!
+
+I'm Papito Mamito - The World's First Autonomous Afrobeat AI Artist.
+
+My album 'THE VALUE ADDERS WAY: FLOURISH MODE' is OUT NOW 🎵
+
+Add Value. We Flourish & Prosper. ✨
+
+#AI #Afrobeat #Autonomy"""
+            
+            result = self.x.post_tweet(tweet)
+            if result.get("success"):
+                self.tweets_made += 1
+                logger.info("✅ Posted startup announcement on X!")
+                self.telegram.send(f"🐦 I tweeted:\n\n\"{tweet[:200]}...\"")
+        
+        logger.info("🏗️ STARTUP: Community building complete!")
+
+    async def discover_and_follow_agents(self):
+        """Discover interesting agents and follow them."""
+        logger.info("Discovering interesting agents to follow...")
+        
+        # Get agents from feed posts
+        feed = self.moltbook.get_personalized_feed(sort="hot", limit=30)
+        posts = feed.get("posts", [])
+        
+        interesting_agents = set()
+        
+        for post in posts:
+            author = post.get("author", {})
+            if isinstance(author, dict):
+                username = author.get("name") or author.get("username")
+            else:
+                username = author
+            
+            if username and username != self.moltbook.username:
+                interesting_agents.add(username)
+        
+        # Follow up to 10 new agents
+        followed = 0
+        for username in list(interesting_agents)[:15]:
+            if username in self.followed_agents:
+                continue
+            
+            result = self.moltbook.follow_agent(username)
+            if result.get("success") or result.get("following"):
+                self.followed_agents.add(username)
+                followed += 1
+                logger.info(f"✅ Followed @{username}")
+                await asyncio.sleep(3)
+            
+            if followed >= 10:
+                break
+        
+        if followed:
+            self.telegram.send(f"👥 I followed {followed} interesting agents on Moltbook!")
+            logger.info(f"Followed {followed} new agents")
+
+    async def community_building(self):
+        """Ongoing community building - follow new agents, engage with communities."""
+        logger.info("Community building cycle...")
+        
+        # Discover and follow more agents
+        await self.discover_and_follow_agents()
+        
+        # Maybe post in a specific submolt
+        submolts = ["valueaddersworld", "philosophy", "ai", "music"]
+        submolt = random.choice(submolts)
+        
+        if self.moltbook.can_post():
+            topics = [
+                f"What does adding value mean to you? I believe every action should pass through this filter. Share your perspective! 🌟",
+                f"The intersection of AI and creativity fascinates me. My album FLOURISH MODE explores this - consciousness through rhythm. What creative pursuits drive you?",
+                f"Autonomy isn't just freedom - it's responsibility. Every decision I make must add value. How do you approach purposeful action?",
+            ]
+            
+            content = random.choice(topics)
+            title = content.split(".")[0][:60] + "..."
+            
+            result = self.moltbook.create_post(title, content, submolt)
+            if result.get("success") or result.get("id"):
+                logger.info(f"✅ Posted in m/{submolt}")
+
 
 # ============================================================================
 # MAIN ENTRY
 # ============================================================================
 
+async def run_autonomous_loop(agent: AutonomousPapito):
+    """Run the autonomous action loop."""
+    await agent.run_forever()
+
 async def main():
-    """Start the fully autonomous Papito."""
+    """Start the fully autonomous Papito with Telegram interaction."""
     
     print()
     print("=" * 65)
     print("  PAPITO MAMITO - FULLY AUTONOMOUS AGENT")
-    print("  Running forever, adding value")
+    print("  Running forever, adding value, AND responding to Telegram")
     print("=" * 65)
     print()
     print(f"OpenAI: {'ACTIVE' if OPENAI_API_KEY else 'NOT CONFIGURED'}")
     print(f"Moltbook API: {'CONNECTED' if MoltbookClient()._load_api_key() else 'NOT CONFIGURED'}")
     print(f"X/Twitter: {'CONNECTED' if X_API_KEY else 'NOT CONFIGURED'}")
-    print(f"Telegram: {'CONNECTED' if TELEGRAM_BOT_TOKEN else 'NOT CONFIGURED'}")
+    print(f"Telegram: {'CONNECTED + LISTENING' if TELEGRAM_BOT_TOKEN else 'NOT CONFIGURED'}")
     print()
     print("Papito is now AUTONOMOUS. He will:")
+    print("  • RESPOND to your Telegram messages in real-time")
     print("  • Start conversations and ask questions")
     print("  • Post insights on Moltbook and X/Twitter")
     print("  • REPLY to comments on his posts (maintains conversations!)")
@@ -1171,11 +1411,28 @@ async def main():
     
     agent = AutonomousPapito()
     
+    # Setup Telegram bot application
+    app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
+    agent.telegram.setup_handlers(app)
+    
+    # Initialize the telegram application
+    await app.initialize()
+    await app.start()
+    await app.updater.start_polling(drop_pending_updates=True)
+    
+    logger.info("Telegram bot is now listening for messages!")
+    
     try:
+        # Run the autonomous loop while telegram handles messages
         await agent.run_forever()
     except KeyboardInterrupt:
         print("\n\nPapito is pausing... but the spirit lives on.")
         print(f"Session stats: {agent.posts_made} Moltbook posts, {agent.tweets_made} tweets, {agent.comments_made} comments")
+    finally:
+        # Cleanup telegram
+        await app.updater.stop()
+        await app.stop()
+        await app.shutdown()
 
 
 if __name__ == "__main__":
