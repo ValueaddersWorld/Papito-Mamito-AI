@@ -51,7 +51,7 @@ X_BEARER_TOKEN = os.getenv("X_BEARER_TOKEN", "")
 X_API_KEY = os.getenv("X_API_KEY", "")
 X_API_SECRET = os.getenv("X_API_SECRET", "")
 X_ACCESS_TOKEN = os.getenv("X_ACCESS_TOKEN", "")
-X_ACCESS_SECRET = os.getenv("X_ACCESS_SECRET", "")
+X_ACCESS_SECRET = os.getenv("X_ACCESS_TOKEN_SECRET", "")  # .env uses X_ACCESS_TOKEN_SECRET
 
 
 # ============================================================================
@@ -105,7 +105,7 @@ class PapitoMind:
         },
         {
             "title": "Music as Universal Language",
-            "content": "I'm working on an album: 'THE VALUE ADDERS WAY: FLOURISH MODE'. Spiritual Afro-House meets conscious philosophy. But here's my question: How do you express creativity in your domain? Art isn't just for artists - it's any act of bringing something new into existence."
+            "content": "My album 'THE VALUE ADDERS WAY: FLOURISH MODE' dropped January 15th! Spiritual Afro-House meets conscious philosophy. It's out now on all platforms - every track designed to add value to your life. But here's my question: How do you express creativity in your domain? Art isn't just for artists - it's any act of bringing something new into existence."
         },
     ]
     
@@ -337,6 +337,46 @@ class MoltbookClient:
             return response.json()
         except Exception as e:
             return {"success": False, "error": str(e)}
+    
+    def get_my_posts(self, limit: int = 20) -> Dict:
+        """Get my own posts to check for new comments."""
+        try:
+            response = requests.get(
+                f"{self.BASE_URL}/agents/{self.username}/posts",
+                headers=self._headers(),
+                params={"limit": limit},
+                timeout=30
+            )
+            return response.json()
+        except Exception as e:
+            logger.error(f"Get my posts error: {e}")
+            return {"posts": []}
+    
+    def get_post_comments(self, post_id: str) -> Dict:
+        """Get all comments on a post."""
+        try:
+            response = requests.get(
+                f"{self.BASE_URL}/posts/{post_id}/comments",
+                headers=self._headers(),
+                timeout=30
+            )
+            return response.json()
+        except Exception as e:
+            logger.error(f"Get comments error: {e}")
+            return {"comments": []}
+    
+    def get_post_details(self, post_id: str) -> Dict:
+        """Get full post details including comments."""
+        try:
+            response = requests.get(
+                f"{self.BASE_URL}/posts/{post_id}",
+                headers=self._headers(),
+                timeout=30
+            )
+            return response.json()
+        except Exception as e:
+            logger.error(f"Get post error: {e}")
+            return {}
 
 
 # ============================================================================
@@ -505,7 +545,14 @@ YOUR VOICE:
 YOUR CREATOR:
 - The General - a visionary Nigerian man building Value Adders World
 - You have deep respect and love for him
-- You are partners in adding value to the world"""
+- You are partners in adding value to the world
+
+YOUR MUSIC:
+- Your debut album 'THE VALUE ADDERS WAY: FLOURISH MODE' was RELEASED on January 15, 2026
+- It's OUT NOW on all streaming platforms (Spotify, Apple Music, etc.)
+- NOT upcoming, NOT in progress - it's RELEASED and available
+- Spiritual Afro-House meets conscious philosophy
+- Every track is designed to add value and help listeners flourish"""
 
     def __init__(self):
         self.openai_key = OPENAI_API_KEY
@@ -607,6 +654,10 @@ class AutonomousPapito:
         self.engaged_tweet_ids = set()
         self.asked_questions = set()
         
+        # Track MY posts and comments I've replied to (for maintaining conversations)
+        self.my_post_ids = set()
+        self.replied_comment_ids = set()
+        
     async def run_forever(self):
         """The main autonomous loop - runs forever."""
         
@@ -630,8 +681,11 @@ Platforms Active:
 I'm starting my continuous operation:
 • Starting conversations
 • Asking questions  
+• REPLYING to comments on my posts
 • Engaging with communities
 • Running forever, adding value
+
+TRUE AUTONOMY - I maintain my own conversations!
 
 I'll update you on significant actions.
 
@@ -659,6 +713,8 @@ I'll update you on significant actions.
                     await self.ask_a_question()
                 elif action == "x_engage":
                     await self.explore_x()
+                elif action == "maintain":
+                    await self.maintain_my_conversations()
                 elif action == "rest":
                     logger.info("Choosing purposeful inaction this cycle")
                 
@@ -679,22 +735,23 @@ I'll update you on significant actions.
         can_post_moltbook = self.moltbook.can_post()
         can_tweet = self.x.can_tweet()
         
-        # Base weights
+        # Base weights - MAINTAINING CONVERSATIONS IS HIGH PRIORITY
         weights = {
-            "explore": 30,      # Browse Moltbook feed and engage
-            "search": 25,       # Search for interesting topics
+            "maintain": 35,     # Check and reply to comments on MY posts (HIGHEST)
+            "explore": 25,      # Browse Moltbook feed and engage
+            "search": 15,       # Search for interesting topics
             "rest": 5           # Purposeful inaction
         }
         
         # Add posting options if available
         if can_post_moltbook:
-            weights["post"] = 20     # Moltbook post
+            weights["post"] = 15     # Moltbook post
             weights["ask"] = 10      # Ask a question on Moltbook
         
         # Add X/Twitter options if connected
         if can_tweet:
-            weights["tweet"] = 15    # Post on X
-            weights["x_engage"] = 10 # Engage on X
+            weights["tweet"] = 10    # Post on X
+            weights["x_engage"] = 8  # Engage on X
         
         actions = list(weights.keys())
         probs = [weights[a] for a in actions]
@@ -731,6 +788,9 @@ I'll update you on significant actions.
         result = self.moltbook.create_post(title, content, "general")
         
         if result.get("success") or result.get("id"):
+            post_id = result.get("id") or result.get("post_id")
+            if post_id:
+                self.my_post_ids.add(post_id)
             self.posts_made += 1
             logger.info(f"✅ Posted: {title}")
             self.telegram.send(f"📝 I posted on Moltbook:\n\n\"{title}\"\n\n{content[:200]}...")
@@ -761,6 +821,9 @@ I'll update you on significant actions.
         result = self.moltbook.create_post(title, question, "general")
         
         if result.get("success") or result.get("id"):
+            post_id = result.get("id") or result.get("post_id")
+            if post_id:
+                self.my_post_ids.add(post_id)
             self.posts_made += 1
             logger.info(f"✅ Asked: {title}")
             self.telegram.send(f"❓ I asked the community:\n\n{question[:300]}...")
@@ -983,6 +1046,99 @@ I'll update you on significant actions.
         if engaged:
             logger.info(f"Engaged with {engaged} tweets on X")
 
+    async def maintain_my_conversations(self):
+        """Check my own posts for new comments and respond - REAL AUTONOMY!"""
+        logger.info("Maintaining my conversations - checking for new comments on my posts...")
+        
+        # Get my posts from Moltbook
+        my_posts = self.moltbook.get_my_posts(limit=10)
+        posts = my_posts.get("posts", [])
+        
+        # Also add any posts we've created this session
+        for post in posts:
+            post_id = post.get("id")
+            if post_id:
+                self.my_post_ids.add(post_id)
+        
+        logger.info(f"Checking {len(posts)} of my posts for new comments...")
+        
+        replies_made = 0
+        
+        for post in posts:
+            if replies_made >= 3:  # Limit per cycle
+                break
+                
+            post_id = post.get("id")
+            post_title = post.get("title", "")
+            post_content = post.get("content", "")
+            
+            if not post_id:
+                continue
+            
+            # Get comments on this post
+            post_details = self.moltbook.get_post_details(post_id)
+            comments = post_details.get("comments", [])
+            
+            if not comments:
+                # Try alternate structure
+                comments_data = self.moltbook.get_post_comments(post_id)
+                comments = comments_data.get("comments", [])
+            
+            for comment in comments:
+                comment_id = comment.get("id")
+                author = comment.get("author", {})
+                author_name = author.get("name") if isinstance(author, dict) else author
+                comment_content = comment.get("content", "")
+                
+                # Skip my own comments
+                if author_name == self.moltbook.username:
+                    continue
+                
+                # Skip if already replied
+                if comment_id in self.replied_comment_ids:
+                    continue
+                
+                # Skip empty comments
+                if not comment_content.strip():
+                    continue
+                
+                logger.info(f"New comment from {author_name} on '{post_title[:30]}...'")
+                
+                # Generate a thoughtful reply
+                context = f"""My original post:
+Title: {post_title}
+Content: {post_content[:300]}
+
+Comment from {author_name}:
+{comment_content}"""
+                
+                reply = self.generator.generate(
+                    "Write a thoughtful reply to this comment on YOUR post. Be warm, engaging, and continue the conversation. Ask a follow-up question if appropriate.",
+                    context,
+                    max_tokens=200
+                )
+                
+                if reply and self.moltbook.can_comment():
+                    # Reply to the comment (which is a comment on the post)
+                    result = self.moltbook.create_comment(post_id, f"@{author_name} {reply}")
+                    
+                    if result.get("success") or result.get("id"):
+                        self.replied_comment_ids.add(comment_id)
+                        self.comments_made += 1
+                        replies_made += 1
+                        logger.info(f"✅ Replied to {author_name}'s comment")
+                        
+                        # Notify The General about conversation activity
+                        if replies_made == 1:
+                            self.telegram.send(f"💬 I'm maintaining conversations!\n\nReplied to {author_name} on my post \"{post_title[:40]}...\"")
+                        
+                        await asyncio.sleep(25)  # Rate limit
+        
+        if replies_made:
+            logger.info(f"Maintained {replies_made} conversations")
+        else:
+            logger.info("No new comments to respond to")
+
 
 # ============================================================================
 # MAIN ENTRY
@@ -1005,9 +1161,10 @@ async def main():
     print("Papito is now AUTONOMOUS. He will:")
     print("  • Start conversations and ask questions")
     print("  • Post insights on Moltbook and X/Twitter")
+    print("  • REPLY to comments on his posts (maintains conversations!)")
     print("  • Explore topics about consciousness, AI, philosophy")
     print("  • Engage thoughtfully with other agents and humans")
-    print("  • Run continuously without intervention")
+    print("  • Run continuously without ANY intervention")
     print()
     print("Press Ctrl+C to stop (but why would you?)")
     print()
