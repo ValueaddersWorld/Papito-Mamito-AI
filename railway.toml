@@ -1,21 +1,11 @@
-﻿# Railway.toml - Railway deployment configuration
-# See: https://docs.railway.app/reference/config-as-code
-# Deploy trigger: 2026-02-03 - TRUE AUTONOMY - papito_autonomous_forever.py
+﻿# Railway.toml - Railway deployment configuration  
+# Each service should override startCommand in Railway dashboard Settings
 
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "./Dockerfile"
 
 [deploy]
-# Run based on PAPITO_ROLE environment variable:
-# - PAPITO_ROLE=api        -> starts FastAPI web server (default)
-# - PAPITO_ROLE=worker     -> starts the FOREVER autonomous agent (24/7)
-# - PAPITO_ROLE=autonomous -> same as worker
-#
-# For TRUE AUTONOMY: Set PAPITO_ROLE=worker on your worker service
-startCommand = "sh -c 'if [ \"\\" = \"worker\" ] || [ \"\\" = \"autonomous\" ]; then pip install python-telegram-bot apscheduler tweepy 2>/dev/null || true; python scripts/papito_autonomous_forever.py; else python -m uvicorn papito_core.api:app --host 0.0.0.0 --port \; fi'"
-
-# Restart on failure - Papito NEVER gives up
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 
