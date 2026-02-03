@@ -450,16 +450,26 @@ class XClient:
                 consumer_secret=X_API_SECRET,
                 access_token=X_ACCESS_TOKEN,
                 access_token_secret=X_ACCESS_SECRET,
-                wait_on_rate_limit=True,
+                wait_on_rate_limit=False,  # Don't block on rate limits
             )
             
-            # Verify credentials
-            me = self.client.get_me()
-            if me and me.data:
-                self.user_id = me.data.id
-                self.username = me.data.username
-                self.connected = True
-                logger.info(f"Connected to X as @{self.username}")
+            # Try to verify credentials, but don't fail if rate limited
+            try:
+                me = self.client.get_me()
+                if me and me.data:
+                    self.user_id = me.data.id
+                    self.username = me.data.username
+                    self.connected = True
+                    logger.info(f"Connected to X as @{self.username}")
+            except Exception as verify_error:
+                # Rate limited or other error - still mark as connected
+                # We have valid credentials, just can't verify right now
+                if "rate limit" in str(verify_error).lower() or "429" in str(verify_error):
+                    logger.warning(f"X rate limited during init - will retry later. Assuming connected.")
+                    self.connected = True
+                else:
+                    logger.warning(f"X verification failed: {verify_error}")
+                    self.connected = True  # Try anyway
             
         except ImportError:
             logger.warning("tweepy not installed - X integration disabled")

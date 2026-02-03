@@ -1,0 +1,27 @@
+# Papito Mamito AI - Autonomous Agent
+# This runs 24/7, forever, adding value
+# Deploy to: Railway, Render, Fly.io, or any VPS
+
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    tzdata \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and install
+COPY requirements.txt .
+RUN pip install --upgrade pip && pip install -r requirements.txt
+
+# Copy the autonomous agent script
+COPY scripts/papito_autonomous_forever.py .
+
+# Papito runs FOREVER
+CMD ["python", "papito_autonomous_forever.py"]

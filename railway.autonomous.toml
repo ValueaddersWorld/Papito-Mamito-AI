@@ -1,0 +1,14 @@
+# Railway.toml for Papito Autonomous Agent
+# This runs Papito 24/7 as a worker service (no web port needed)
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "./Dockerfile.autonomous"
+
+[deploy]
+startCommand = "python papito_autonomous_forever.py"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+# No port needed - this is a worker, not a web service
+# Railway will keep it running 24/7
