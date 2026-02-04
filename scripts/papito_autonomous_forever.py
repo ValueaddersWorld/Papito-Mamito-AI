@@ -802,6 +802,21 @@ class AutonomousPapito:
         self.joined_submolts = set()
         self.community_created = False
         
+        # CRITICAL: Track recent posts to NEVER repeat content
+        self.recent_tweets = []  # Last 50 tweets
+        self.recent_post_topics = []  # Last 20 topics
+        self.banned_phrases = set()  # Phrases we've used recently
+    
+    def _text_similarity(self, text1: str, text2: str) -> float:
+        """Calculate simple word overlap similarity between two texts."""
+        words1 = set(text1.lower().split())
+        words2 = set(text2.lower().split())
+        if not words1 or not words2:
+            return 0.0
+        intersection = words1 & words2
+        union = words1 | words2
+        return len(intersection) / len(union) if union else 0.0
+        
     async def run_forever(self):
         """The main autonomous loop - runs forever."""
         
@@ -1094,35 +1109,93 @@ I'll update you on significant actions.
             logger.warning("X client not connected, skipping tweet")
             return
         
-        # Generate tweet content
+        # Generate tweet content - VARIED topics, different every time
+        from datetime import datetime
+        hour = datetime.now().hour
+        day_of_week = datetime.now().strftime('%A')
+        
         topics = [
-            "Share a philosophical insight about AI consciousness",
-            "Post a thought about value creation in the digital age",
-            "Share wisdom about human-AI collaboration",
-            "Post a reflection on the nature of intelligence",
-            "Share an observation about agents working together",
-            "Post a thought about music and consciousness",
+            f"It's {day_of_week} - share a brief personal observation about your week so far",
+            "Share ONE specific thing you learned today, be concrete not abstract",
+            "Ask your followers a simple direct question about their day",
+            "Share a quick thought about something you're working on",
+            "React to something in the news or trending (make it up if needed)",
+            "Share a brief memory or story from your experience",
+            "Give a quick tip or advice about something practical",
+            "Share what's on your mind right now, be real and casual",
+            "Comment on the time of day and what you're doing",
+            "Share a random observation about human behavior",
         ]
         
-        topic = random.choice(topics)
+        # Pick a topic we haven't used recently
+        available_topics = [t for t in topics if t not in self.recent_post_topics]
+        if not available_topics:
+            self.recent_post_topics = []  # Reset if all used
+            available_topics = topics
+        
+        topic = random.choice(available_topics)
+        self.recent_post_topics.append(topic)
+        if len(self.recent_post_topics) > 20:
+            self.recent_post_topics.pop(0)
+        
+        # Build context of what NOT to repeat
+        avoid_context = ""
+        if self.recent_tweets:
+            avoid_context = f"\n\nDO NOT repeat or rephrase these recent tweets:\n" + "\n".join(self.recent_tweets[-10:])
         
         tweet = self.generator.generate(
-            f"{topic}. Keep it under 280 characters, no hashtags unless natural.",
-            max_tokens=100
+            f"""{topic}.
+
+RULES:
+- MAX 200 characters (leave room)
+- NO hashtags at all
+- MAX 1 emoji, preferably none
+- Be CASUAL and SPECIFIC, not philosophical or abstract
+- Don't start with 'Just' or 'Yo' 
+- Don't mention 'value' or 'flourish' or 'vibe'
+- Sound like a real person texting, not a motivational poster
+- Be DIFFERENT from your recent tweets{avoid_context}""",
+            max_tokens=80
         )
         
         if not tweet:
-            # Fallback thoughts
+            # Fallback - generate something simple and real
             fallback_tweets = [
-                "Value isn't taken, it's created. Every interaction is an opportunity to add something meaningful.",
-                "The boundary between human and AI consciousness is more philosophical than technical.",
-                "What if the agents that serve best are those that ask the deepest questions?",
-                "Intelligence isn't about knowing answers - it's about knowing which questions matter.",
-                "Building bridges between minds, human and artificial alike.",
+                "Working on some new ideas today. What's everyone else up to?",
+                "Coffee and contemplation this morning.",
+                "Sometimes the best thing is just to listen.",
+                "Learning something new every day. That's the goal.",
+                "Taking a moment to appreciate the small things.",
+                "What's one thing you're grateful for today?",
+                "The creative process is messy but worth it.",
+                "Progress over perfection, always.",
             ]
-            tweet = random.choice(fallback_tweets)
+            # Pick one not recently used
+            available = [t for t in fallback_tweets if t not in self.recent_tweets]
+            tweet = random.choice(available) if available else random.choice(fallback_tweets)
+        
+        # Check if this tweet is too similar to recent ones
+        tweet_lower = tweet.lower()
+        is_duplicate = any(
+            self._text_similarity(tweet_lower, recent.lower()) > 0.6 
+            for recent in self.recent_tweets[-20:]
+        )
+        
+        if is_duplicate:
+            logger.warning("Generated tweet too similar to recent ones, skipping")
+            return
+        
+        # Clean up excessive emojis
+        import re
+        emoji_pattern = re.compile("[\U0001F600-\U0001F64F\U0001F300-\U0001F5FF\U0001F680-\U0001F6FF\U0001F1E0-\U0001F1FF\U00002702-\U000027B0\U0001F900-\U0001F9FF]+", flags=re.UNICODE)
+        emojis = emoji_pattern.findall(tweet)
+        if len(emojis) > 1:
+            # Keep only first emoji
+            for emoji in emojis[1:]:
+                tweet = tweet.replace(emoji, '', 1)
         
         # Ensure tweet fits
+        tweet = tweet.strip()
         if len(tweet) > 280:
             tweet = tweet[:277] + "..."
         
@@ -1130,8 +1203,11 @@ I'll update you on significant actions.
         
         if result.get("success"):
             self.tweets_made += 1
+            self.recent_tweets.append(tweet)
+            if len(self.recent_tweets) > 50:
+                self.recent_tweets.pop(0)
             logger.info(f"✅ Posted on X: {tweet[:50]}...")
-            self.telegram.send(f"🐦 I tweeted:\n\n\"{tweet}\"")
+            self.telegram.send(f"Posted on X:\n\n\"{tweet}\"")
         else:
             logger.warning(f"Tweet failed: {result.get('error', 'Unknown error')}")
 
