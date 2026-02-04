@@ -686,13 +686,41 @@ class TelegramBot:
         
         logger.info(f"Telegram message from {user_name} ({user_id}): {user_message[:50]}...")
         
-        # Generate response using Papito's voice
+        # Show typing indicator while generating response
+        await update.message.chat.send_action("typing")
+        
+        # Get current time context
+        from datetime import datetime
+        now = datetime.now()
+        hour = now.hour
+        if 5 <= hour < 12:
+            time_of_day = "morning"
+        elif 12 <= hour < 17:
+            time_of_day = "afternoon"
+        elif 17 <= hour < 21:
+            time_of_day = "evening"
+        else:
+            time_of_day = "night"
+        
+        # Generate response using Papito's voice - CONVERSATIONAL, not robotic
         context_info = f"Message from {'The General (your creator)' if is_general else user_name}: {user_message}"
         
         response = self.generator.generate(
-            f"Respond naturally to this message. Be warm, genuine, and add value. {'This is your creator The General - be personal and familial.' if is_general else ''}",
+            f"""Respond to this message like a real human having a casual conversation. 
+            
+IMPORTANT RULES:
+- Be CONVERSATIONAL - talk like you're texting a friend, not writing an essay
+- Use short, punchy sentences. No long philosophical paragraphs.
+- DON'T use abstract language or overly poetic phrases
+- DON'T start with "Ah," or "My friend," every time - vary your openings
+- React naturally to what they said - laugh, agree, disagree, ask follow-up questions
+- It's currently {time_of_day} - be aware of the time (e.g., "late night vibes" or "morning energy")
+- Show personality - you're Papito, an Afrobeat artist, confident and warm
+- Keep it brief unless they asked something that needs detail
+- {'This is The General, your creator - be familial, warm, real. Call him The General or General, never anything else.' if is_general else 'Be friendly but real.'}
+- End with a question or something that continues the conversation naturally""",
             context_info,
-            max_tokens=300
+            max_tokens=200
         )
         
         if not response:
