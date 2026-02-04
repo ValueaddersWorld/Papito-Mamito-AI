@@ -1,7 +1,7 @@
 ﻿# syntax=docker/dockerfile:1
 # Papito Mamito AI - Docker Image
 # Supports both API server and autonomous agent modes
-# Cache bust: 2026-02-04-autonomous-fix
+# Cache bust: 2025-12-24-christmas-eve-wisdom
 
 FROM python:3.11-slim
 
@@ -22,12 +22,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy the entire papito_core package
 COPY apps/papito_core /app/apps/papito_core
 COPY docs /app/docs
-COPY scripts /app/scripts
 
-# Install Python dependencies - BOTH for API and autonomous agent
-RUN pip install --upgrade pip && \
-    pip install "/app/apps/papito_core[api]" && \
-    pip install python-telegram-bot[job-queue] tweepy openai requests apscheduler
+# Install Python dependencies
+RUN pip install --upgrade pip && pip install "/app/apps/papito_core[api]"
 
 # Create content directories
 RUN mkdir -p content/blogs content/releases content/analytics content/schedules
