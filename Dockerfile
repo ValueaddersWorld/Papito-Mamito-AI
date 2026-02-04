@@ -22,6 +22,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy the entire papito_core package
 COPY apps/papito_core /app/apps/papito_core
 COPY docs /app/docs
+COPY scripts /app/scripts
 
 # Install Python dependencies
 RUN pip install --upgrade pip && pip install "/app/apps/papito_core[api]"
