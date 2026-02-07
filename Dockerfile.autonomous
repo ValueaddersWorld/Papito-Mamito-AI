@@ -20,8 +20,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
-# Copy the autonomous agent script
-COPY scripts/papito_autonomous_forever.py .
+# Copy the papito_core package (needed for imports)
+COPY apps/papito_core /app/apps/papito_core
+RUN pip install "/app/apps/papito_core"
 
-# Papito runs FOREVER
-CMD ["python", "papito_autonomous_forever.py"]
+# Copy docs for persona
+COPY docs /app/docs
+
+# Copy the autonomous agent scripts to proper location
+RUN mkdir -p scripts
+COPY scripts/papito_autonomous_forever.py scripts/
+COPY scripts/run_papito_autonomous.py scripts/
+
+# Papito runs FOREVER - using scripts/ path for consistency
+CMD ["python", "scripts/papito_autonomous_forever.py"]
