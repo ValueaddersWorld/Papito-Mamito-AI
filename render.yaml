@@ -1,17 +1,22 @@
 # Render.yaml - For Render.com deployment
 # Deploy Papito as a background worker that runs forever
+# IMPORTANT: Use a PAID plan ($7/month) to prevent spin-down!
 
 services:
   - type: worker
     name: papito-autonomous
-    env: python
+    runtime: python
+    plan: starter  # $7/month - prevents spin-down. Use 'free' to test but it WILL stop.
     buildCommand: pip install -r requirements.txt
     startCommand: python scripts/papito_autonomous_forever.py
+    autoDeploy: true  # Auto-deploy on git push
     envVars:
       - key: PYTHON_VERSION
         value: "3.11"
       - key: OPENAI_API_KEY
         sync: false  # Set in Render dashboard
+      - key: MOLTBOOK_API_KEY
+        sync: false  # CRITICAL - set this!
       - key: TELEGRAM_BOT_TOKEN
         sync: false
       - key: TELEGRAM_OWNER_CHAT_ID

@@ -1,0 +1,30 @@
+# Papito Mamito AI - Autonomous Agent Dependencies
+# For cloud deployment on Render/Railway
+
+# Core
+python-dotenv>=1.0.0
+requests>=2.31.0
+httpx>=0.27.0
+
+# AI
+openai>=1.0.0
+anthropic>=0.75.0
+
+# Telegram Bot
+python-telegram-bot>=21.0
+
+# Twitter/X API
+tweepy>=4.14.0
+
+# Scheduling
+APScheduler>=3.11.0
+
+# Firebase (optional - for music storage)
+firebase-admin>=6.0.0
+
+# Async support
+aiohttp>=3.9.0
+aiofiles>=24.0.0
+
+# Utilities
+rich>=13.0.0
