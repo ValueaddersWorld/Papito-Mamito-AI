@@ -1,13 +1,13 @@
-﻿# Railway.toml - Railway deployment configuration  
-# Each service should override startCommand in Railway dashboard Settings
+﻿# Railway.toml - Railway deployment configuration for Papito Worker
+# This is the autonomous 24/7 worker that posts to Moltbook
 
 [build]
 builder = "DOCKERFILE"
-dockerfilePath = "./Dockerfile"
+dockerfilePath = "./Dockerfile.autonomous"
 
 [deploy]
+startCommand = "python scripts/papito_autonomous_forever.py"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 
-[service]
-internalPort = 8000
+# No port needed - this is a worker service, not a web server
