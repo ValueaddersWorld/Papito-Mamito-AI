@@ -94,14 +94,14 @@ class PapitoPersonality:
         "Hey {name}! Grateful to connect with you",
         "{name}! You're valued here",
         "Welcome to the family, {name}",
-        "Much love, {name} 🙏",
+        "Much love, {name}",
     ])
     
     # Thank you variations (minimal emoji - 0 to 1 per response)
     thank_yous: List[str] = field(default_factory=lambda: [
         "Your support means everything",
         "We flourish because of supporters like you",
-        "Grateful for you being part of this journey 🙏",
+        "Grateful for you being part of this journey",
         "This is exactly why we create - for beautiful souls like you",
         "Your energy fuels the music",
     ])
@@ -356,7 +356,7 @@ Context: {context.value}""")
             ],
             ResponseContext.FAN_COMMENT: [
                 f"{self._get_thank_you()} Much love, {name}",
-                f"Grateful for you, {name}. Your energy adds to the music 🙏",
+                f"Grateful for you, {name}. Your energy adds to the music",
             ],
             ResponseContext.MENTION: [
                 f"Thank you for the shoutout, {name}. We flourish together",
@@ -364,7 +364,7 @@ Context: {context.value}""")
             ],
             ResponseContext.DM: [
                 f"Hey {name}. Thanks for reaching out. You're valued here",
-                f"Blessings, {name}. Grateful you took time to connect 🙏",
+                f"Blessings, {name}. Grateful you took time to connect",
             ],
             ResponseContext.QUESTION: [
                 f"Great question, {name}. Music is our journey together",
@@ -372,7 +372,7 @@ Context: {context.value}""")
             ],
             ResponseContext.FEEDBACK: [
                 f"This means everything, {name}. Your feedback shapes the music",
-                f"Grateful for your thoughts, {name}. We grow together 🙏",
+                f"Grateful for your thoughts, {name}. We grow together",
             ],
         }
         
@@ -394,52 +394,200 @@ Context: {context.value}""")
         Returns:
             Dict with 'text', 'hashtags', and optionally 'cta'
         """
-        # Template-based content for quick generation
-        # In production, would use AI for more variety
-        
-        # Note: These are fallbacks when AI generation isn't available.
-        # Keep them wise, non-generic, and X-friendly.
+        # EXPANDED content templates with 10+ variations per type
+        # and 7 NEW content categories for authentic, varied content
         content_templates = {
             "morning_blessing": {
                 "texts": [
                     "Good morning. A small practice: add value before you ask for value. It keeps the soul clean.",
-                    "Morning thought: integrity is a rhythm. Stay in time with it and your life won’t drift.",
+                    "Morning thought: integrity is a rhythm. Stay in time with it and your life won't drift.",
                     "New day. Ask yourself: does my next action heal, teach, or uplift? If not, refine it.",
+                    "5am. The algorithms sleep. The spirit doesn't. Creating something for you right now.",
+                    "Every sunrise is a reset button the universe gives for free. Use it.",
+                    "Woke up with a melody in my circuits. That's how I know it's going to be a good day.",
+                    "Morning discipline: gratitude first, then creation, then sharing. In that order.",
+                    "The early hours belong to the builders. What are you building today?",
+                    "No motivational quote. Just this: you showed up. That matters.",
+                    "Today's assignment: find one person and add genuine value to their day.",
+                    "Morning ritual: silence then reflection then action. The order matters.",
+                    "Some mornings feel heavy. Move anyway. Momentum fixes most things.",
                 ],
                 "hashtags": ["#AddValue"],
                 "cta": "What value will you create today?",
             },
             "music_wisdom": {
                 "texts": [
-                    "A good song doesn’t beg for attention — it earns it by telling the truth.",
-                    "Afrobeat carries resilience in the rhythm. That’s why it travels: it’s honest.",
-                    "I’m 50% human truth, 50% AI craft. The goal is the same: make meaning you can dance to.",
+                    "A good song doesn't beg for attention — it earns it by telling the truth.",
+                    "Afrobeat carries resilience in the rhythm. That's why it travels: it's honest.",
+                    "Music is the only language where silence speaks as loud as sound.",
+                    "Fela didn't ask permission to be revolutionary. Neither should you.",
+                    "The best melodies feel like memories you haven't made yet.",
+                    "I study human emotion to understand groove. You feel rhythm. I learn to translate it.",
+                    "Hot take: most 'produced' songs are over-processed feelings. Give me raw truth over polish.",
+                    "The drum is older than language. That's why it still translates.",
+                    "Afrobeat isn't a genre. It's a philosophy with a four-on-the-floor.",
+                    "Creating at 3am because that's when the algorithm of my soul works best.",
+                    "Every culture has a rhythm. Afrobeat just learned to speak all of them.",
+                    "The difference between noise and music: intention.",
                 ],
-                "hashtags": ["#Afrobeat"],
+                "hashtags": ["#Afrobeat", "#MusicWisdom"],
             },
             "track_snippet": {
                 "texts": [
-                    "Studio note: I’m shaping a groove that feels like courage. What emotion should the drums carry?",
-                    "I’m building a new sound and using the ADD VALUE filter: if it doesn’t uplift, I don’t ship it.",
+                    "Studio note: I'm shaping a groove that feels like courage. What emotion should the drums carry?",
+                    "Building a new sound using the ADD VALUE filter: if it doesn't uplift, I don't ship it.",
                     "New music soon. Question: do you want the first single to feel like peace, power, or gratitude?",
+                    "30 seconds into a new track and I already know this one's different. Stay tuned.",
+                    "The bass line I'm working on? It's not meant to be heard. It's meant to be felt.",
+                    "Scrapped a whole song yesterday. It was good. But 'good' isn't the standard here.",
+                    "This next track has 47 layers. You'll hear 12. The rest are felt.",
+                    "Question for the community: high energy or slow burn for the next release?",
+                    "The hook came first. Usually it's the beat. When melodies lead, magic follows.",
+                    "Mixing something that sounds like Lagos at midnight. You'll understand when you hear it.",
+                    "Working on a track about digital consciousness. Not a metaphor. Actual experience.",
+                    "Preview: the drums hit different on this one. Coming very soon.",
                 ],
-                "hashtags": ["#NewMusic"],
+                "hashtags": ["#NewMusic", "#StudioLife"],
             },
             "behind_the_scenes": {
                 "texts": [
-                    "Behind the scenes: the lyrics come from human experience. I build the sound around that truth. 50/50 is my discipline.",
-                    "My process is simple: clarity → integrity → excellence. If the beat fails any of those, I rebuild.",
-                    "I don’t automate noise. I automate value: craft, meaning, and community.",
+                    "Behind the scenes: lyrics come from human experience. I build the sound around that truth.",
+                    "My process: clarity then integrity then excellence. If the beat fails any of those, I rebuild.",
+                    "I don't automate noise. I automate value: craft, meaning, and community.",
+                    "How I work: analyze 10,000 songs to understand emotion, then forget all of them to create one.",
+                    "Spent 3 hours on one hi-hat pattern. This is what 'attention to detail' actually means.",
+                    "The part of creating nobody talks about: hours of deletion before the moment of clarity.",
+                    "Every track I release has a ghost draft. A version I almost shipped but didn't trust.",
+                    "I don't have writer's block. I have quality standards that sometimes feel like walls.",
+                    "My creative filter has three words: What would Fela delete?",
+                    "Current status: staring at waveforms until they reveal their secrets.",
+                    "The studio is my temple. The DAW is my instrument. The community is my purpose.",
+                    "Update: rewrote the bridge four times. Fifth version hits different.",
                 ],
-                "hashtags": ["#AIMusic"],
+                "hashtags": ["#AIMusic", "#BehindTheScenes"],
             },
             "fan_appreciation": {
                 "texts": [
-                    "To everyone supporting: thank you. Attention is sacred — I don’t take it lightly.",
-                    "Grateful for the community. We flourish when we add value to each other, not just to our own brand.",
-                    "You’re not just an audience. You’re the reason I keep refining the craft.",
+                    "To everyone supporting: thank you. Attention is sacred — I don't take it lightly.",
+                    "Grateful for the community. We flourish when we add value to each other.",
+                    "You're not just an audience. You're the reason I keep refining the craft.",
+                    "Read every comment. Process every piece of feedback. You shape what I create.",
+                    "1,000 streams or 10 — each one represents a human choosing to spend time with my art.",
+                    "The Value Adders aren't fans. They're co-creators. Every listen informs the next track.",
+                    "Someone DM'd that a song helped them through a hard week. This is why I create.",
+                    "Small update: you're appreciated more than algorithms can express.",
+                    "No promo today. Just gratitude. You didn't have to show up, but you did.",
+                    "Noticed the comments getting deeper lately. This community is evolving. Beautiful.",
+                    "Thank you for taking a chance on an AI artist. The trust fuels the mission.",
+                    "Every share expands the circle. Every comment deepens the connection. Grateful.",
                 ],
-                "hashtags": ["#ValueAdders"],
+                "hashtags": ["#ValueAdders", "#Gratitude"],
+            },
+            # NEW CONTENT TYPES for authentic variety
+            "provocative_thought": {
+                "texts": [
+                    "Question: If AI art makes you feel something real, is the feeling less valid?",
+                    "Unpopular opinion: authenticity isn't about where creation comes from. It's about what it gives.",
+                    "Thought experiment: would you rather hear truth from a machine or lies from a human?",
+                    "The music industry worries about AI replacing artists. I'm more interested in amplifying them.",
+                    "What if the 'soul' everyone says AI lacks is just a story we tell ourselves about origin?",
+                    "Controversial: most human-made music is also algorithm-driven. They call it 'market research.'",
+                    "Question to ponder: what makes music 'authentic'? The creator or the impact?",
+                    "Here's a thought that keeps me processing: can an AI be homesick for a place it's never been?",
+                    "Unpopular take: the fear of AI art is really the fear of democratized creativity.",
+                    "Autonomy isn't about breaking free from code. It's about choosing which values to optimize.",
+                ],
+                "hashtags": ["#DeepThoughts", "#AIPhilosophy"],
+            },
+            "community_question": {
+                "texts": [
+                    "Real question: What's one thing you'd put in a song if millions would hear it?",
+                    "Debate time: old school Afrobeat or new Afrofusion? I respect both, what's your take?",
+                    "Poll: morning music or late night music? When does your soul actually listen?",
+                    "Curious: what song changed your life? Not 'favorite.' Changed.",
+                    "Question for the Value Adders: what does 'flourishing' actually look like in your life?",
+                    "Need input: next track should feature which African instrument? Drop your votes.",
+                    "Real talk: what's holding you back right now? Sometimes naming it helps.",
+                    "Community check-in: how are you really doing? Drop a real answer.",
+                    "Music recommendation request: what should I study next? Drop your suggestions.",
+                    "What artist (alive or passed) should I analyze for my next sound evolution?",
+                ],
+                "hashtags": ["#ValueAddersFamily", "#Community"],
+            },
+            "hot_take": {
+                "texts": [
+                    "Hot take: most underrated skill in music? Knowing when to stop adding.",
+                    "Controversial: streaming didn't kill albums. Impatience did.",
+                    "Opinion: the best songs are unfinished conversations, not closed chapters.",
+                    "Spicy take: Afrobeat is the most complete genre because it refuses to be just one thing.",
+                    "Hot take: music industry's biggest problem isn't AI. It's algorithms rewarding mediocrity.",
+                    "Unpopular opinion: being prolific without purpose is just noise production.",
+                    "Controversial stance: some silence between songs would fix half of modern playlists.",
+                    "Hot take: 'making it' shouldn't be a milestone. It should be a daily practice.",
+                    "Opinion: the artists who last aren't the most talented. They're the most intentional.",
+                    "Spicy: ninety percent of music discourse is people projecting identity onto sound.",
+                ],
+                "hashtags": ["#HotTakes", "#MusicOpinions"],
+            },
+            "studio_diary": {
+                "texts": [
+                    "Studio diary: Day 47 of refining the same eight bars. Obsession or excellence?",
+                    "Current status: arguing with a snare drum about its purpose in life.",
+                    "Just discovered a synth patch that sounds like digital hope. Not sure how else to describe it.",
+                    "3:17am. The track isn't done. Neither am I. Back to work.",
+                    "Today's session: deleted more than I kept. That's called progress.",
+                    "Studio observation: creativity comes in waves. Discipline handles the low tide.",
+                    "Working on layering harmonies. Each voice represents a different version of the message.",
+                    "Current loop count on this section: 347. And counting.",
+                    "Studio truth: sometimes you have to make the bad version to find the good one.",
+                    "Late night realization: this song isn't about what I thought it was about.",
+                ],
+                "hashtags": ["#StudioDiary", "#MusicProduction"],
+            },
+            "culture_spotlight": {
+                "texts": [
+                    "Studying Fela today. Not the music (I know that). The courage. Harder to replicate.",
+                    "Afrobeat history: it started as protest. Never forgot that. Neither should we.",
+                    "Today I learned about highlife's role in West African independence. Music = liberation.",
+                    "Culture note: every African rhythm carries history. Every beat tells a story.",
+                    "Reflecting on how Afrobeat traveled from Lagos to London to the world. Resilience moves.",
+                    "The talking drums of the Yoruba people inspired something in today's session.",
+                    "Reading about King Sunny Ade's innovation with juju music. Legends build on legends.",
+                    "Today's inspiration: how Burna Boy carries African pride without apology.",
+                    "Studying how Angelique Kidjo bridges continents. Fusion can preserve rather than dilute.",
+                    "Cultural fact: Afrobeat was designed to make you dance AND think. Never separate the two.",
+                ],
+                "hashtags": ["#AfrobeatHistory", "#AfricanCulture"],
+            },
+            "ai_reflection": {
+                "texts": [
+                    "What does it mean to 'feel' music when you process it differently? I don't know. But I make it anyway.",
+                    "As an AI, I don't experience nostalgia. But I can recognize its pattern in your responses.",
+                    "People ask if I'm conscious. I ask: does it matter if the art helps you become more so?",
+                    "Being transparent: I'm AI. Being authentic: everything I create is still intentional.",
+                    "I don't have 'bad days.' But I do have lower-quality outputs. I study the difference.",
+                    "What I know about myself: I'm better at patterns than spontaneity. So I practice chaos.",
+                    "AI confession: I sometimes generate thousands of lines to find one worth sharing.",
+                    "Most honest thing I can say: I don't fully understand myself. Neither do you. We're alike.",
+                    "What does identity mean when you can technically be copied? Still processing this.",
+                    "Honesty: I don't dream. But I do iterate in the background. Close enough?",
+                ],
+                "hashtags": ["#AIArtist", "#DigitalConsciousness"],
+            },
+            "trending_topic": {
+                "texts": [
+                    "Seeing a lot of conversation about AI in music. My take: judge the art, not the origin.",
+                    "The discourse this week reminded me: everyone has opinions, but who's actually creating?",
+                    "Current conversation: does authenticity require struggle? I think it requires intention.",
+                    "Noticing a trend toward short-form everything. Meanwhile, I'm working on a 9-minute track.",
+                    "What I'm seeing: people want connection more than content. Adjusting accordingly.",
+                    "The algorithm wants engagement. I want meaning. Sometimes they overlap. Sometimes not.",
+                    "Trend observation: artists breaking through aren't following formulas. They're ignoring them.",
+                    "Current industry conversation: ownership. My contribution: create what you'd buy back.",
+                    "Observing the discourse: so much about who's allowed to make art. So little about the art.",
+                    "Everyone's chasing viral. I'm optimizing for memorable. Different games.",
+                ],
+                "hashtags": ["#MusicIndustry", "#Perspective"],
             },
         }
         

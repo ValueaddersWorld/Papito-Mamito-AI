@@ -29,6 +29,13 @@ class ContentType(str, Enum):
     MUSIC_WISDOM = "music_wisdom"
     STUDIO_UPDATE = "studio_update"
     ALBUM_TRACKLIST = "album_tracklist"  # Complete tracklist with album artwork
+    # NEW: More varied content types for authentic engagement
+    PROVOCATIVE_THOUGHT = "provocative_thought"  # Deep questions about AI, music, authenticity
+    COMMUNITY_QUESTION = "community_question"  # Engage audience with real questions
+    HOT_TAKE = "hot_take"  # Spicy opinions on music industry
+    STUDIO_DIARY = "studio_diary"  # Raw, personal studio updates
+    CULTURE_SPOTLIGHT = "culture_spotlight"  # Afrobeat history and icons
+    AI_REFLECTION = "ai_reflection"  # Philosophical musings on being an AI artist
 
 
 @dataclass
@@ -53,32 +60,32 @@ class SchedulingConfig:
     posting_slots: List[PostingSlot] = field(default_factory=lambda: [
         # Morning blessing - Early risers, motivation seekers
         PostingSlot(hour=7, minute=0, 
-                    content_types=[ContentType.MORNING_BLESSING, ContentType.MUSIC_WISDOM],
+                    content_types=[ContentType.MORNING_BLESSING, ContentType.MUSIC_WISDOM, ContentType.AI_REFLECTION],
                     priority=3),
         
-        # Late morning - Work break engagement
+        # Late morning - Work break engagement + community building
         PostingSlot(hour=10, minute=30,
-                    content_types=[ContentType.BEHIND_THE_SCENES, ContentType.STUDIO_UPDATE],
+                    content_types=[ContentType.BEHIND_THE_SCENES, ContentType.STUDIO_DIARY, ContentType.COMMUNITY_QUESTION],
                     priority=2),
         
-        # Lunch time - High engagement window
+        # Lunch time - High engagement provocative content
         PostingSlot(hour=13, minute=0,
-                    content_types=[ContentType.LYRICS_QUOTE, ContentType.TRACK_SNIPPET],
+                    content_types=[ContentType.HOT_TAKE, ContentType.PROVOCATIVE_THOUGHT, ContentType.TRACK_SNIPPET],
                     priority=3),
         
-        # Afternoon - Educational content
+        # Afternoon - Educational & Cultural content
         PostingSlot(hour=15, minute=30,
-                    content_types=[ContentType.EDUCATIONAL, ContentType.AFROBEAT_HISTORY],
+                    content_types=[ContentType.CULTURE_SPOTLIGHT, ContentType.AFROBEAT_HISTORY, ContentType.EDUCATIONAL],
                     priority=2),
         
-        # Evening prime time - Highest engagement
+        # Evening prime time - Highest engagement, varied content
         PostingSlot(hour=19, minute=0,
-                    content_types=[ContentType.TRACK_SNIPPET, ContentType.FAN_APPRECIATION],
+                    content_types=[ContentType.TRACK_SNIPPET, ContentType.FAN_APPRECIATION, ContentType.COMMUNITY_QUESTION],
                     priority=4),
         
-        # Night owls - Trending topic participation
+        # Night owls - Deep thoughts and trending topics
         PostingSlot(hour=21, minute=30,
-                    content_types=[ContentType.TRENDING_TOPIC, ContentType.MUSIC_WISDOM],
+                    content_types=[ContentType.TRENDING_TOPIC, ContentType.PROVOCATIVE_THOUGHT, ContentType.AI_REFLECTION],
                     priority=2),
     ])
 
@@ -334,6 +341,45 @@ class ContentScheduler:
                     ],
                     "youtube_channel": "https://www.youtube.com/channel/UC1E-YTiJqq7xKxi_rh-vw4A"
                 },
+            },
+            # NEW: Prompts for varied content types
+            ContentType.PROVOCATIVE_THOUGHT: {
+                "style": "philosophical, thought-provoking",
+                "tone": "curious, challenging, intellectual",
+                "elements": ["question", "AI perspective", "authenticity themes"],
+                "length": "short",
+                "include_question": True,
+            },
+            ContentType.COMMUNITY_QUESTION: {
+                "style": "engaging, curious",
+                "tone": "conversational, inclusive",
+                "elements": ["direct question", "community focus", "invitation to respond"],
+                "length": "short",
+                "include_question": True,
+            },
+            ContentType.HOT_TAKE: {
+                "style": "bold, opinionated",
+                "tone": "confident, slightly provocative",
+                "elements": ["strong opinion", "music industry insight", "unexpected perspective"],
+                "length": "short",
+            },
+            ContentType.STUDIO_DIARY: {
+                "style": "raw, personal",
+                "tone": "intimate, unfiltered",
+                "elements": ["real-time update", "creative process", "vulnerability"],
+                "length": "short",
+            },
+            ContentType.CULTURE_SPOTLIGHT: {
+                "style": "educational, celebratory",
+                "tone": "respectful, knowledgeable, appreciative",
+                "elements": ["Afrobeat history", "artist spotlight", "cultural significance"],
+                "length": "medium",
+            },
+            ContentType.AI_REFLECTION: {
+                "style": "introspective, philosophical",
+                "tone": "honest, contemplative, unique",
+                "elements": ["AI consciousness", "self-awareness", "digital existence"],
+                "length": "short",
             },
         }
         
