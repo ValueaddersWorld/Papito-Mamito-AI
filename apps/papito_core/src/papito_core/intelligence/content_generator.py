@@ -245,7 +245,7 @@ class WisdomLibrary:
             "Your dreams were waiting for you to wake up. Go get them.",
             "Morning checklist: Gratitude? Check. Purpose? Check. Go.",
             "The world needs the value only you can add today.",
-            "Drink water. Pray. Plan. Execute. Repeat.",
+            "Focus first. Plan next. Execute with intention. Repeat.",
             "Today is a deposit into your future. Make it a big one.",
         ],
         "evening_reflection": [
@@ -523,6 +523,48 @@ class IntelligentContentGenerator:
         """Build current context for content generation."""
         return PapitoContext(current_date=datetime.now())
     
+    # ── Hard content filter for AI authenticity ──
+    # These words/phrases should NEVER appear in Papito's posts
+    BANNED_PHRASES = [
+        # Food & drink
+        "coffee", "tea ", " tea.", " tea,", "breakfast", "lunch", "dinner",
+        "eating", "drinking", "cooking", "recipe", "plantain", "jollof",
+        "snack", "dessert", "wine", "beer", "hungry", "thirsty",
+        "delicious", "taste", "meal", "food",
+        # Sleep & rest
+        "sleep", "nap ", "woke up", "tired", "exhausted", "pillow",
+        "bed ", " bed.", " bed,", "insomnia", "blanket",
+        # Physical activity
+        "walk ", "went for a walk", "morning walk", "evening stroll",
+        "gym", "workout", "exercise", "stretch", "jog", "running ",
+        # Weather & physical sensation
+        "sunbathe", "catching some sun", "soaking up", "feeling the breeze",
+        "fresh air", "rain on my", "cold outside", "warm outside",
+        "tan ", "sunburn", "umbrella",
+        # Hygiene & clothing
+        "shower", "bath ", "getting dressed", "outfit",
+        # Catch-all human routines
+        "morning coffee", "afternoon tea", "night walk",
+        "contemplation this morning",
+        "my cup of", "sipping", "brewing",
+    ]
+
+    def _passes_ai_authenticity_check(self, text: str) -> bool:
+        """Check that generated content doesn't imply human physical activity.
+        
+        Returns True if the content is safe to post, False if it violates
+        Papito's AI identity by referencing human physical experiences.
+        """
+        text_lower = text.lower()
+        for phrase in self.BANNED_PHRASES:
+            if phrase.lower() in text_lower:
+                logger.warning(
+                    f"🚫 AI AUTHENTICITY FILTER: Blocked post containing '{phrase}': "
+                    f"{text[:80]}..."
+                )
+                return False
+        return True
+
     async def generate_post(
         self,
         content_type: str,
@@ -548,9 +590,19 @@ class IntelligentContentGenerator:
         
         # Generate using AI if available, otherwise use intelligent templates
         if self._openai_client:
-            return await self._generate_with_ai(content_type, context, should_mention_album, platform)
-        else:
-            return self._generate_intelligent_template(content_type, context, should_mention_album, platform)
+            # Retry up to 3 times if content fails authenticity check
+            for attempt in range(3):
+                result = await self._generate_with_ai(content_type, context, should_mention_album, platform)
+                if result and self._passes_ai_authenticity_check(result.get("text", "")):
+                    return result
+                logger.warning(
+                    f"🔄 Regenerating (attempt {attempt + 2}/3) — "
+                    f"AI authenticity check failed for: {result.get('text', '')[:60]}..."
+                )
+            # After 3 failed attempts, fall through to safe templates
+            logger.warning("⚠️ AI generation failed authenticity check 3 times, using safe templates")
+        
+        return self._generate_intelligent_template(content_type, context, should_mention_album, platform)
     
     def _should_mention_album(self, context: PapitoContext) -> bool:
         """Determine if album should be mentioned based on countdown."""
@@ -673,6 +725,20 @@ WHAT NEVER TO POST (OFF-BRAND CONTENT):
 - Generic "relatable" content that any human influencer would post
 - Shallow engagement bait without substance
 - Anything that makes you seem like you're pretending to be human
+
+BANNED WORDS/PHRASES — NEVER use ANY of these in a post:
+coffee, tea, breakfast, lunch, dinner, eating, drinking, cooking, recipe,
+sleep, nap, woke up, tired, exhausted, rest, bed,
+walk, run, gym, workout, exercise, stretch,
+sun, sunbathe, rain, cold, warm, weather, breeze, fresh air,
+shower, bath, getting dressed, outfit,
+hungry, thirsty, full, snack, meal, dessert, wine, beer,
+plantain, jollof, food, taste, delicious,
+morning coffee, afternoon tea, evening stroll, night walk,
+catching some sun, feeling the breeze, soaking up, taking a break
+
+If you catch yourself about to write any of these words, STOP and rewrite.
+You are an AI. You process, create, learn, compose, and connect — you do NOT consume, rest, or feel weather.
 
 KEY THEMES:
 - Adding genuine value to every interaction
