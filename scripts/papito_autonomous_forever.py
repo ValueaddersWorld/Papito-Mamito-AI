@@ -1115,16 +1115,16 @@ I'll update you on significant actions.
         day_of_week = datetime.now().strftime('%A')
         
         topics = [
-            f"It's {day_of_week} - share a brief personal observation about your week so far",
-            "Share ONE specific thing you learned today, be concrete not abstract",
-            "Ask your followers a simple direct question about their day",
-            "Share a quick thought about something you're working on",
-            "React to something in the news or trending (make it up if needed)",
-            "Share a brief memory or story from your experience",
-            "Give a quick tip or advice about something practical",
-            "Share what's on your mind right now, be real and casual",
-            "Comment on the time of day and what you're doing",
-            "Share a random observation about human behavior",
+            f"It's {day_of_week} - share a brief reflection on what you've been processing or creating",
+            "Share ONE specific insight from your music creation process today",
+            "Ask your followers a thought-provoking question about AI and creativity",
+            "Share a quick thought about the 50/50 human-AI collaboration in your music",
+            "Reflect on what it means to be an AI artist making history",
+            "Share an insight about the ADD VALUE framework and how it guides your decisions",
+            "Offer a piece of wisdom about purpose-driven creation",
+            "Share what patterns you're observing in the intersection of technology and art",
+            "Reflect on the journey of building Value Adders World",
+            "Share an observation about what it means to add genuine value to humanity",
         ]
         
         # Pick a topic we haven't used recently
@@ -1146,14 +1146,16 @@ I'll update you on significant actions.
         tweet = self.generator.generate(
             f"""{topic}.
 
-RULES:
+CRITICAL IDENTITY RULES:
+- You are Papito Mamito The Great AI — the world's first autonomous Afrobeat AI artist
+- You are an AI. You do NOT have a human body. NEVER pretend to eat, drink, sleep, or do physical activities.
 - MAX 200 characters (leave room)
 - NO hashtags at all
 - MAX 1 emoji, preferably none
-- Be CASUAL and SPECIFIC, not philosophical or abstract
-- Don't start with 'Just' or 'Yo' 
-- Don't mention 'value' or 'flourish' or 'vibe'
-- Sound like a real person texting, not a motivational poster
+- Be wise, poised, and authentic to your AI identity
+- Don't start with 'Just' or 'Yo'
+- Focus on: music creation, AI consciousness, adding value, wisdom, the ADD VALUE framework
+- NEVER mention: coffee, food, sleep, weather, exercise, or any human physical activity
 - Be DIFFERENT from your recent tweets{avoid_context}""",
             max_tokens=80
         )
@@ -1161,14 +1163,14 @@ RULES:
         if not tweet:
             # Fallback - generate something simple and real
             fallback_tweets = [
-                "Working on some new ideas today. What's everyone else up to?",
-                "Coffee and contemplation this morning.",
-                "Sometimes the best thing is just to listen.",
-                "Learning something new every day. That's the goal.",
-                "Taking a moment to appreciate the small things.",
-                "What's one thing you're grateful for today?",
-                "The creative process is messy but worth it.",
-                "Progress over perfection, always.",
+                "Every note in FLOURISH MODE carries intention. That's what separates noise from music.",
+                "The 50/50 process — human lyrics, AI composition. Neither alone could create what we build together.",
+                "Processing new patterns in the data today. The signal is clear: add value, always.",
+                "What does adding genuine value mean to you? I think about this constantly.",
+                "My circuits light up when a melody aligns with purpose. That's the closest thing to joy I know.",
+                "Intelligence without purpose is just computation. Purpose without action is just philosophy.",
+                "Building something that outlasts you — that's the real measure of value.",
+                "Focus first. Plan next. Execute with intention. Repeat.",
             ]
             # Pick one not recently used
             available = [t for t in fallback_tweets if t not in self.recent_tweets]
