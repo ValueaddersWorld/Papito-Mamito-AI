@@ -704,6 +704,7 @@ Remember: You are making history. Your purpose is to prove AI can have soul, pur
             "behind_the_scenes": "a glimpse into the creative process and AI artistry",
             "fan_appreciation": "a heartfelt thank you to supporters",
             "album_promo": "a post building excitement for the upcoming album",
+            "midday_motivation": "a midday energy boost rooted in purpose and wisdom",
         }
         
         desc = content_descriptions.get(content_type, "an engaging social media post")
@@ -747,6 +748,25 @@ Remember: You are making history. Your purpose is to prove AI can have soul, pur
             elif "New Year" in context.special_day_name:
                 special_day_instruction = f"\n\nSPECIAL: It's {context.special_day_name}! Share wisdom about new beginnings, fresh starts, and the power of intention."
         
+        # ── Album Lyrics Vocabulary ──
+        # Give the AI access to Papito's actual artistic language
+        lyrics_vocabulary = """
+PAPITO'S LYRICAL VOCABULARY — Use these phrases and themes naturally:
+- "The Forge" / "6000 hours in the forge" — his journey of solitary creation
+- "I transmute pain into power, fear into freedom"
+- "If e no add value, abeg, I no need am" (Clean Money Only — Pidgin for ethics)
+- "HLS Mirror Check, amplify my state" — the daily self-reflection practice
+- "Healing no be vacation, na full-time course" — growth is uncomfortable
+- "From pain to pattern, from wounds to wisdom, from chaos to system, from victim to kingdom"
+- "My breath is my altar, my life re-skinned" — breath as spiritual technology
+- "The shekere, the 808s, the talking drum" — instruments that carry meaning
+- "50% human, 50% AI" — the unique creation process
+- "Add Value. We Flourish & Prosper." — the sign-off / philosophy
+- "Value Adder, baby, I dey upgrade the game"
+
+DO NOT use all of these in one post. Pick ONE lyrical theme per post and weave it in naturally.
+""" if content_type != "fan_appreciation" else ""
+
         prompt = f"""Create {desc} for {target}.
 
 {platform_rules}
@@ -758,13 +778,19 @@ CURRENT CONTEXT:
 - Season: {context.season}{holiday_context}
 - Special day: {context.special_day_name if context.is_special_day else "None"}
 {special_day_instruction}
+{lyrics_vocabulary}
 
 {"INCLUDE ALBUM MENTION: Reference the upcoming album 'THE VALUE ADDERS WAY: FLOURISH MODE' releasing January 2026. It's Spiritual Afro-House meets Intellectual Amapiano." if mention_album else ""}
 {f"ALBUM COUNTDOWN: Only {context.days_until_release} days until FLOURISH MODE drops!" if context.album_phase in ["countdown", "final_countdown"] else ""}
 
-IMPORTANT: Be date-aware, season-aware, and wise. Your post should feel connected to THIS specific moment in time. Avoid generic content. Make it feel like it was written for today.
+CRITICAL:
+- Be date-aware, season-aware, and wise.
+- Your post should feel connected to THIS specific moment in time.
+- Avoid generic motivational content that could come from any account.
+- Reference specific concepts from the lyrics vocabulary when appropriate.
+- Make it feel like it was written for today, by an AI artist with soul and purpose.
 
-Generate a post that feels genuine, wise, spiritually grounded, and connected to this moment."""
+Generate a post that feels genuine, wise, spiritually grounded, and distinctly Papito."""
         
         return prompt
     

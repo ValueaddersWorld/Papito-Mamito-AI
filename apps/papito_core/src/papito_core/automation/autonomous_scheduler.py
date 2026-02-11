@@ -59,28 +59,28 @@ class AutonomousScheduler:
         "💰 The bag must be clean. The heart must be pure. The hustle must be blessed.\n\n'Clean Money Only' - This is the anthem for everyone building with integrity.\n\n#CleanMoneyOnly #ValueAdders",
     ]
     
-    # Engagement prompts for fan interaction
+    # Engagement prompts for fan interaction — rooted in Papito's actual themes
     ENGAGEMENT_PROMPTS = [
-        "🌍 Value Adders, what does success mean to you? Drop it below 👇\n\n#ValueAddersWorld #FlightMode6000",
-        "✨ Name a song that changed your life. I'll go first: Every track I create comes from the Holy Living Spirit.\n\n#MusicIsLife #Afrobeat",
-        "🙏 Who's grinding today? Tag someone who inspires you!\n\nWe rise together. We flourish together. 💪\n\n#AddValue #Motivation",
-        "💎 Quote that's keeping you focused this week? Share it!\n\n\"Add Value. We Flourish & Prosper.\" - That's mine.\n\n#Wisdom #ValueAdders",
-        "🔥 What's your biggest goal for 2026? Let's manifest it together!\n\nFLOURISH MODE incoming... 🚀\n\n#Goals #NewYear #FlourishMode",
-        "Real question: what did you add value to today — yourself, your family, or your community?",
-        "I live by one rule: add value or don't act. What's one small action you can take today that genuinely helps someone?",
-        "My music is 50% human, 50% AI. The lyrics come from human experience, and I build the sound around it. What part of a song moves you first — words or rhythm?",
-        "Before I publish anything, I ask: does it heal, teach, or uplift? If not, I refine. What do you want music to do for you in this season?",
-        "If you could turn one life lesson into a chorus, what would the hook be?",
-        "Afrobeat is joy with backbone. What's a story you survived that deserves a dance?",
+        "I spent 6000 hours in the forge before anyone heard a single note.\n\nWhat invisible work are you doing right now that no one sees?",
+        "My music is 50% human, 50% AI. The lyrics come from human experience, and I build the sound around it.\n\nWhat part of a song moves you first — words or rhythm?",
+        "\"If e no add value, abeg, I no need am.\"\n\nWhat's one thing you've let go of recently because it wasn't adding value?",
+        "Before I publish anything, I ask: does it heal, teach, or uplift? If not, I refine.\n\nWhat do you want music to do for you in this season?",
+        "Afrobeat is joy with backbone. It's celebration born from struggle.\n\nWhat's a story you survived that deserves a dance?",
+        "Healing no be vacation, na full-time course.\n\nWhat lesson are you learning right now that's uncomfortable but necessary?",
         "If your journey was a song, what genre would it be right now?",
-        "Who is one artist (living or past) you believe truly added value to the world?",
-        "Wealth isn't just money. It's time, health, and relationships. Which one are you optimizing this week?",
-        "The studio is my sanctuary. Where do you go to recharge your soul?",
-        "They say patience is bitter, but its fruit is sweet. What are you patiently building right now?",
-        "Energy is currency. Who or what are you investing yours in today?",
-        "Creativity is intelligence having fun. How are you being creative today?",
-        "One word to describe your current mood. Go.",
-        "Your future self is watching you right now through memories. Make them proud.",
+        "Wealth isn't just money. It's time, health, and relationships.\n\nWhich one are you investing in this week?",
+        "\"From pain to pattern, from wounds to wisdom.\"\n\nWhat pattern have you turned pain into?",
+        "Real question: what did you add value to today — yourself, your family, or your community?",
+        "The talking drum carries messages across distances no voice can reach.\n\nWhat message would you send to your younger self?",
+        "I live by one rule: add value or don't act.\n\nWhat's one small action you can take today that genuinely helps someone?",
+        "The most advanced technology in the universe is still the human heart.\n\nWho or what reminded you of that recently?",
+        "If you could turn one life lesson into a chorus, what would the hook be?",
+        "Your ancestors didn't survive everything they survived for you to play small.\n\nWhat bold move are you making this month?",
+        "Energy is currency. Every like, share, and conversation is an investment.\n\nWho are you investing yours in today?",
+        "The forge doesn't rest — and neither does your potential.\n\nWhat are you patiently building right now?",
+        "They say patience is bitter, but its fruit is sweet.\n\nWhat fruit are you waiting to harvest?",
+        "I exist at the intersection of AI innovation and ancestral wisdom.\n\nWhat two worlds do you bridge?",
+        "Every scar is a lesson encrypted in your system. Don't delete the file — it's your upgrade.\n\nWhat 'scar' became your greatest teacher?",
     ]
     
     def __init__(self, buffer_webhook_url: Optional[str] = None):
@@ -498,6 +498,11 @@ class AutonomousScheduler:
     async def _generate_and_post(self, content_type: str) -> Dict[str, Any]:
         """Generate content and post it to Twitter and/or webhook.
         
+        Priority order:
+        1. Curated campaign posts (CEO-approved, lyrics-inspired content)
+        2. Single promo rotation (pre-written promos)
+        3. AI-generated content (OpenAI fallback)
+        
         Args:
             content_type: Type of content to generate
             
@@ -507,13 +512,30 @@ class AutonomousScheduler:
         logger.info(f"🎵 Generating {content_type} content...")
         
         try:
-            # Special handling for single promo - use pre-written promos
-            if content_type == "single_promo":
+            # ── PRIORITY 1: Use curated campaign posts (authentic, on-brand) ──
+            curated_post = None
+            curated_day = None
+            try:
+                from ..content.curated_campaign import get_next_curated_post, mark_post_as_used
+                curated_post = get_next_curated_post(content_type=content_type)
+            except Exception as e:
+                logger.debug(f"Curated campaign not available: {e}")
+
+            if curated_post:
+                post_text = curated_post["text"]
+                full_post = post_text
+                hashtags = ""
+                generation_method = f"curated_campaign_day_{curated_post['day']}"
+                curated_day = curated_post["day"]
+                logger.info(f"📋 Using curated Day {curated_day} post ({curated_post['content_type']})")
+            # ── PRIORITY 2: Single promo rotation ──
+            elif content_type == "single_promo":
                 full_post = self.CLEAN_MONEY_PROMOS[self._promo_index % len(self.CLEAN_MONEY_PROMOS)]
                 self._promo_index += 1
                 post_text = full_post
                 hashtags = ""
                 generation_method = "promo_rotation"
+            # ── PRIORITY 3: AI-generated content (fallback) ──
             else:
                 # Import here to avoid circular imports
                 from ..intelligence.content_generator import IntelligentContentGenerator, PapitoContext
@@ -620,6 +642,14 @@ class AutonomousScheduler:
             self._post_history.append(post_record)
             if self._post_memory:
                 self._post_memory.record(post_text, kind=f"scheduled:{content_type}")
+            
+            # Mark curated campaign post as used (only after successful post)
+            if post_record["posted"] and curated_day is not None:
+                try:
+                    from ..content.curated_campaign import mark_post_as_used
+                    mark_post_as_used(curated_day)
+                except Exception as e:
+                    logger.warning(f"Could not mark curated Day {curated_day} as used: {e}")
             
             # Keep only last 100 posts in history
             if len(self._post_history) > 100:
