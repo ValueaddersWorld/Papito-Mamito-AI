@@ -1534,9 +1534,13 @@ async def main():
     # Initialize the telegram application
     await app.initialize()
     await app.start()
-    await app.updater.start_polling(drop_pending_updates=True)
     
-    logger.info("Telegram bot is now listening for messages!")
+    try:
+        await app.updater.start_polling(drop_pending_updates=True)
+        logger.info("Telegram bot is now listening for messages!")
+    except Exception as e:
+        logger.warning(f"Telegram polling failed (likely another instance running): {e}")
+        logger.warning("Continuing in AUTONOMOUS MODE without Telegram listening...")
     
     try:
         # Run the autonomous loop while telegram handles messages
