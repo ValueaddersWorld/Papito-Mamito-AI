@@ -12,3 +12,10 @@ content/analytics/log.csv
 content/schedules/*.json
 content/blogs/*.tmp
 content/releases/distribution/*.json
+
+# Secrets & credentials - NEVER commit these
+firebase_creds_base64.txt
+**/firebase-adminsdk*.json
+*_secret*
+*_creds*
+*.key

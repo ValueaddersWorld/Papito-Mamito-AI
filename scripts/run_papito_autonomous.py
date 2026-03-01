@@ -47,9 +47,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Configuration
-BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "8453118456:AAGBKCK4fno0tE5vgwRaVPbm4oWDbB60OCw")
+BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-OWNER_CHAT_ID = os.getenv("TELEGRAM_OWNER_CHAT_ID", "847060632")  # The General's chat ID
+OWNER_CHAT_ID = os.getenv("TELEGRAM_OWNER_CHAT_ID", "")  # The General's chat ID
 
 # Conversation memory - stores recent messages per user
 conversation_memory: Dict[int, List[Dict]] = {}

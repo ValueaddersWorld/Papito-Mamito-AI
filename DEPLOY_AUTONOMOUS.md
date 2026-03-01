@@ -12,14 +12,15 @@ Papito needs to run 24/7 on a server to be truly autonomous. Here are your optio
    - Use `Dockerfile.autonomous` as the Dockerfile
 5. Add Environment Variables:
    ```
-   OPENAI_API_KEY=your_key
-   TELEGRAM_BOT_TOKEN=8453118456:AAGBKCK4fno0tE5vgwRaVPbm4oWDbB60OCw
-   TELEGRAM_OWNER_CHAT_ID=847060632
+   OPENAI_API_KEY=your_openai_api_key
+   TELEGRAM_BOT_TOKEN=your_telegram_bot_token
+   TELEGRAM_OWNER_CHAT_ID=your_telegram_chat_id
    X_BEARER_TOKEN=your_bearer
    X_API_KEY=your_api_key
    X_API_SECRET=your_api_secret
    X_ACCESS_TOKEN=your_access_token
    X_ACCESS_TOKEN_SECRET=your_access_secret
+   MOLTBOOK_API_KEY=your_moltbook_api_key
    ```
 6. Deploy! Papito will run forever.
 

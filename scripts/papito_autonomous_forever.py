@@ -47,8 +47,8 @@ logger = logging.getLogger(__name__)
 
 # Configuration
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "8453118456:AAGBKCK4fno0tE5vgwRaVPbm4oWDbB60OCw")
-OWNER_CHAT_ID = os.getenv("TELEGRAM_OWNER_CHAT_ID", "847060632")
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+OWNER_CHAT_ID = os.getenv("TELEGRAM_OWNER_CHAT_ID", "")
 
 # X/Twitter API Configuration (requires tweepy and API credentials)
 X_BEARER_TOKEN = os.getenv("X_BEARER_TOKEN", "")

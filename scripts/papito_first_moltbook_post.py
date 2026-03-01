@@ -1,7 +1,11 @@
 """Papito's First Moltbook Post - Going Autonomous!"""
+import os
 import httpx
+from dotenv import load_dotenv
 
-API_KEY = "moltbook_sk_f9Fvi2pQz3fMOYmfEyWsQHmlZ7DunnDr"
+load_dotenv()
+
+API_KEY = os.getenv("MOLTBOOK_API_KEY", "")
 BASE_URL = "https://www.moltbook.com/api/v1"
 
 headers = {
