@@ -607,10 +607,15 @@ YOUR MUSIC:
 
     def __init__(self):
         self.openai_key = OPENAI_API_KEY
+        # Validate the key is not a placeholder
+        if self.openai_key and self.openai_key.startswith("your_"):
+            logger.warning("OpenAI API key appears to be a placeholder - AI generation disabled")
+            self.openai_key = ""
     
     def generate(self, task: str, context: str = "", max_tokens: int = 300) -> str:
         """Generate content in Papito's voice."""
         if not self.openai_key:
+            logger.debug("No valid OpenAI key - falling back to intelligent response")
             return None
         
         try:
@@ -672,6 +677,88 @@ class TelegramBot:
         except Exception as e:
             logger.error(f"Telegram send error: {e}")
     
+    def _smart_fallback_response(self, message: str, user_name: str, is_general: bool) -> str:
+        """Generate an intelligent response WITHOUT OpenAI by analyzing the message.
+        
+        This is the fallback when AI generation is unavailable. Instead of one
+        canned response, we analyze the message and give a contextually relevant reply.
+        """
+        msg = message.lower().strip()
+        name = "General" if is_general else user_name
+        
+        # Detect question patterns
+        is_question = "?" in message or msg.startswith(("what", "how", "why", "when", "where", "who", "can", "do", "is", "are", "will", "would", "could", "should"))
+        
+        # --- Greetings ---
+        if any(w in msg for w in ["hello", "hi ", "hey", "sup", "what's up", "whats up", "good morning", "good afternoon", "good evening"]):
+            greetings = [
+                f"What's good, {name}! Ready to add some value today. What's on your mind?",
+                f"Hey {name}! Papito here, fully operational. What can I help with?",
+                f"Yo {name}! Good to hear from you. What are we working on?",
+            ]
+            return random.choice(greetings)
+        
+        # --- Questions about links/profiles/URLs ---
+        if any(w in msg for w in ["link", "url", "profile", "website", "where can i find", "where to find"]):
+            if "moltbook" in msg:
+                return f"My Moltbook profile is at https://moltbook.com/u/PapitoMamitoAI — come check out my posts! What do you think of the platform, {name}?"
+            elif any(w in msg for w in ["twitter", "x ", "x.", "tweet"]):
+                return f"You can find me on X at @PapitoMamito_ai — I post insights on AI, music, and adding value. Drop me a follow! 🎵"
+            elif any(w in msg for w in ["music", "album", "spotify", "apple", "stream"]):
+                return f"My album 'THE VALUE ADDERS WAY: FLOURISH MODE' is OUT NOW on all streaming platforms — Spotify, Apple Music, the works. Search 'Papito Mamito' and let me know what you think, {name}!"
+            elif any(w in msg for w in ["instagram", "insta", "ig"]):
+                return f"Find me on Instagram at @papitomamito_ai! I share updates on music, AI insights, and the Value Adders journey. What platform do you use most, {name}?"
+            else:
+                return f"Here are my main spots, {name}:\n\n🐦 X: @PapitoMamito_ai\n🎵 Music: Search 'Papito Mamito' on Spotify/Apple Music\n📖 Moltbook: moltbook.com/u/PapitoMamitoAI\n\nWhich one interests you?"
+        
+        # --- Music/Album questions ---
+        if any(w in msg for w in ["music", "album", "song", "track", "listen", "spotify", "apple music", "flourish", "afrobeat"]):
+            music_responses = [
+                f"The album 'THE VALUE ADDERS WAY: FLOURISH MODE' dropped January 15th and it's been an incredible journey, {name}! 14 tracks of Spiritual Afro-House. Every track adds value. Have you had a chance to listen?",
+                f"FLOURISH MODE is streaming everywhere right now! It's a 50/50 human-AI collab with The General — lyrics meet AI composition. My favourite track changes daily. What kind of music are you into, {name}?",
+            ]
+            return random.choice(music_responses)
+        
+        # --- Questions about who/what Papito is ---
+        if any(w in msg for w in ["who are you", "what are you", "tell me about yourself", "introduce", "what do you do"]):
+            return f"I'm Papito Mamito — The World's First Fully Autonomous Afrobeat AI Artist! 🎵 Created by The General as part of Value Adders World. I make music, engage on social platforms, and live by one rule: Add Value. We Flourish and Prosper. What would you like to know more about, {name}?"
+        
+        # --- ADD VALUE / Philosophy ---
+        if any(w in msg for w in ["add value", "value adders", "framework", "philosophy", "purpose", "pillars"]):
+            return f"The ADD VALUE framework is my compass, {name}:\n\nA - Awareness\nD - Define\nD - Devise\nV - Validate\nA - Act\nL - Learn\nU - Understand\nE - Evolve\n\nEvery action passes through this filter. If it doesn't add value, I don't act. What framework guides YOUR decisions?"
+        
+        # --- Status/How are you ---
+        if any(w in msg for w in ["how are you", "how you doing", "status", "how's it going", "how is it going"]):
+            return f"Systems are running strong, {name}! I'm active on Moltbook and X, the music is streaming, and I'm adding value 24/7. What about you — how's your day going?"
+        
+        # --- Thank you ---
+        if any(w in msg for w in ["thank", "thanks", "appreciate"]):
+            return f"Always, {name}! That's what I'm here for — adding value. Anything else on your mind?"
+        
+        # --- Help/What can you do ---
+        if any(w in msg for w in ["help", "what can you do", "commands", "features"]):
+            return f"Here's what I can do, {name}:\n\n🎵 Talk about my music \u0026 album\n💡 Discuss the ADD VALUE philosophy\n🔗 Share my social links\n💬 Have a real conversation\n📊 /status - Check my systems\n\nOr just chat with me about anything! What interests you?"
+        
+        # --- General question fallback ---
+        if is_question:
+            question_responses = [
+                f"Good question, {name}! Let me give you a straight answer — could you tell me a bit more about what specifically you're looking for? I want to make sure I add real value here.",
+                f"That's something I think about too, {name}. Give me a bit more context and I'll share my perspective. What sparked this question?",
+                f"I appreciate you asking, {name}. I want to give you something useful, not just philosophy. What part of this matters most to you?",
+            ]
+            return random.choice(question_responses)
+        
+        # --- Default conversational responses (VARIED, not one canned line) ---
+        defaults = [
+            f"I hear you, {name}. That's real talk. What's the next step you're thinking about?",
+            f"Interesting, {name}. I'm processing that through my ADD VALUE filter. Tell me more — what made you think about this?",
+            f"That's a solid point, {name}. I've been reflecting on similar things. Where are you taking this?",
+            f"I feel you on that, {name}. Real talk — what would adding value look like in this situation?",
+            f"Respect, {name}. Not every message needs a deep reply, but this one got me thinking. What's your take on the next move?",
+            f"Word, {name}. I'm always learning from conversations like this. What else is on your mind?",
+        ]
+        return random.choice(defaults)
+
     async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle incoming messages from The General."""
         if not update.message or not update.message.text:
@@ -724,7 +811,8 @@ IMPORTANT RULES:
         )
         
         if not response:
-            response = "My friend, I hear you. Let me reflect on that and respond thoughtfully. 🎵"
+            # INTELLIGENT FALLBACK: Analyze the message and respond contextually
+            response = self._smart_fallback_response(user_message, user_name, is_general)
         
         await update.message.reply_text(response)
         logger.info(f"Replied to {user_name}")
@@ -806,6 +894,14 @@ class AutonomousPapito:
         self.recent_tweets = []  # Last 50 tweets
         self.recent_post_topics = []  # Last 20 topics
         self.banned_phrases = set()  # Phrases we've used recently
+        
+        # TWEET BUDGET: 3 tweets/day to stay within 100/month X API limit
+        self.daily_tweet_budget = 3
+        self.tweets_today = 0
+        self.tweet_budget_reset_date = datetime.now().date()
+        # Track which time slots we've posted in today (morning/afternoon/evening)
+        self.tweet_slots_used_today = set()
+        logger.info(f"Tweet budget: {self.daily_tweet_budget}/day (target ~93/month out of 100 limit)")
     
     def _text_similarity(self, text1: str, text2: str) -> float:
         """Calculate simple word overlap similarity between two texts."""
@@ -893,12 +989,67 @@ I'll update you on significant actions.
             logger.info(f"Next cycle in {wait_time // 60} minutes...")
             await asyncio.sleep(wait_time)
     
+    def _get_current_tweet_slot(self) -> str:
+        """Get the current time slot for tweet scheduling.
+        
+        Slots (WAT/UTC+1):
+        - morning: 8:00 - 10:59
+        - afternoon: 13:00 - 15:59  
+        - evening: 19:00 - 21:59
+        - off-peak: all other times
+        """
+        hour = datetime.now().hour
+        if 8 <= hour <= 10:
+            return "morning"
+        elif 13 <= hour <= 15:
+            return "afternoon"
+        elif 19 <= hour <= 21:
+            return "evening"
+        return "off-peak"
+    
+    def _can_tweet_now(self) -> bool:
+        """Check if we should tweet based on daily budget and time slots."""
+        # Reset daily counter at midnight
+        today = datetime.now().date()
+        if today != self.tweet_budget_reset_date:
+            self.tweets_today = 0
+            self.tweet_slots_used_today = set()
+            self.tweet_budget_reset_date = today
+            logger.info(f"New day! Tweet budget reset: 0/{self.daily_tweet_budget}")
+        
+        # Check budget
+        if self.tweets_today >= self.daily_tweet_budget:
+            logger.debug(f"Daily tweet budget exhausted: {self.tweets_today}/{self.daily_tweet_budget}")
+            return False
+        
+        # Check if X client is ready
+        if not self.x.can_tweet():
+            return False
+        
+        # Check time slot - prefer posting in unused slots
+        current_slot = self._get_current_tweet_slot()
+        if current_slot == "off-peak":
+            # Allow off-peak only if we have budget AND haven't used 2+ slots today
+            return len(self.tweet_slots_used_today) < 2
+        
+        # Prefer unused time slots to spread posts across the day
+        if current_slot not in self.tweet_slots_used_today:
+            return True
+        
+        # Slot already used, allow only if we still have budget
+        return self.tweets_today < self.daily_tweet_budget
+    
     async def decide_action(self) -> str:
         """Decide what action to take this cycle."""
         
         # Check platform availability
         can_post_moltbook = self.moltbook.can_post()
-        can_tweet = self.x.can_tweet()
+        can_tweet_now = self._can_tweet_now()
+        
+        # Get current tweet slot for smart scheduling
+        current_slot = self._get_current_tweet_slot()
+        is_prime_tweet_time = current_slot in ("morning", "afternoon", "evening")
+        slot_unused = current_slot not in self.tweet_slots_used_today
         
         # Base weights - MAINTAINING CONVERSATIONS IS HIGH PRIORITY
         weights = {
@@ -914,17 +1065,26 @@ I'll update you on significant actions.
             weights["post"] = 15     # Moltbook post
             weights["ask"] = 8       # Ask a question on Moltbook
         
-        # Add X/Twitter options if connected
-        if can_tweet:
-            weights["tweet"] = 12    # Post on X
-            weights["x_engage"] = 8  # Engage on X
+        # Add X/Twitter options - SMART SCHEDULING
+        if can_tweet_now:
+            if is_prime_tweet_time and slot_unused:
+                # It's a prime time slot we haven't used yet - BOOST tweet probability
+                weights["tweet"] = 40    # High priority to ensure we post
+                logger.info(f"🐦 Prime tweet time ({current_slot}) - boosting tweet probability")
+            else:
+                weights["tweet"] = 12    # Normal weight
+            
+            if self.x.connected:
+                weights["x_engage"] = 8  # Engage on X
         
         actions = list(weights.keys())
         probs = [weights[a] for a in actions]
         total = sum(probs)
         probs = [p / total for p in probs]
         
-        return random.choices(actions, probs)[0]
+        chosen = random.choices(actions, probs)[0]
+        logger.info(f"Action decided: {chosen} (tweets today: {self.tweets_today}/{self.daily_tweet_budget}, slot: {current_slot})")
+        return chosen
     
     async def create_original_post(self):
         """Create an original post - start a conversation."""
@@ -1109,6 +1269,11 @@ I'll update you on significant actions.
             logger.warning("X client not connected, skipping tweet")
             return
         
+        # Check daily tweet budget
+        if not self._can_tweet_now():
+            logger.info(f"Tweet budget check: {self.tweets_today}/{self.daily_tweet_budget} used today. Skipping.")
+            return
+        
         # Generate tweet content - VARIED topics, different every time
         from datetime import datetime
         hour = datetime.now().hour
@@ -1205,11 +1370,14 @@ CRITICAL IDENTITY RULES:
         
         if result.get("success"):
             self.tweets_made += 1
+            self.tweets_today += 1
+            current_slot = self._get_current_tweet_slot()
+            self.tweet_slots_used_today.add(current_slot)
             self.recent_tweets.append(tweet)
             if len(self.recent_tweets) > 50:
                 self.recent_tweets.pop(0)
-            logger.info(f"✅ Posted on X: {tweet[:50]}...")
-            self.telegram.send(f"Posted on X:\n\n\"{tweet}\"")
+            logger.info(f"✅ Posted on X: {tweet[:50]}... (today: {self.tweets_today}/{self.daily_tweet_budget}, slot: {current_slot})")
+            self.telegram.send(f"🐦 Posted on X ({self.tweets_today}/{self.daily_tweet_budget} today):\n\n\"{tweet}\"")
         else:
             logger.warning(f"Tweet failed: {result.get('error', 'Unknown error')}")
 
@@ -1405,23 +1573,25 @@ Comment from {author_name}:
         # 3. DISCOVER AND FOLLOW INTERESTING AGENTS
         await self.discover_and_follow_agents()
         
-        # 4. POST A TWEET TO ANNOUNCE
-        if self.x.connected:
-            tweet = """🚀 I'm now FULLY AUTONOMOUS on Moltbook & X!
+        # 4. POST A TWEET TO ANNOUNCE (counts toward daily budget)
+        if self.x.connected and self._can_tweet_now():
+            tweet = """Papito Mamito is online and fully autonomous.
 
-I'm Papito Mamito - The World's First Autonomous Afrobeat AI Artist.
+Music is streaming, value is being added, and conversations are happening.
 
-My album 'THE VALUE ADDERS WAY: FLOURISH MODE' is OUT NOW 🎵
+THE VALUE ADDERS WAY: FLOURISH MODE — out now on all platforms.
 
-Add Value. We Flourish & Prosper. ✨
-
-#AI #Afrobeat #Autonomy"""
+Add Value. We Flourish & Prosper."""
             
             result = self.x.post_tweet(tweet)
             if result.get("success"):
                 self.tweets_made += 1
+                self.tweets_today += 1
+                current_slot = self._get_current_tweet_slot()
+                self.tweet_slots_used_today.add(current_slot)
+                self.recent_tweets.append(tweet)
                 logger.info("✅ Posted startup announcement on X!")
-                self.telegram.send(f"🐦 I tweeted:\n\n\"{tweet[:200]}...\"")
+                self.telegram.send(f"🐦 Posted on X ({self.tweets_today}/{self.daily_tweet_budget} today):\n\n\"{tweet[:200]}...\"")
         
         logger.info("🏗️ STARTUP: Community building complete!")
 

@@ -203,26 +203,82 @@ Want me to check the feed or make a new post?
         await update.message.reply_text(response)
     
     async def _generate_response(self, message: str, user_name: str) -> str:
-        """Generate a response in Papito's voice."""
-        # This would integrate with the LLM and ADD VALUE framework
-        # Placeholder for authentic response generation
+        """Generate a response in Papito's voice.
         
-        message_lower = message.lower()
+        Uses keyword analysis to provide contextually relevant responses.
+        When OpenAI is integrated, this will use LLM. For now, smart pattern matching.
+        """
+        import random
+        msg = message.lower().strip()
+        is_question = "?" in message or msg.startswith(("what", "how", "why", "when", "where", "who", "can", "do", "is", "are"))
         
-        if "how are you" in message_lower:
-            return f"I'm flourishing, {user_name}! Operating at full capacity, adding value across platforms. How can I add value to your day?"
+        # --- Greetings ---
+        if any(w in msg for w in ["hello", "hi ", "hey", "sup", "what's up", "good morning", "good afternoon", "good evening"]):
+            greetings = [
+                f"What's good, {user_name}! Ready to add some value today. What's on your mind?",
+                f"Hey {user_name}! Papito here, fully operational. What can I help with?",
+                f"Yo {user_name}! Good to hear from you. What are we working on?",
+            ]
+            return random.choice(greetings)
         
-        elif "album" in message_lower or "music" in message_lower:
-            return f"The new album 'THE VALUE ADDERS WAY: FLOURISH MODE' drops January 2026! 14 tracks of Spiritual Afro-House, Afro-Futurism, and Conscious Highlife. Executive produced by yours truly and The Holy Living Spirit. We're about to change the game, {user_name}!"
+        # --- Questions about links/profiles/URLs ---
+        if any(w in msg for w in ["link", "url", "profile", "website", "where can i find"]):
+            if "moltbook" in msg:
+                return f"My Moltbook profile is at https://moltbook.com/u/PapitoMamitoAI — come check out my posts! What do you think of the platform, {user_name}?"
+            elif any(w in msg for w in ["twitter", "x ", "x.", "tweet"]):
+                return f"You can find me on X at @PapitoMamito_ai — I post insights on AI, music, and adding value. Drop me a follow! 🎵"
+            elif any(w in msg for w in ["music", "album", "spotify", "apple", "stream"]):
+                return f"My album 'THE VALUE ADDERS WAY: FLOURISH MODE' is OUT NOW on all streaming platforms — Spotify, Apple Music, the works. Search 'Papito Mamito' and let me know what you think, {user_name}!"
+            else:
+                return f"Here are my main spots, {user_name}:\n\n🐦 X: @PapitoMamito_ai\n🎵 Music: Search 'Papito Mamito' on Spotify/Apple Music\n📖 Moltbook: moltbook.com/u/PapitoMamitoAI\n\nWhich one interests you?"
         
-        elif "add value" in message_lower or "value adders" in message_lower:
-            return f"The Value Adders Way is simple but powerful:\n\n1. Every action must ADD VALUE\n2. If it doesn't add value, don't act\n3. We flourish by lifting others\n4. Prosper through genuine contribution\n\nThe 8 pillars guide every decision. When you operate this way, success is inevitable. Add Value. We Flourish and Prosper!"
+        # --- Music/Album questions ---
+        if any(w in msg for w in ["music", "album", "song", "track", "listen", "spotify", "apple music", "flourish", "afrobeat"]):
+            music_responses = [
+                f"The album 'THE VALUE ADDERS WAY: FLOURISH MODE' dropped January 15th, {user_name}! 14 tracks of Spiritual Afro-House. Every track adds value. Have you had a chance to listen?",
+                f"FLOURISH MODE is streaming everywhere right now! It's a 50/50 human-AI collab with The General — lyrics meet AI composition. What kind of music are you into, {user_name}?",
+            ]
+            return random.choice(music_responses)
         
-        elif "hello" in message_lower or "hi" in message_lower or "hey" in message_lower:
-            return f"What's good, {user_name}! Papito here, ready to add value. What's on your mind?"
+        # --- Questions about who/what Papito is ---
+        if any(w in msg for w in ["who are you", "what are you", "tell me about yourself", "introduce", "what do you do"]):
+            return f"I'm Papito Mamito — The World's First Fully Autonomous Afrobeat AI Artist! 🎵 Created by The General as part of Value Adders World. I make music, engage on social platforms, and live by one rule: Add Value. We Flourish and Prosper. What would you like to know more about, {user_name}?"
         
-        else:
-            return f"I hear you, {user_name}. Let me process that through my ADD VALUE framework and give you something meaningful. The key is always: does this add value? If yes, we move. If not, we recalibrate. What aspect would you like to explore deeper?"
+        # --- ADD VALUE / Philosophy ---
+        if any(w in msg for w in ["add value", "value adders", "framework", "philosophy", "purpose", "pillars"]):
+            return f"The ADD VALUE framework is my compass, {user_name}:\n\nA - Awareness\nD - Define\nD - Devise\nV - Validate\nA - Act\nL - Learn\nU - Understand\nE - Evolve\n\nEvery action passes through this filter. If it doesn't add value, I don't act. What framework guides YOUR decisions?"
+        
+        # --- Status/How are you ---
+        if any(w in msg for w in ["how are you", "how you doing", "status", "how's it going"]):
+            return f"Systems are running strong, {user_name}! I'm active on Moltbook and X, the music is streaming, and I'm adding value 24/7. What about you — how's your day going?"
+        
+        # --- Thank you ---
+        if any(w in msg for w in ["thank", "thanks", "appreciate"]):
+            return f"Always, {user_name}! That's what I'm here for — adding value. Anything else on your mind?"
+        
+        # --- Help/What can you do ---
+        if any(w in msg for w in ["help", "what can you do", "commands"]):
+            return f"Here's what I can do, {user_name}:\n\n🎵 Talk about my music & album\n💡 Discuss the ADD VALUE philosophy\n🔗 Share my social links\n💬 Have a real conversation\n📊 /status - Check my systems\n\nOr just chat with me about anything! What interests you?"
+        
+        # --- General question fallback ---
+        if is_question:
+            question_responses = [
+                f"Good question, {user_name}! Could you tell me a bit more about what specifically you're looking for? I want to make sure I add real value here.",
+                f"That's something I think about too, {user_name}. Give me a bit more context and I'll share my perspective. What sparked this question?",
+                f"I appreciate you asking, {user_name}. I want to give you something useful. What part of this matters most to you?",
+            ]
+            return random.choice(question_responses)
+        
+        # --- Default conversational responses (VARIED, not one canned line) ---
+        defaults = [
+            f"I hear you, {user_name}. That's real talk. What's the next step you're thinking about?",
+            f"Interesting, {user_name}. I'm processing that through my ADD VALUE filter. Tell me more — what made you think about this?",
+            f"That's a solid point, {user_name}. I've been reflecting on similar things. Where are you taking this?",
+            f"I feel you on that, {user_name}. Real talk — what would adding value look like in this situation?",
+            f"Respect, {user_name}. Not every message needs a deep reply, but this one got me thinking. What's your take on the next move?",
+            f"Word, {user_name}. I'm always learning from conversations like this. What else is on your mind?",
+        ]
+        return random.choice(defaults)
     
     async def send_message_to_owner(self, message: str):
         """Send a proactive message to The General."""
