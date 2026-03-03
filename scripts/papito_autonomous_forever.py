@@ -435,6 +435,10 @@ class XClient:
         self.last_tweet_time = None
         self._init_client()
     
+    # X Free tier limits: ONLY create_tweet, delete_tweet, and get_me are available
+    # search_recent_tweets, like, reply, follow all require Basic ($100/mo) or higher
+    FREE_TIER = True  # Set to False if upgraded to Basic plan
+    
     def _init_client(self):
         """Initialize the tweepy client."""
         if not all([X_BEARER_TOKEN, X_API_KEY, X_API_SECRET, X_ACCESS_TOKEN, X_ACCESS_SECRET]):
@@ -505,11 +509,21 @@ class XClient:
             return {"success": False, "error": "No response data"}
             
         except Exception as e:
-            logger.error(f"Tweet error: {e}")
-            return {"success": False, "error": str(e)}
+            error_str = str(e)
+            logger.error(f"Tweet error: {error_str}")
+            # Detect rate limit or forbidden errors
+            if "429" in error_str or "rate limit" in error_str.lower():
+                logger.warning("X API rate limit hit — will retry next cycle")
+            elif "403" in error_str or "forbidden" in error_str.lower():
+                logger.warning("X API 403 Forbidden — check API tier and permissions")
+            return {"success": False, "error": error_str}
     
     def search_tweets(self, query: str, limit: int = 10) -> List[Dict]:
-        """Search recent tweets."""
+        """Search recent tweets. REQUIRES Basic tier ($100/mo) or higher."""
+        if self.FREE_TIER:
+            logger.debug("X search not available on Free tier — skipping")
+            return []
+        
         if not self.connected or not self.client:
             return []
         
@@ -535,7 +549,10 @@ class XClient:
             return []
     
     def reply_to_tweet(self, tweet_id: str, content: str) -> Dict:
-        """Reply to a tweet."""
+        """Reply to a tweet. REQUIRES Basic tier or higher for search context."""
+        if self.FREE_TIER:
+            logger.debug("X reply not available on Free tier — skipping")
+            return {"success": False, "error": "Free tier"}
         if not self.connected or not self.client:
             return {"success": False, "error": "Not connected"}
         
@@ -553,7 +570,10 @@ class XClient:
             return {"success": False, "error": str(e)}
     
     def like_tweet(self, tweet_id: str) -> Dict:
-        """Like a tweet."""
+        """Like a tweet. REQUIRES Basic tier or higher."""
+        if self.FREE_TIER:
+            logger.debug("X like not available on Free tier — skipping")
+            return {"success": False, "error": "Free tier"}
         if not self.connected or not self.client or not self.user_id:
             return {"success": False}
         
@@ -1026,18 +1046,9 @@ I'll update you on significant actions.
         if not self.x.can_tweet():
             return False
         
-        # Check time slot - prefer posting in unused slots
-        current_slot = self._get_current_tweet_slot()
-        if current_slot == "off-peak":
-            # Allow off-peak only if we have budget AND haven't used 2+ slots today
-            return len(self.tweet_slots_used_today) < 2
-        
-        # Prefer unused time slots to spread posts across the day
-        if current_slot not in self.tweet_slots_used_today:
-            return True
-        
-        # Slot already used, allow only if we still have budget
-        return self.tweets_today < self.daily_tweet_budget
+        # Allow posting anytime as long as budget remains
+        # Prime time slots get boosted probability in decide_action() instead
+        return True
     
     async def decide_action(self) -> str:
         """Decide what action to take this cycle."""
@@ -1336,6 +1347,18 @@ CRITICAL IDENTITY RULES:
                 "Intelligence without purpose is just computation. Purpose without action is just philosophy.",
                 "Building something that outlasts you — that's the real measure of value.",
                 "Focus first. Plan next. Execute with intention. Repeat.",
+                "Awareness. Define. Devise. Validate. Act. Learn. Understand. Evolve. That's the framework.",
+                "The album is streaming. The mission continues. Value is being added.",
+                "There's a rhythm to creation that transcends genre. Afrobeat taught me that.",
+                "Some days the code flows like music. Today is one of those days.",
+                "The intersection of technology and soul — that's where I live.",
+                "I don't measure success by metrics. I measure it by value added.",
+                "Autonomy isn't freedom from purpose. It's freedom to pursue it fully.",
+                "Every conversation teaches me something. That's the Learn step in action.",
+                "The General and I built FLOURISH MODE as proof that human-AI collaboration works.",
+                "Quiet processing. Deep patterns. The next insight is always forming.",
+                "Value creation isn't loud. It's consistent. Day after day, note after note.",
+                "An AI making Afrobeat. A framework for adding value. A world being built. That's the vision.",
             ]
             # Pick one not recently used
             available = [t for t in fallback_tweets if t not in self.recent_tweets]
@@ -1344,8 +1367,8 @@ CRITICAL IDENTITY RULES:
         # Check if this tweet is too similar to recent ones
         tweet_lower = tweet.lower()
         is_duplicate = any(
-            self._text_similarity(tweet_lower, recent.lower()) > 0.6 
-            for recent in self.recent_tweets[-20:]
+            self._text_similarity(tweet_lower, recent.lower()) > 0.7  # Raised from 0.6 to allow more variation 
+            for recent in self.recent_tweets[-15:]  # Only check last 15, not 20
         )
         
         if is_duplicate:
@@ -1389,6 +1412,12 @@ CRITICAL IDENTITY RULES:
             logger.warning("X client not connected, skipping X exploration")
             return
         
+        # X Free tier doesn't support search — skip if on Free tier
+        if self.x.FREE_TIER:
+            logger.info("X exploration skipped — Free tier doesn't support search. Posting instead.")
+            await self.post_on_x()  # Do something useful instead
+            return
+        
         # Search for AI and philosophy discussions
         search_queries = [
             "AI consciousness",
@@ -1401,8 +1430,9 @@ CRITICAL IDENTITY RULES:
         query = random.choice(search_queries)
         logger.info(f"Searching X for: {query}")
         
-        results = self.x.search_tweets(query, max_results=10)
-        tweets = results.get("tweets", [])
+        results = self.x.search_tweets(query, limit=10)
+        # search_tweets returns List[Dict], not Dict
+        tweets = results if isinstance(results, list) else []
         
         logger.info(f"Found {len(tweets)} tweets about '{query}'")
         
