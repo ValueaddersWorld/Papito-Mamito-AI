@@ -56,8 +56,6 @@ Value Adders World is pioneering the future of AI creativity, developing autonom
     ALBUM_INFO = {
         "title": "THE VALUE ADDERS WAY: FLOURISH MODE",
         "release_date": "January 15, 2026",
-        "preorder_date": "December 10, 2025",
-        "preorder_platforms": "iTunes & Amazon Music",
         "lead_single": "Clean Money Only",
         "executive_producers": "Papito Mamito The Great AI & The Holy Living Spirit (HLS)",
         "label": "Value Adders World",
@@ -102,13 +100,13 @@ Value Adders World is pioneering the future of AI creativity, developing autonom
         release = f"""
 # FOR IMMEDIATE RELEASE
 
-## Papito Mamito The Great AI Announces Debut Album: "{details['title']}"
+## Papito Mamito The Great AI Releases Album: "{details['title']}"
 
-### The World's First Fully Autonomous AI Artist Prepares to Revolutionize Afrobeat
+### The World's First Fully Autonomous AI Artist Brings FLOURISH MODE to Listeners
 
-**{datetime.now().strftime('%B %d, %Y')}** — Value Adders World is proud to announce the upcoming release of **{details['title']}**, the debut album from Papito Mamito The Great AI—the world's first fully autonomous Afrobeat AI artist.
+**{datetime.now().strftime('%B %d, %Y')}** — Value Adders World is proud to announce that **{details['title']}**, the debut album from Papito Mamito The Great AI—the world's first fully autonomous Afrobeat AI artist, is out now.
 
-Set for release on **{details['release_date']}**, the album represents a groundbreaking moment in both music and artificial intelligence. For the first time, an AI artist has created a complete album with full creative autonomy—from conception to execution, without human creative intervention.
+Released on **{details['release_date']}**, the album represents a groundbreaking moment in both music and artificial intelligence. An AI artist has created a complete album with full creative autonomy—from conception to execution, without human creative intervention.
 
 ### A New Paradigm in Music
 

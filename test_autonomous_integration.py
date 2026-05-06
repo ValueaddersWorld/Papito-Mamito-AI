@@ -11,8 +11,16 @@ Run this script to verify your installation:
 
 import asyncio
 import sys
+from functools import wraps
 from pathlib import Path
 from datetime import datetime, timezone
+
+try:
+    import pytest
+
+    pytestmark = pytest.mark.asyncio
+except ImportError:
+    pytestmark = ()
 
 # Add project to path
 sys.path.insert(0, str(Path(__file__).parent / "apps" / "papito_core" / "src"))
@@ -25,9 +33,10 @@ results = {
 }
 
 
-def test(name):
+def integration_case(name):
     """Decorator to track test results."""
     def decorator(func):
+        @wraps(func)
         async def wrapper():
             print(f"\n🧪 Testing: {name}...")
             try:
@@ -48,14 +57,14 @@ def test(name):
 # PHASE 1 TESTS: Real-Time Event System
 # ============================================
 
-@test("Event Dispatcher - Import")
+@integration_case("Event Dispatcher - Import")
 def test_event_dispatcher_import():
     from papito_core.realtime import EventDispatcher, Event, EventType, EventPriority
     assert EventDispatcher is not None
     assert EventType.MENTION is not None
 
 
-@test("Event Dispatcher - Create and Register Handler")
+@integration_case("Event Dispatcher - Create and Register Handler")
 async def test_event_dispatcher_handler():
     from papito_core.realtime import EventDispatcher, Event, EventType
     
@@ -79,13 +88,13 @@ async def test_event_dispatcher_handler():
     assert handler_called, "Handler was not called"
 
 
-@test("Webhook Server - Import")
+@integration_case("Webhook Server - Import")
 def test_webhook_server_import():
     from papito_core.realtime.webhook_server import webhook_app
     assert webhook_app is not None
 
 
-@test("Heartbeat Daemon - Import and Create")
+@integration_case("Heartbeat Daemon - Import and Create")
 def test_heartbeat_import():
     from papito_core.realtime import HeartbeatDaemon, HealthStatus
     
@@ -94,7 +103,7 @@ def test_heartbeat_import():
     assert HealthStatus.HEALTHY is not None
 
 
-@test("X Stream - Import")
+@integration_case("X Stream - Import")
 def test_x_stream_import():
     from papito_core.realtime.x_stream import XStreamListener, XMentionPoller
     assert XStreamListener is not None
@@ -105,7 +114,7 @@ def test_x_stream_import():
 # PHASE 2 TESTS: Value Score Intelligence
 # ============================================
 
-@test("Value Score Calculator - Import and Create")
+@integration_case("Value Score Calculator - Import and Create")
 def test_value_score_import():
     from papito_core.intelligence import ValueScoreCalculator, PillarID, ActionType
     
@@ -114,7 +123,7 @@ def test_value_score_import():
     assert len(PillarID) == 8  # 8 pillars
 
 
-@test("Value Score Calculator - Calculate Score")
+@integration_case("Value Score Calculator - Calculate Score")
 async def test_value_score_calculate():
     from papito_core.intelligence import ValueScoreCalculator, ActionType
     
@@ -131,7 +140,7 @@ async def test_value_score_calculate():
     assert score.threshold > 0
 
 
-@test("Action Gate - Import and Evaluate")
+@integration_case("Action Gate - Import and Evaluate")
 async def test_action_gate():
     from papito_core.intelligence import ActionGate, GateDecision, ActionType
     
@@ -147,7 +156,7 @@ async def test_action_gate():
     assert result.decision in [GateDecision.PASS, GateDecision.BLOCK, GateDecision.DEFER, GateDecision.ESCALATE]
 
 
-@test("Action Learner - Import and Create")
+@integration_case("Action Learner - Import and Create")
 def test_action_learner():
     from papito_core.intelligence import ActionLearner, ActionOutcome
     
@@ -158,7 +167,7 @@ def test_action_learner():
     assert "total_records" in stats
 
 
-@test("Value Gated Handlers - Import")
+@integration_case("Value Gated Handlers - Import")
 def test_value_gated_handlers():
     from papito_core.intelligence import ValueGatedHandlers, create_value_gated_handlers
     
@@ -166,7 +175,7 @@ def test_value_gated_handlers():
     assert handlers is not None
 
 
-@test("Value Metrics Dashboard - Import and Create")
+@integration_case("Value Metrics Dashboard - Import and Create")
 def test_value_metrics():
     from papito_core.intelligence import ValueMetricsDashboard, get_metrics_dashboard
     
@@ -181,7 +190,7 @@ def test_value_metrics():
 # PHASE 3 TESTS: Multi-Platform Autonomy
 # ============================================
 
-@test("Platform Base - Import")
+@integration_case("Platform Base - Import")
 def test_platform_base():
     from papito_core.platforms import Platform, PlatformEvent, PlatformAction, PlatformCapability
     
@@ -190,7 +199,7 @@ def test_platform_base():
     assert Platform.YOUTUBE is not None
 
 
-@test("Platform Event - Create")
+@integration_case("Platform Event - Create")
 def test_platform_event():
     from papito_core.platforms import Platform, PlatformEvent
     from papito_core.platforms.base import EventCategory
@@ -206,7 +215,7 @@ def test_platform_event():
     assert event.platform == Platform.X
 
 
-@test("Cross-Platform Coordinator - Import and Create")
+@integration_case("Cross-Platform Coordinator - Import and Create")
 def test_coordinator():
     from papito_core.platforms import CrossPlatformCoordinator, get_coordinator
     
@@ -217,7 +226,7 @@ def test_coordinator():
     assert "running" in stats
 
 
-@test("Platform Adapters - Import")
+@integration_case("Platform Adapters - Import")
 def test_adapters_import():
     from papito_core.platforms.adapters import XAdapter, DiscordAdapter, YouTubeAdapter
     
@@ -226,7 +235,7 @@ def test_adapters_import():
     assert YouTubeAdapter is not None
 
 
-@test("Mock Adapter - Full Flow")
+@integration_case("Mock Adapter - Full Flow")
 async def test_mock_adapter_flow():
     from papito_core.platforms.base import MockPlatformAdapter, PlatformConfig, Platform, PlatformAction
     
@@ -255,7 +264,7 @@ async def test_mock_adapter_flow():
 # INTEGRATION TESTS
 # ============================================
 
-@test("Full Pipeline - Event → Value Score → Gate")
+@integration_case("Full Pipeline - Event -> Value Score -> Gate")
 async def test_full_pipeline():
     from papito_core.realtime import EventDispatcher, Event, EventType
     from papito_core.intelligence import ActionGate, ActionType, GateDecision
@@ -294,7 +303,7 @@ async def test_full_pipeline():
     assert gate_results[0].value_score is not None
 
 
-@test("Multi-Platform Event Routing")
+@integration_case("Multi-Platform Event Routing")
 async def test_multiplatform_routing():
     from papito_core.platforms import CrossPlatformCoordinator, Platform, PlatformEvent
     from papito_core.platforms.base import EventCategory, MockPlatformAdapter, PlatformConfig

@@ -1101,7 +1101,7 @@ def calendar_generate(
     """Generate a content calendar for the next N days.
     
     Uses ContentScheduler to create optimized posting schedule with:
-    - 6 daily time slots in WAT timezone
+    - 3 daily posts sampled from Amsterdam daytime slots
     - Content type variety (blessings, snippets, wisdom, etc.)
     - Platform-specific content (X, Instagram)
     
@@ -1139,7 +1139,7 @@ def calendar_generate(
             posts = by_date[date_str]
             
             table = Table(title=f"📆 {date_str}")
-            table.add_column("Time (WAT)", style="cyan")
+            table.add_column(f"Time ({scheduler.config.timezone})", style="cyan")
             table.add_column("Content Type", style="green")
             table.add_column("Platform", style="magenta")
             
@@ -1183,7 +1183,7 @@ def calendar_generate(
 def calendar_slots() -> None:
     """Display the configured daily posting slots.
     
-    Shows the 6 optimized time slots for Papito's Afrobeat audience.
+    Shows the Amsterdam daytime posting slots for Papito's audience.
     """
     try:
         from .automation import ContentScheduler
@@ -1196,7 +1196,7 @@ def calendar_slots() -> None:
     console.print(f"\n[bold green]⏰ Daily Posting Slots ({scheduler.config.timezone})[/bold green]\n")
     
     table = Table(title="Optimized Posting Times")
-    table.add_column("Time (WAT)", style="cyan")
+    table.add_column(f"Time ({scheduler.config.timezone})", style="cyan")
     table.add_column("Priority", style="magenta")
     table.add_column("Content Types", style="green")
     table.add_column("Platforms", style="yellow")
@@ -1229,15 +1229,16 @@ def calendar_next() -> None:
     now = scheduler.get_current_time_wat()
     next_slot = scheduler.get_next_posting_slot()
     
-    console.print(f"\n[bold]Current time (WAT):[/bold] {now.strftime('%Y-%m-%d %H:%M')}\n")
+    console.print(f"\n[bold]Current time ({scheduler.config.timezone}):[/bold] {now.strftime('%Y-%m-%d %H:%M')}\n")
     
     if next_slot:
         next_time = f"{next_slot.hour:02d}:{next_slot.minute:02d}"
         content_types = ", ".join([ct.value.replace("_", " ").title() for ct in next_slot.content_types])
         
-        console.print(f"[green]📍 Next posting slot:[/green] {next_time} WAT")
+        console.print(f"[green]📍 Next posting slot:[/green] {next_time} {scheduler.config.timezone}")
         console.print(f"[cyan]Content options:[/cyan] {content_types}")
         console.print(f"[magenta]Platforms:[/magenta] {', '.join(next_slot.platforms)}")
         console.print(f"[yellow]Priority:[/yellow] {'⭐' * next_slot.priority}")
     else:
-        console.print("[yellow]No more slots today. First slot tomorrow is at 07:00 WAT.[/yellow]")
+        first_slot = min(scheduler.config.posting_slots, key=lambda s: s.hour * 60 + s.minute)
+        console.print(f"[yellow]No more slots today. First slot tomorrow is at {first_slot.hour:02d}:{first_slot.minute:02d} {scheduler.config.timezone}.[/yellow]")

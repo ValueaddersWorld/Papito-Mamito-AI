@@ -160,7 +160,7 @@ class ScheduledPost(BaseModel):
     id: Optional[str] = None
     
     scheduled_at: datetime
-    timezone: str = "Africa/Lagos"
+    timezone: str = "Europe/Amsterdam"
     recurrence: Optional[str] = None  # "daily", "weekly", None
     
     post_type: str  # "morning_blessing", "afternoon_engagement", "evening_spotlight", "custom"

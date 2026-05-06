@@ -15,6 +15,7 @@ import httpx
 
 from ..settings import get_settings
 from ..database import get_firebase_client, ContentQueueItem
+from ..engines.ai_personality import sanitize_public_text
 
 
 class ContentCategory(str, Enum):
@@ -133,6 +134,13 @@ class ReviewQueue:
         """
         # Determine if auto-approve
         auto_approve = self._should_auto_approve(category)
+        title = sanitize_public_text(title, max_length=120)
+        body = sanitize_public_text(body)
+        formatted_content = formatted_content or {}
+        sanitized_formatted = {
+            key: sanitize_public_text(value) if isinstance(value, str) else value
+            for key, value in formatted_content.items()
+        }
         
         # Create queue item
         item = ContentQueueItem(
@@ -142,7 +150,7 @@ class ReviewQueue:
             body=body,
             media_urls=media_urls or [],
             hashtags=hashtags or [],
-            formatted=formatted_content or {},
+            formatted=sanitized_formatted,
             status=ReviewStatus.APPROVED.value if auto_approve else ReviewStatus.PENDING_REVIEW.value,
             auto_approve=auto_approve,
             requires_review=not auto_approve,

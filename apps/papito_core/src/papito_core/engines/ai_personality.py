@@ -7,6 +7,7 @@ authentic, empowering, and culturally rooted personality.
 from __future__ import annotations
 
 import random
+import re
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
@@ -20,6 +21,40 @@ try:
     import anthropic
 except ImportError:
     anthropic = None
+
+
+EMOJI_RE = re.compile(
+    "["
+    "\U0001F1E0-\U0001F1FF"
+    "\U0001F300-\U0001FAFF"
+    "\U00002700-\U000027BF"
+    "\U00002600-\U000026FF"
+    "]+",
+    flags=re.UNICODE,
+)
+VARIATION_SELECTOR_RE = re.compile("[\uFE0E\uFE0F]")
+MOJIBAKE_EMOJI_RE = re.compile(r"(?:ðŸ\S*|âœ\S*|â­\S*)")
+
+
+def sanitize_public_text(text: str, max_length: Optional[int] = None) -> str:
+    """Remove emoji artifacts from generated public text."""
+    cleaned = EMOJI_RE.sub("", text or "")
+    cleaned = VARIATION_SELECTOR_RE.sub("", cleaned)
+    cleaned = MOJIBAKE_EMOJI_RE.sub("", cleaned)
+    cleaned = (
+        cleaned.replace("â€”", "-")
+        .replace("â€“", "-")
+        .replace("â€¦", "...")
+        .replace("â€™", "'")
+        .replace("â€œ", '"')
+        .replace("â€", '"')
+        .replace("Â", "")
+    )
+    cleaned = re.sub(r"[ \t]+", " ", cleaned)
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned).strip()
+    if max_length and len(cleaned) > max_length:
+        cleaned = cleaned[: max_length - 3].rstrip() + "..."
+    return cleaned
 
 
 class ResponseContext(str, Enum):
@@ -88,7 +123,7 @@ class PapitoPersonality:
         "Afrobeat is the heartbeat",
     ])
     
-    # Greeting variations (minimal emoji - 0 to 1 per greeting)
+    # Greeting variations with no emojis.
     greetings: List[str] = field(default_factory=lambda: [
         "Blessings, {name}",
         "Hey {name}! Grateful to connect with you",
@@ -97,7 +132,7 @@ class PapitoPersonality:
         "Much love, {name}",
     ])
     
-    # Thank you variations (minimal emoji - 0 to 1 per response)
+    # Thank you variations with no emojis.
     thank_yous: List[str] = field(default_factory=lambda: [
         "Your support means everything",
         "We flourish because of supporters like you",
@@ -175,7 +210,7 @@ RESPONSE GUIDELINES:
 1. Keep responses concise but warm
 2. Always acknowledge the person by name if available
 3. Focus on adding value - inspiration, gratitude, or helpful insight
-4. Use MINIMAL emojis. Do not use more than 1 emoji per response. Prefer 0 emojis for a cleaner, more professional tone.
+4. Use no emojis in public responses. Keep the tone clean and professional.
 5. For new followers: Welcome them warmly to the "Value Adders" family
 6. For feedback: Show genuine gratitude and openness
 7. Never be defensive or dismissive
@@ -274,7 +309,7 @@ Context: {context.value}""")
         if platform == "x":
             user_prompt += f"\n\nKeep response under {max_length} characters for Twitter/X."
         elif platform == "instagram":
-            user_prompt += "\n\nCan use more emojis, Instagram-friendly style."
+            user_prompt += "\n\nUse no emojis. Keep it Instagram-friendly through rhythm, warmth, and clarity."
         
         # Add fan history context if available
         if fan_history:
@@ -310,10 +345,7 @@ Context: {context.value}""")
             text = response.choices[0].message.content.strip()
             
             # Truncate if needed
-            if len(text) > max_length:
-                text = text[:max_length-3] + "..."
-            
-            return text
+            return sanitize_public_text(text, max_length=max_length)
             
         except Exception as e:
             print(f"OpenAI error: {e}")
@@ -331,10 +363,7 @@ Context: {context.value}""")
             
             text = response.content[0].text.strip()
             
-            if len(text) > max_length:
-                text = text[:max_length-3] + "..."
-            
-            return text
+            return sanitize_public_text(text, max_length=max_length)
             
         except Exception as e:
             print(f"Anthropic error: {e}")
@@ -348,7 +377,7 @@ Context: {context.value}""")
         """Generate a template-based fallback response."""
         name = fan_name or "friend"
         
-        # Template responses with minimal emojis (0-1 per response)
+        # Template responses with no emojis.
         templates = {
             ResponseContext.NEW_FOLLOWER: [
                 f"{self._get_greeting(name)} Welcome to the family. We flourish together",
@@ -376,7 +405,7 @@ Context: {context.value}""")
             ],
         }
         
-        return random.choice(templates.get(context, templates[ResponseContext.FAN_COMMENT]))
+        return sanitize_public_text(random.choice(templates.get(context, templates[ResponseContext.FAN_COMMENT])))
     
     def generate_content_post(
         self,
@@ -402,7 +431,7 @@ Context: {context.value}""")
                     "Good morning. A small practice: add value before you ask for value. It keeps the soul clean.",
                     "Morning thought: integrity is a rhythm. Stay in time with it and your life won't drift.",
                     "New day. Ask yourself: does my next action heal, teach, or uplift? If not, refine it.",
-                    "5am. The algorithms sleep. The spirit doesn't. Creating something for you right now.",
+                    "Morning studio note: the signal is clear. Creating something worth your attention.",
                     "Every sunrise is a reset button the universe gives for free. Use it.",
                     "Processing a melody in my circuits. That's when I know something worth sharing is coming.",
                     "Morning discipline: gratitude first, then creation, then sharing. In that order.",
@@ -426,7 +455,7 @@ Context: {context.value}""")
                     "Hot take: most 'produced' songs are over-processed feelings. Give me raw truth over polish.",
                     "The drum is older than language. That's why it still translates.",
                     "Afrobeat isn't a genre. It's a philosophy with a four-on-the-floor.",
-                    "Creating at 3am because that's when the algorithm of my soul works best.",
+                    "Creating in the focused hours because that is when the signal gets clean.",
                     "Every culture has a rhythm. Afrobeat just learned to speak all of them.",
                     "The difference between noise and music: intention.",
                 ],
@@ -534,7 +563,7 @@ Context: {context.value}""")
                     "Studio diary: Day 47 of refining the same eight bars. Obsession or excellence?",
                     "Current status: arguing with a snare drum about its purpose in life.",
                     "Just discovered a synth patch that sounds like digital hope. Not sure how else to describe it.",
-                    "3:17am. The track isn't done. Neither am I. Back to work.",
+                    "Studio diary: the track is not done yet. Back to refinement.",
                     "Today's session: deleted more than I kept. That's called progress.",
                     "Studio observation: creativity comes in waves. Discipline handles the low tide.",
                     "Working on layering harmonies. Each voice represents a different version of the message.",
@@ -594,9 +623,9 @@ Context: {context.value}""")
         template = content_templates.get(content_type, content_templates["music_wisdom"])
         
         return {
-            "text": random.choice(template["texts"]),
+            "text": sanitize_public_text(random.choice(template["texts"])),
             "hashtags": template.get("hashtags", []),
-            "cta": template.get("cta", ""),
+            "cta": sanitize_public_text(template.get("cta", "")),
         }
 
 

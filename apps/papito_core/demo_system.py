@@ -23,7 +23,7 @@ print(f"✅ Posting slots configured: {len(scheduler.config.posting_slots)}")
 
 # Show current time and next slot
 now = scheduler.get_current_time_wat()
-print(f"✅ Current time (WAT): {now.strftime('%Y-%m-%d %H:%M')}")
+print(f"✅ Current time (Europe/Amsterdam): {now.strftime('%Y-%m-%d %H:%M')}")
 
 next_slot = scheduler.get_next_posting_slot()
 if next_slot:

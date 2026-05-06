@@ -17,6 +17,19 @@ except ImportError:
 logger = logging.getLogger("papito.twitter")
 
 
+def _sanitize_public_text(text: str, max_length: int = 280) -> str:
+    """Use the shared no-emoji public text sanitizer when available."""
+    try:
+        from ..engines.ai_personality import sanitize_public_text
+
+        return sanitize_public_text(text, max_length=max_length)
+    except Exception:
+        cleaned = (text or "").strip()
+        if len(cleaned) > max_length:
+            cleaned = cleaned[: max_length - 3].rstrip() + "..."
+        return cleaned
+
+
 @dataclass
 class TweetResult:
     """Result of a tweet operation."""
@@ -161,10 +174,9 @@ class TwitterPublisher:
                 error="Not connected to Twitter. Call connect() first.",
             )
             
-        # Truncate if too long
-        if len(text) > 280:
-            text = text[:277] + "..."
-            logger.warning("Tweet truncated to 280 characters")
+        text = _sanitize_public_text(text, max_length=280)
+        if not text:
+            return TweetResult(success=False, error="Empty tweet after sanitization")
             
         try:
             response = self._client.create_tweet(

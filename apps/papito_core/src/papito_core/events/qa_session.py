@@ -318,7 +318,7 @@ the creative process, or whatever's on your mind. I'll answer as many questions 
             return ""
         
         session = self.sessions[session_id]
-        time_str = session.scheduled_time.strftime("%B %d at %I:%M %p WAT")
+        time_str = session.scheduled_time.strftime("%B %d at %I:%M %p Europe/Amsterdam")
         
         announcement = f"""❓ Q&A SESSION ANNOUNCEMENT ❓
 

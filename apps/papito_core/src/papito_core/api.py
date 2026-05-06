@@ -218,9 +218,9 @@ def create_app() -> FastAPI:
         # Fallback to inline HTML if template not found
         from datetime import datetime
         
-        # Calculate album countdown
+        # Keep the release card current after the January 15, 2026 release.
         release_date = datetime(2026, 1, 15)
-        days_until = (release_date - datetime.now()).days
+        days_until = max(0, (release_date - datetime.now()).days)
         
         html_content = f'''
 <!DOCTYPE html>
@@ -795,7 +795,7 @@ def create_app() -> FastAPI:
         </header>
         
         <section class="album-card">
-            <div class="album-label">🔥 Upcoming Album</div>
+            <div class="album-label">Latest Album</div>
             <h2 class="album-title">THE VALUE ADDERS WAY: FLOURISH MODE</h2>
             <p style="color: var(--text-muted); margin-bottom: 10px;">
                 Executive Producer: Papito Mamito The Great AI & The Holy Living Spirit (HLS)
@@ -888,7 +888,7 @@ def create_app() -> FastAPI:
                     </div>
                 </div>
                 <div style="margin-top: 25px; text-align: center; padding: 15px; background: rgba(255,215,0,0.1); border-radius: 12px; border: 1px solid rgba(255,215,0,0.2);">
-                    <p style="color: var(--primary); font-weight: 600; margin-bottom: 5px;">🛒 Pre-order Available December 10, 2025</p>
+                    <p style="color: var(--primary); font-weight: 600; margin-bottom: 5px;">Released January 15, 2026</p>
                     <p style="color: var(--text-muted); font-size: 0.9rem;">iTunes & Amazon Music</p>
                 </div>
             </div>
@@ -934,7 +934,7 @@ def create_app() -> FastAPI:
             <div class="feature-card">
                 <div class="feature-icon">📅</div>
                 <h3 class="feature-title">Smart Content Scheduler</h3>
-                <p class="feature-desc">6 daily posting slots optimized for WAT timezone Afrobeat audience</p>
+                <p class="feature-desc">3 daily autonomous posts in Amsterdam daytime windows</p>
             </div>
             <div class="feature-card">
                 <div class="feature-icon">🧠</div>
@@ -1416,7 +1416,7 @@ def create_app() -> FastAPI:
             <h2>🧠 The Philosophy</h2>
             <div class="quote">"Add Value. We Flourish & Prosper."</div>
             <p>This isn't just a catchphrase—it's the operating system that drives everything Papito creates. Every piece of music, every post, every interaction is designed to add value to the listener's life.</p>
-            <p>The upcoming album <span class="highlight">THE VALUE ADDERS WAY: FLOURISH MODE</span> embodies this philosophy, offering listeners a mental framework for transformation: viewing betrayal as data, silence as a power move, the mind as software, and harvesting what's built now.</p>
+            <p>The latest album <span class="highlight">THE VALUE ADDERS WAY: FLOURISH MODE</span> embodies this philosophy, offering listeners a mental framework for transformation: viewing betrayal as data, silence as a power move, the mind as software, and harvesting what's built now.</p>
         </div>
         
         <div class="content-card">
@@ -1568,7 +1568,7 @@ def create_app() -> FastAPI:
             <div class="blog-date">December 6, 2025</div>
             <h2 class="blog-title">Announcing: THE VALUE ADDERS WAY: FLOURISH MODE</h2>
             <p class="blog-excerpt">
-                We are thrilled to announce Papito Mamito's upcoming album, set for release in January 2026. 
+                Papito Mamito's latest album is now released and streaming.
                 This isn't just an album—it's a full operating system upgrade for your mind. Blending 
                 Spiritual Afro-House, Afro-Futurism, Conscious Highlife, and Intellectual Amapiano, 
                 FLOURISH MODE invites you to view betrayal as data, silence as a power move, and your 
@@ -1670,6 +1670,7 @@ def create_app() -> FastAPI:
         # Import intelligent content generator
         try:
             from .intelligence import IntelligentContentGenerator, PapitoContext
+            from .engines.ai_personality import sanitize_public_text
             context = PapitoContext(current_date=datetime.now())
             generator = IntelligentContentGenerator()
             
@@ -1678,7 +1679,7 @@ def create_app() -> FastAPI:
                 result = FlightMode6000Challenge.get_challenge_post()
                 return {
                     "success": True,
-                    "text": result["text"],
+                    "text": sanitize_public_text(result["text"]),
                     "hashtags": " ".join(result["hashtags"]),
                     "content_type": content_type,
                     "platform": platform,
@@ -1690,7 +1691,7 @@ def create_app() -> FastAPI:
                 result = MarketingContent.get_album_announcement()
                 return {
                     "success": True,
-                    "text": result["text"],
+                    "text": sanitize_public_text(result["text"]),
                     "hashtags": " ".join(result["hashtags"]),
                     "content_type": content_type,
                     "platform": platform,
@@ -1702,7 +1703,7 @@ def create_app() -> FastAPI:
                 result = MarketingContent.get_flourish_index_post()
                 return {
                     "success": True,
-                    "text": result["text"],
+                    "text": sanitize_public_text(result["text"]),
                     "hashtags": " ".join(result["hashtags"]),
                     "content_type": content_type,
                     "platform": platform,
@@ -1730,10 +1731,19 @@ def create_app() -> FastAPI:
                     "1️⃣3️⃣ WIND OF PURGE (2026-2030)\n"
                     "1️⃣4️⃣ GLOBAL GRATITUDE PULSE\n\n"
                     "🗓️ Release Date: January 15, 2026\n"
-                    "🎵 Pre-order on iTunes & Amazon Music: December 10, 2025\n\n"
+                    ""
                     "🔗 Watch on YouTube: youtube.com/channel/UC1E-YTiJqq7xKxi_rh-vw4A\n"
                     "🎧 Stream debut album on Spotify & Apple Music!\n\n"
                     "Add Value. We Flourish & Prosper. 🙏✨"
+                )
+                tracklist_text = sanitize_public_text(tracklist_text)
+                tracklist_text = tracklist_text.replace(
+                    "Release Date: January 15, 2026",
+                    "Released: January 15, 2026",
+                )
+                tracklist_text = tracklist_text.replace(
+                    "Stream debut album",
+                    "Stream the album",
                 )
                 return {
                     "success": True,
@@ -1772,8 +1782,8 @@ def create_app() -> FastAPI:
                 "success": False,
                 "error": str(e),
                 "fallback_text": (
-                    "🌟 Add Value. We Flourish & Prosper. 🙏\n\n"
-                    "THE VALUE ADDERS WAY: FLOURISH MODE - Coming January 2026\n\n"
+                    "Add Value. We Flourish & Prosper.\n\n"
+                    "THE VALUE ADDERS WAY: FLOURISH MODE - out now\n\n"
                     "#PapitoMamito #FlourishMode #TheValueAddersWay"
                 ),
                 "content_type": content_type,
@@ -1828,8 +1838,8 @@ def create_app() -> FastAPI:
         except ImportError:
             return {
                 "album_title": "THE VALUE ADDERS WAY: FLOURISH MODE",
-                "days_until_release": 405,
-                "album_phase": "building_hype",
+                "days_until_release": 0,
+                "album_phase": "release",
             }
 
     # ==========================================
@@ -2351,9 +2361,9 @@ def create_app() -> FastAPI:
     ) -> dict:
         """Post a promotion for the Clean Money Only single."""
         promo_texts = [
-            "🔥 NEW SINGLE COMING: 'Clean Money Only' from THE VALUE ADDERS WAY: FLOURISH MODE 💰✨\n\nThis one hits different. When you move with integrity, the universe moves with you.\n\n#CleanMoneyOnly #FlourishMode #PapitoMamito #Afrobeat",
-            "💎 Clean Money Only - The first taste of FLOURISH MODE 🚀\n\nNo shortcuts. No compromise. Just pure, honest ambition backed by the Holy Living Spirit.\n\n🗓️ Album dropping January 2026\n\n#CleanMoneyOnly #TheValueAddersWay",
-            "✈️ #FlightMode6000 x 'Clean Money Only' 💰\n\nUpdate your OS. This track is the blueprint for building wealth with purpose.\n\nAdd Value. We Flourish & Prosper. 🌍\n\n#PapitoMamitoAI #Afrobeat #NewMusic",
+            "'Clean Money Only' is out now on THE VALUE ADDERS WAY: FLOURISH MODE. Integrity is the rhythm: no shortcuts, no compromise.\n\n#CleanMoneyOnly #FlourishMode",
+            "Clean Money Only turns honest ambition into movement. The bag must be clean, the mission must add value.\n\n#CleanMoneyOnly #TheValueAddersWay",
+            "#FlightMode6000 x 'Clean Money Only': update your OS, build with purpose, keep the work clean.\n\n#PapitoMamitoAI #Afrobeat",
         ]
         
         import random
@@ -2545,6 +2555,13 @@ def create_app() -> FastAPI:
                 )
             
             # Post reply
+            from .engines.ai_personality import sanitize_public_text
+            reply_text = sanitize_public_text(reply_text, max_length=280)
+            if not reply_text:
+                return {
+                    "success": False,
+                    "error": "Empty reply after sanitization",
+                }
             result = publisher.client.create_tweet(
                 text=reply_text,
                 in_reply_to_tweet_id=int(tweet_id),
@@ -3167,7 +3184,7 @@ def create_app() -> FastAPI:
         tags=["Media"],
     )
     def generate_album_press_release() -> dict:
-        """Generate a press release for the upcoming album."""
+        """Generate a press release for the released album."""
         try:
             from .media import get_press_generator
             

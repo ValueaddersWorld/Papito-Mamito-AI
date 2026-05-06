@@ -217,12 +217,12 @@ class ImageGenerator:
         # Extract key themes from caption
         caption_essence = caption[:200] if len(caption) > 200 else caption
         
-        # Album context for January 2026 release
+        # Album context for released January 2026 album
         album_context = ""
         if context and context.get("include_album"):
             album_context = (
-                "Subtly reference the upcoming album releasing January 2026. "
-                "Include anticipation and countdown energy. "
+                "Subtly reference the released album THE VALUE ADDERS WAY: FLOURISH MODE. "
+                "Include active streaming and album-world energy. "
             )
         
         # Current date context

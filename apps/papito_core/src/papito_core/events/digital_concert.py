@@ -184,7 +184,7 @@ class DigitalConcertManager:
             return []
         
         event = self.events[event_id]
-        time_str = event.scheduled_time.strftime("%B %d at %I:%M %p WAT")
+        time_str = event.scheduled_time.strftime("%B %d at %I:%M %p Europe/Amsterdam")
         
         thread = []
         

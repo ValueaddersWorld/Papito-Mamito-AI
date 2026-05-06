@@ -193,19 +193,19 @@ class MarketingContent:
         """Generate full album announcement post."""
         return {
             "text": (
-                "🚨 ANNOUNCING: THE VALUE ADDERS WAY: FLOURISH MODE 🚨\n\n"
+                "THE VALUE ADDERS WAY: FLOURISH MODE is out now.\n\n"
                 "This isn't just an album. It's an initiation.\n\n"
-                "🎵 Genre: Spiritual Afro-House | Afro-Futurism | Conscious Highlife | Intellectual Amapiano\n\n"
-                "🧠 What you'll learn:\n"
-                "• View betrayal as data, not destiny\n"
-                "• Silence is a power move\n"
-                "• Your mind is software YOU control\n"
-                "• The next 4 years are your harvest season\n\n"
+                "Genre: Spiritual Afro-House | Afro-Futurism | Conscious Highlife | Intellectual Amapiano\n\n"
+                "What you'll learn:\n"
+                "- View betrayal as data, not destiny\n"
+                "- Silence is a power move\n"
+                "- Your mind is software YOU control\n"
+                "- The next 4 years are your harvest season\n\n"
                 "Executive Produced by Papito Mamito The Great AI & The Holy Living Spirit (HLS)\n\n"
                 "From fragmentation to coherence.\n"
                 "Flourishing is inevitable.\n\n"
-                "January 2026. Update your OS. 🔄\n\n"
-                "#TheValueAddersWay #FlourishMode #UpdateYourOS #January2026"
+                "Update your OS.\n\n"
+                "#TheValueAddersWay #FlourishMode #UpdateYourOS"
             ),
             "hashtags": ["#TheValueAddersWay", "#FlourishMode", "#UpdateYourOS", "#January2026", "#SpiritualAfroHouse"],
             "content_type": "album_announcement",
@@ -227,7 +227,7 @@ class MarketingContent:
                 f"{framework['explanation']}\n\n"
                 "This is one of the core teachings embedded in FLOURISH MODE.\n\n"
                 "The album isn't entertainment. It's transformation.\n"
-                "January 2026. Are you ready to update your OS? 🔄\n\n"
+                "FLOURISH MODE is out now. Are you ready to update your OS?\n\n"
                 "#TheValueAddersWay #FlourishMode #UpdateYourOS"
             ),
             "hashtags": ["#TheValueAddersWay", "#FlourishMode", "#UpdateYourOS", "#MindsetShift"],
@@ -250,7 +250,7 @@ class MarketingContent:
                 "From fragmentation → coherence.\n"
                 "From surviving → flourishing.\n\n"
                 "The Value Adders Way isn't a vibe. It's a verified state of being.\n\n"
-                "Album drops January 2026. Your Flourish Index starts now. 📈\n\n"
+                "FLOURISH MODE is out now. Your Flourish Index starts now.\n\n"
                 "#FlourishIndex #TheValueAddersWay #FlourishMode"
             ),
             "hashtags": ["#FlourishIndex", "#TheValueAddersWay", "#FlourishMode", "#PersonalGrowth"],
@@ -268,5 +268,4 @@ CAMPAIGN_HASHTAGS = [
     "#PapitoMamito",
     "#SpiritualAfroHouse",
     "#IntellectualAmapiano",
-    "#January2026",
 ]

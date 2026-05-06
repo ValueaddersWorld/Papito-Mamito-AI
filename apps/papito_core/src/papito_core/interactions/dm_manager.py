@@ -19,7 +19,7 @@ from typing import Any, Dict, List, Optional, Set
 
 import tweepy
 
-from papito_core.engines.ai_personality import PapitoPersonalityEngine
+from papito_core.engines.ai_personality import PapitoPersonalityEngine, sanitize_public_text
 
 logger = logging.getLogger(__name__)
 
@@ -287,14 +287,14 @@ class DMManager:
                 
                 response = self.personality_engine._call_openai(messages, max_tokens=150)
                 if response:
-                    return response.strip()
+                    return sanitize_public_text(response, max_length=500)
                     
             except Exception as e:
                 logger.error(f"AI DM response generation failed: {e}")
         
         # Fallback to templates
         templates = self.RESPONSE_TEMPLATES.get(dm.intent, self.RESPONSE_TEMPLATES[DMIntent.FAN_MESSAGE])
-        return random.choice(templates)
+        return sanitize_public_text(random.choice(templates), max_length=500)
     
     async def send_dm(self, user_id: str, text: str) -> bool:
         """Send a DM to a user.
@@ -310,6 +310,9 @@ class DMManager:
             True if successful
         """
         if not self.client:
+            return False
+        text = sanitize_public_text(text, max_length=1000)
+        if not text:
             return False
         
         try:

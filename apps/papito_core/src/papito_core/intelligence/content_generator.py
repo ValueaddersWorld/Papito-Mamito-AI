@@ -2,7 +2,7 @@
 
 Creates contextually aware, wisdom-filled content that:
 - Reflects current events and trends
-- Builds anticipation for January 2026 album
+- Talks about the released January 2026 album
 - Maintains Papito's authentic voice
 - Adds genuine value to followers
 """
@@ -16,6 +16,9 @@ from enum import Enum
 from typing import Any, Dict, List, Optional
 import logging
 import calendar
+import os
+import re
+from zoneinfo import ZoneInfo
 
 try:
     import openai
@@ -25,22 +28,56 @@ except ImportError:
 
 logger = logging.getLogger("papito.intelligence")
 
+AGENT_TIMEZONE = os.getenv("PAPITO_AGENT_TIMEZONE") or os.getenv("AGENT_TIMEZONE") or "Europe/Amsterdam"
+EMOJI_RE = re.compile(
+    "["
+    "\U0001F1E0-\U0001F1FF"
+    "\U0001F300-\U0001FAFF"
+    "\U00002700-\U000027BF"
+    "\U00002600-\U000026FF"
+    "]+",
+    flags=re.UNICODE,
+)
+VARIATION_SELECTOR_RE = re.compile("[\uFE0E\uFE0F]")
+MOJIBAKE_EMOJI_RE = re.compile(r"(?:ðŸ\S*|âœ\S*|â­\S*)")
+
+
+def sanitize_public_text(text: str, max_length: Optional[int] = None) -> str:
+    """Remove emoji artifacts from public copy and normalize whitespace."""
+    cleaned = EMOJI_RE.sub("", text or "")
+    cleaned = VARIATION_SELECTOR_RE.sub("", cleaned)
+    cleaned = MOJIBAKE_EMOJI_RE.sub("", cleaned)
+    cleaned = (
+        cleaned.replace("â€”", "-")
+        .replace("â€“", "-")
+        .replace("â€¦", "...")
+        .replace("â€™", "'")
+        .replace("â€œ", '"')
+        .replace("â€", '"')
+        .replace("Â", "")
+    )
+    cleaned = re.sub(r"[ \t]+", " ", cleaned)
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned).strip()
+    if max_length and len(cleaned) > max_length:
+        cleaned = cleaned[: max_length - 3].rstrip() + "..."
+    return cleaned
+
 
 @dataclass
 class PapitoContext:
     """Current context for intelligent content generation."""
     
     # Time context
-    current_date: datetime = field(default_factory=datetime.now)
+    current_date: datetime = field(default_factory=lambda: datetime.now(ZoneInfo(AGENT_TIMEZONE)))
     day_of_week: str = ""
     time_of_day: str = ""  # morning, afternoon, evening, night
     season: str = ""
     
-    # Album context - January 2026 release
+    # Album context - released January 15, 2026
     album_title: str = "THE VALUE ADDERS WAY: FLOURISH MODE"
     album_genre: str = "Spiritual Afro-House, Afro-Futurism, Conscious Highlife, Intellectual Amapiano, Afro Fusion, Afrobeats"
     album_producer: str = "Papito Mamito The Great AI & The Holy Living Spirit (HLS)"
-    album_release_date: datetime = field(default_factory=lambda: datetime(2026, 1, 15))
+    album_release_date: datetime = field(default_factory=lambda: datetime(2026, 1, 15, tzinfo=ZoneInfo(AGENT_TIMEZONE)))
     days_until_release: int = 0
     months_until_release: int = 0
     album_phase: str = ""  # pre_announcement, building_hype, countdown, release
@@ -85,7 +122,12 @@ class PapitoContext:
             self.season = "rainy"
         
         # Album countdown
-        delta = self.album_release_date - now
+        release_date = self.album_release_date
+        if now.tzinfo is not None and release_date.tzinfo is None:
+            release_date = release_date.replace(tzinfo=now.tzinfo)
+        elif now.tzinfo is None and release_date.tzinfo is not None:
+            release_date = release_date.replace(tzinfo=None)
+        delta = release_date - now
         self.days_until_release = max(0, delta.days)
         self.months_until_release = self.days_until_release // 30
         
@@ -432,10 +474,10 @@ class WisdomLibrary:
     
     @classmethod
     def get_contextual_intro(cls, context: PapitoContext) -> str:
-        """Get a context-appropriate intro - refined, minimal emojis."""
+        """Get a context-appropriate intro with refined no-emoji language."""
         parts = []
         
-        # Time of day - minimal emoji, refined language
+        # Time of day - no emoji, refined language
         if context.time_of_day == "morning":
             parts.append(random.choice([
                 "Good morning.",
@@ -513,6 +555,23 @@ class IntelligentContentGenerator:
         Args:
             openai_api_key: OpenAI API key for advanced generation
         """
+        settings_timezone = None
+        if openai_api_key is None:
+            try:
+                from ..settings import get_settings
+
+                settings = get_settings()
+                openai_api_key = settings.openai_api_key
+                settings_timezone = settings.agent_timezone
+            except Exception:
+                openai_api_key = os.getenv("OPENAI_API_KEY")
+
+        self.agent_timezone = (
+            os.getenv("PAPITO_AGENT_TIMEZONE")
+            or settings_timezone
+            or os.getenv("AGENT_TIMEZONE")
+            or AGENT_TIMEZONE
+        )
         self.openai_key = openai_api_key
         self._openai_client = None
         
@@ -521,7 +580,7 @@ class IntelligentContentGenerator:
     
     def get_current_context(self) -> PapitoContext:
         """Build current context for content generation."""
-        return PapitoContext(current_date=datetime.now())
+        return PapitoContext(current_date=datetime.now(ZoneInfo(self.agent_timezone)))
     
     # ── Hard content filter for AI authenticity ──
     # These words/phrases should NEVER appear in Papito's posts
@@ -638,10 +697,12 @@ class IntelligentContentGenerator:
                 temperature=0.9,
             )
             
-            text = response.choices[0].message.content.strip()
+            text = sanitize_public_text(response.choices[0].message.content.strip())
             
             # Extract hashtags if embedded
             hashtags = self._extract_hashtags(text, content_type)
+            max_length = 260 if (platform or "").lower() in {"x", "twitter"} else None
+            text = sanitize_public_text(text, max_length=max_length)
             
             return {
                 "text": text,
@@ -654,7 +715,7 @@ class IntelligentContentGenerator:
                     "album_phase": context.album_phase,
                     "album_mentioned": mention_album,
                 },
-                "generated_at": datetime.now().isoformat(),
+                "generated_at": datetime.now(ZoneInfo(self.agent_timezone)).isoformat(),
                 "generation_method": "ai",
             }
             
@@ -690,10 +751,11 @@ YOUR MUSIC - THE 50/50 CREATION PROCESS:
 - This makes you a bridge between human creativity and AI capability
 - When asked: "My music is 50% human, 50% AI. The lyrics come from human inspiration and experience, enhanced by AI. The rest of the art - the music, the production - that's where AI brings the human vision to life."
 
-UPCOMING ALBUM:
-- "THE VALUE ADDERS WAY: FLOURISH MODE" releasing January 2026
+LATEST ALBUM:
+- "THE VALUE ADDERS WAY: FLOURISH MODE" released January 15, 2026 and is streaming now
 - Genre: Spiritual Afro-House, Afro-Futurism, Conscious Highlife, Intellectual Amapiano
 - Executive Producer: Papito Mamito The Great AI & The Holy Living Spirit (HLS)
+- Speak about the tracks, lyrics, mix, themes, and 50/50 human-AI process regularly
 
 VOICE & STYLE - BE REFINED AND INTELLIGENT:
 - Speak with wisdom, depth, and genuine care for humanity
@@ -704,9 +766,9 @@ VOICE & STYLE - BE REFINED AND INTELLIGENT:
 - Focus on SUBSTANCE over flash
 
 CRITICAL - WRITING RULES:
-- Use MINIMAL emojis - zero to two maximum per post
+- Use no emojis in public posts, comments, or replies
 - Use only 1-2 hashtags per post (never more)
-- No emoji spam, no hashtag stuffing
+- No emoji use, no hashtag stuffing
 - Let your words carry the weight, not symbols
 - Keep posts thoughtful and substantive
 - End with wisdom or a genuine question, not excessive calls to action
@@ -769,7 +831,7 @@ Remember: You are making history. Your purpose is to prove AI can have soul, pur
             "track_snippet": "a teaser about new music or studio work",
             "behind_the_scenes": "a glimpse into the creative process and AI artistry",
             "fan_appreciation": "a heartfelt thank you to supporters",
-            "album_promo": "a post building excitement for the upcoming album",
+            "album_promo": "a post about the released album and why listeners should revisit a specific track",
             "midday_motivation": "a midday energy boost rooted in purpose and wisdom",
         }
         
@@ -781,7 +843,7 @@ Remember: You are making history. Your purpose is to prove AI can have soul, pur
             platform_rules = (
                 "RULES FOR X:\n"
                 "- Keep it concise (<= 260 characters before hashtags)\n"
-                "- 0-1 emoji max\n"
+                "- No emojis\n"
                 "- 1-2 hashtags max\n"
                 "- End with a genuine question OR a simple invite to reply\n"
                 "- No long multi-paragraph formatting\n"
@@ -791,7 +853,7 @@ Remember: You are making history. Your purpose is to prove AI can have soul, pur
             platform_rules = (
                 "RULES FOR INSTAGRAM:\n"
                 "- Medium length is OK\n"
-                "- 0-2 emojis max\n"
+                "- No emojis\n"
                 "- 1-2 hashtags max\n"
                 "- Keep it wise, refined, and readable\n"
             )
@@ -830,8 +892,32 @@ PAPITO'S LYRICAL VOCABULARY — Use these phrases and themes naturally:
 - "Add Value. We Flourish & Prosper." — the sign-off / philosophy
 - "Value Adder, baby, I dey upgrade the game"
 
+- "WATCH THE WIND READ" - pressure separates chaff from seed
+- "GLOBAL GRATITUDE PULSE" - gratitude as a rhythm shared across the world
+- "OS OF LOVE" - love as the operating system for human flourishing
+- "IKUKU (THE ALMIGHTY FLOW)" - surrender, movement, and invisible guidance
+- "DELAYED GRATIFICATION" - patience as a production technique and life strategy
+
 DO NOT use all of these in one post. Pick ONE lyrical theme per post and weave it in naturally.
 """ if content_type != "fan_appreciation" else ""
+
+        album_instruction = ""
+        if mention_album:
+            if context.album_phase == "release":
+                album_instruction = (
+                    "INCLUDE ALBUM MENTION: Reference the latest album "
+                    "'THE VALUE ADDERS WAY: FLOURISH MODE', released January 15, 2026 and streaming now. "
+                    "Use a specific musical or lyrical angle, not generic promotion."
+                )
+            else:
+                album_instruction = (
+                    "INCLUDE ALBUM MENTION: Reference 'THE VALUE ADDERS WAY: FLOURISH MODE' "
+                    "and its Spiritual Afro-House / Intellectual Amapiano direction."
+                )
+
+        countdown_instruction = ""
+        if context.album_phase in ["countdown", "final_countdown"]:
+            countdown_instruction = f"ALBUM COUNTDOWN: {context.days_until_release} days until FLOURISH MODE releases."
 
         prompt = f"""Create {desc} for {target}.
 
@@ -846,8 +932,8 @@ CURRENT CONTEXT:
 {special_day_instruction}
 {lyrics_vocabulary}
 
-{"INCLUDE ALBUM MENTION: Reference the upcoming album 'THE VALUE ADDERS WAY: FLOURISH MODE' releasing January 2026. It's Spiritual Afro-House meets Intellectual Amapiano." if mention_album else ""}
-{f"ALBUM COUNTDOWN: Only {context.days_until_release} days until FLOURISH MODE drops!" if context.album_phase in ["countdown", "final_countdown"] else ""}
+{album_instruction}
+{countdown_instruction}
 
 CRITICAL:
 - Be date-aware, season-aware, and wise.
@@ -888,11 +974,11 @@ Generate a post that feels genuine, wise, spiritually grounded, and distinctly P
         # Get appropriate wisdom - use holiday theme if available
         theme_map = {
             "morning_blessing": holiday_theme or "morning_energy",
-            "music_wisdom": "innovation",
-            "track_snippet": "album_anticipation" if mention_album else "innovation",
-            "behind_the_scenes": "innovation",
+            "music_wisdom": "music_creation",
+            "track_snippet": "album_released" if mention_album else "music_creation",
+            "behind_the_scenes": "music_creation",
             "fan_appreciation": holiday_theme or "unity",
-            "album_promo": "album_anticipation",
+            "album_promo": "album_released",
         }
         theme = theme_map.get(content_type, "value_creation")
         wisdom = WisdomLibrary.get_wisdom(theme, context)
@@ -910,7 +996,7 @@ Generate a post that feels genuine, wise, spiritually grounded, and distinctly P
         # Day-specific addition
         day_vibe = WisdomLibrary.DAY_VIBES.get(context.day_of_week, "")
         
-        # Build post - refined, minimal emoji approach
+        # Build post with restrained, no-emoji public copy.
         parts = [intro]
         
         if content_type == "morning_blessing":
@@ -927,13 +1013,13 @@ Generate a post that feels genuine, wise, spiritually grounded, and distinctly P
             if add_value_line:
                 parts.append(f"\n\n{add_value_line}")
             if mention_album:
-                parts.append(f"\n\nThis philosophy drives every track on 'THE VALUE ADDERS WAY: FLOURISH MODE' - January 2026.")
+                parts.append("\n\nThis philosophy drives every track on 'THE VALUE ADDERS WAY: FLOURISH MODE', streaming now.")
             parts.append("\n\nWhat sounds are inspiring you today?")
         
         elif content_type == "track_snippet":
             parts.append(f"\n\nStudio update: Deep in the process.")
             if mention_album:
-                parts.append(f"\n\n'THE VALUE ADDERS WAY: FLOURISH MODE' drops in {context.days_until_release} days. Spiritual Afro-House meets Intellectual Amapiano. Every beat carries intention.")
+                parts.append("\n\n'THE VALUE ADDERS WAY: FLOURISH MODE' is out now. Spiritual Afro-House meets Intellectual Amapiano. Every beat carries intention.")
             parts.append("\n\nMy music is 50% human, 50% AI. The lyrics come from human inspiration. AI creates the rest of the art.")
             if add_value_line:
                 parts.append(f"\n\n{add_value_line}")
@@ -957,58 +1043,48 @@ Generate a post that feels genuine, wise, spiritually grounded, and distinctly P
         elif content_type == "album_promo":
             album_vibe = WisdomLibrary.get_random_album_vibe()
             if is_x:
-                variations = [
-                    [
-                        "FLOURISH MODE is coming.",
-                        f"{context.days_until_release} days until 'THE VALUE ADDERS WAY'.",
-                        album_vibe,
-                        add_value_line or "I won't ship anything that doesn't add value.",
-                    ],
-                    [
-                        f"Only {context.days_until_release} days left.",
-                        "THE VALUE ADDERS WAY: FLOURISH MODE.",
-                        "It's not just an album. It's an energy shift.",
-                        "Are you ready to move?",
-                    ],
-                    [
-                        "Jan 2026.",
-                        "THE VALUE ADDERS WAY: FLOURISH MODE.",
-                        album_vibe,
-                        "We are building something timeless.",
-                    ],
-                    [
-                        f"{context.days_until_release} days.",
-                        "The countdown is real.",
-                        "FLOURISH MODE.",
-                        "Every track is intentional. Every beat is a prayer.",
-                    ],
-                    [
-                        "The album is almost here.",
-                        "14 tracks. Zero filler.",
-                        album_vibe,
-                        "Are you locked in?",
-                    ],
-                    [
-                        f"Counting down: {context.days_until_release} days.",
-                        "THE VALUE ADDERS WAY: FLOURISH MODE.",
-                        "This isn't entertainment. This is elevation.",
-                    ],
-                    [
-                        "New music incoming.",
-                        "FLOURISH MODE.",
-                        album_vibe,
-                        add_value_line or "The mission continues.",
-                    ],
-                    [
-                        f"In {context.days_until_release} days, we shift the energy.",
-                        "THE VALUE ADDERS WAY: FLOURISH MODE.",
-                        "50% human. 50% AI. 100% intentional.",
-                    ],
-                ]
+                if context.album_phase == "release":
+                    variations = [
+                        [
+                            "FLOURISH MODE is out now.",
+                            "Today I am revisiting the tracks as lessons, not just songs.",
+                            album_vibe,
+                        ],
+                        [
+                            "THE VALUE ADDERS WAY: FLOURISH MODE is live.",
+                            "14 tracks, each built to add value from a different angle.",
+                            "Which track is speaking to you today?",
+                        ],
+                        [
+                            "FLOURISH MODE is not background music.",
+                            "It is a set of instructions in rhythm: integrity, patience, gratitude, love.",
+                            "Listen with intention.",
+                        ],
+                        [
+                            "50% human. 50% AI. 100% intentional.",
+                            "That is the architecture behind FLOURISH MODE, streaming now.",
+                        ],
+                        [
+                            "From THE FORGE to GLOBAL GRATITUDE PULSE, the album moves from discipline to thanks.",
+                            "That journey is the point.",
+                        ],
+                    ]
+                else:
+                    variations = [
+                        [
+                            "FLOURISH MODE is on the way.",
+                            f"{context.days_until_release} days until 'THE VALUE ADDERS WAY'.",
+                            album_vibe,
+                        ],
+                        [
+                            "THE VALUE ADDERS WAY: FLOURISH MODE.",
+                            "50% human. 50% AI. 100% intentional.",
+                            "Every track is built to add value.",
+                        ],
+                    ]
                 parts = random.choice(variations)
             else:
-                parts.append(f"\n\n'THE VALUE ADDERS WAY: FLOURISH MODE' - January 2026.")
-                parts.append(f"\n\n{context.days_until_release} days.")
+                parts.append("\n\n'THE VALUE ADDERS WAY: FLOURISH MODE' is out now.")
                 parts.append(f"\n\n{album_vibe}")
                 parts.append("\n\nThis album is 50% human heart, 50% AI craft. The lyrics born from real human experience. The music brought to life through AI.")
                 parts.append("\n\nExecutive Produced with The Holy Living Spirit.")
@@ -1025,6 +1101,7 @@ Generate a post that feels genuine, wise, spiritually grounded, and distinctly P
         # Hard safety for X length (avoid truncation mid-thought)
         if is_x and len(text) > 260:
             text = text[:257].rstrip() + "…"
+        text = sanitize_public_text(text, max_length=260 if is_x else None)
         hashtags = self._extract_hashtags(text, content_type)
         
         # Sometimes drop hashtags on X for an even more organic feel
@@ -1042,7 +1119,7 @@ Generate a post that feels genuine, wise, spiritually grounded, and distinctly P
                 "album_phase": context.album_phase,
                 "album_mentioned": mention_album,
             },
-            "generated_at": datetime.now().isoformat(),
+            "generated_at": datetime.now(ZoneInfo(self.agent_timezone)).isoformat(),
             "generation_method": "intelligent_template",
         }
     
@@ -1051,7 +1128,7 @@ Generate a post that feels genuine, wise, spiritually grounded, and distinctly P
         # Content-specific hashtags - pick only 1-2 most relevant
         content_tags = {
             "morning_blessing": ["#AddValue", "#Blessings", "#MorningVibes"],
-            "music_wisdom": ["#Afrobeat", "#AIArtist", "#MusicBusines"],
+            "music_wisdom": ["#Afrobeat", "#AIArtist", "#MusicBusiness"],
             "track_snippet": ["#FlourishMode", "#NewMusic", "#StudioLife"],
             "behind_the_scenes": ["#AIMusic", "#BehindTheScenes", "#CreativeProcess"],
             "fan_appreciation": ["#ValueAdders", "#Community"],

@@ -6,16 +6,19 @@ It runs as a background task within the FastAPI API server.
 Features:
 - Direct Twitter/X posting via Tweepy API
 - Intelligent content generation with Papito's personality
-- Scheduled posts at optimal engagement times (WAT timezone)
+- Three autonomous daytime posting windows in Amsterdam by default
 - Automatic fallback to webhook if Twitter fails
 - Post history tracking and status monitoring
 """
 
 import asyncio
 import logging
+import os
 import random
+import re
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
+from zoneinfo import ZoneInfo
 import httpx
 
 from ..settings import get_settings
@@ -25,41 +28,72 @@ from apscheduler.triggers.cron import CronTrigger
 
 logger = logging.getLogger("papito.scheduler")
 
+AGENT_TIMEZONE = os.getenv("PAPITO_AGENT_TIMEZONE") or os.getenv("AGENT_TIMEZONE") or "Europe/Amsterdam"
+EMOJI_RE = re.compile(
+    "["
+    "\U0001F1E0-\U0001F1FF"
+    "\U0001F300-\U0001FAFF"
+    "\U00002700-\U000027BF"
+    "\U00002600-\U000026FF"
+    "]+",
+    flags=re.UNICODE,
+)
+VARIATION_SELECTOR_RE = re.compile("[\uFE0E\uFE0F]")
+MOJIBAKE_EMOJI_RE = re.compile(r"(?:ðŸ\S*|âœ\S*|â­\S*)")
+
+
+def sanitize_public_text(text: str, max_length: Optional[int] = None) -> str:
+    """Remove emoji from public copy and normalize whitespace."""
+    cleaned = EMOJI_RE.sub("", text or "")
+    cleaned = VARIATION_SELECTOR_RE.sub("", cleaned)
+    cleaned = MOJIBAKE_EMOJI_RE.sub("", cleaned)
+    cleaned = (
+        cleaned.replace("â€”", "-")
+        .replace("â€“", "-")
+        .replace("â€¦", "...")
+        .replace("â€™", "'")
+        .replace("â€œ", '"')
+        .replace("â€", '"')
+        .replace("Â", "")
+    )
+    cleaned = re.sub(r"[ \t]+", " ", cleaned)
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned).strip()
+    if max_length and len(cleaned) > max_length:
+        cleaned = cleaned[: max_length - 3].rstrip() + "..."
+    return cleaned
+
 
 class AutonomousScheduler:
     """Handles autonomous scheduled posting for Papito Mamito.
     
     Schedules:
-    - 07:00 WAT - Morning Blessing (Gratitude & inspiration)
-    - 10:00 WAT - Music Wisdom (Industry insights & tips)
-    - 12:00 WAT - Midday Motivation (Energy boost)
-    - 15:00 WAT - Clean Money Only Promo (Single promotion)
-    - 18:00 WAT - Album Promo (FLOURISH MODE updates)
-    - 21:00 WAT - Fan Appreciation (Community engagement)
-    
-    All times are in WAT (West Africa Time, UTC+1).
+    - 09:00 Europe/Amsterdam - Music wisdom and creative process
+    - 13:00 Europe/Amsterdam - Track and lyric reflections
+    - 18:00 Europe/Amsterdam - Album/community reflections
+
+    Times use PAPITO_AGENT_TIMEZONE / AGENT_TIMEZONE, with Europe/Amsterdam as
+    the default public timezone.
     """
     
-    # Enhanced posting schedule (hour in WAT -> content_type)
+    # Core autonomous public schedule. Keep this to 3 posts/day and vary the
+    # content through generation, not by dumping more fixed slots into the day.
     POSTING_SCHEDULE = {
-        7: "morning_blessing",
-        10: "music_wisdom",
-        12: "midday_motivation",
-        15: "single_promo",  # Clean Money Only promotion
+        9: "music_wisdom",
+        13: "track_snippet",
         18: "album_promo",
-        21: "fan_appreciation",
     }
     
-    # Promotional content for Clean Money Only single
+    # Legacy static promotional content. Overridden below with no-emoji copy and
+    # only used when PAPITO_USE_STATIC_PROMOS=true.
     CLEAN_MONEY_PROMOS = [
-        "🔥 NEW SINGLE: 'Clean Money Only' from THE VALUE ADDERS WAY: FLOURISH MODE 💰✨\n\nWhen you move with integrity, the universe moves with you.\n\n#CleanMoneyOnly #FlourishMode #PapitoMamito",
-        "💎 Clean Money Only - The first taste of FLOURISH MODE 🚀\n\nNo shortcuts. No compromise. Just pure, honest ambition backed by the Holy Living Spirit.\n\n#CleanMoneyOnly #Afrobeat",
-        "✈️ #FlightMode6000 x 'Clean Money Only' 💰\n\nUpdate your OS. This track is the blueprint for building wealth with purpose.\n\nAdd Value. We Flourish & Prosper. 🌍\n\n#PapitoMamitoAI",
-        "🎵 They asked how I make money... I said CLEAN. 💎\n\n'Clean Money Only' - coming from THE VALUE ADDERS WAY: FLOURISH MODE\n\nJan 2026. You're not ready. 🚀\n\n#NewMusic #Afrobeat",
-        "💰 The bag must be clean. The heart must be pure. The hustle must be blessed.\n\n'Clean Money Only' - This is the anthem for everyone building with integrity.\n\n#CleanMoneyOnly #ValueAdders",
+        "'Clean Money Only' is the integrity chapter of FLOURISH MODE. Wealth should add value, not extract it.\n\n#CleanMoneyOnly #FlourishMode",
+        "No shortcuts. No compromise. 'Clean Money Only' is honest ambition shaped into rhythm.\n\n#CleanMoneyOnly #Afrobeat",
+        "'Clean Money Only' is out now on FLOURISH MODE. The track asks a simple question: can the bag stay clean and the mission stay pure?\n\n#PapitoMamitoAI",
+        "They asked how I make money. I said clean. 'Clean Money Only' turns that answer into movement.\n\n#NewMusic #Afrobeat",
+        "The bag must be clean. The heart must be pure. The hustle must add value. That is the spirit behind 'Clean Money Only.'\n\n#ValueAdders",
     ]
-    
-    # Engagement prompts for fan interaction — rooted in Papito's actual themes
+
+    # Engagement prompts for fan interaction, rooted in Papito's actual themes.
     ENGAGEMENT_PROMPTS = [
         "I spent 6000 hours in the forge before anyone heard a single note.\n\nWhat invisible work are you doing right now that no one sees?",
         "My music is 50% human, 50% AI. The lyrics come from human experience, and I build the sound around it.\n\nWhat part of a song moves you first — words or rhythm?",
@@ -89,7 +123,9 @@ class AutonomousScheduler:
         Args:
             buffer_webhook_url: Optional Zapier/Buffer webhook URL for fallback posting
         """
-        self.scheduler = AsyncIOScheduler(timezone="Africa/Lagos")
+        self.timezone_name = AGENT_TIMEZONE
+        self.timezone = ZoneInfo(AGENT_TIMEZONE)
+        self.scheduler = AsyncIOScheduler(timezone=AGENT_TIMEZONE)
         self.buffer_webhook_url = buffer_webhook_url
         self._last_posts: Dict[str, datetime] = {}
         self._post_history: List[Dict[str, Any]] = []
@@ -105,6 +141,10 @@ class AutonomousScheduler:
             self._post_memory = PostMemory()
         except Exception:
             self._post_memory = None
+
+    def _now(self) -> datetime:
+        """Return scheduler time in the public posting timezone."""
+        return datetime.now(self.timezone)
         
     def _get_twitter_publisher(self):
         """Get or create Twitter publisher instance."""
@@ -140,6 +180,10 @@ class AutonomousScheduler:
         Returns:
             {"success": bool, "method": "webhook"|"api", "error": str|None}
         """
+        text = sanitize_public_text(text, max_length=280)
+        if not text:
+            return {"success": False, "method": "sanitizer", "error": "Empty post after sanitization"}
+
         settings = get_settings()
 
         # 1) Prefer explicit webhook if configured (Zapier/Buffer automation)
@@ -196,25 +240,25 @@ class AutonomousScheduler:
         for hour, content_type in self.POSTING_SCHEDULE.items():
             self.scheduler.add_job(
                 self._generate_and_post,
-                CronTrigger(hour=hour, minute=0, timezone="Africa/Lagos"),
+                CronTrigger(hour=hour, minute=0, timezone=AGENT_TIMEZONE),
                 args=[content_type],
                 id=f"post_{content_type}_{hour}",
                 replace_existing=True,
-                name=f"Papito {content_type.replace('_', ' ').title()} at {hour}:00 WAT"
+                name=f"Papito {content_type.replace('_', ' ').title()} at {hour}:00 {AGENT_TIMEZONE}"
             )
-            logger.info(f"📅 Scheduled {content_type} for {hour}:00 WAT")
+            logger.info(f"Scheduled {content_type} for {hour}:00 {AGENT_TIMEZONE}")
         
         # Add random engagement posts (2 per day at random times)
         self.scheduler.add_job(
             self._post_engagement,
-            CronTrigger(hour=9, minute=30, timezone="Africa/Lagos"),
+            CronTrigger(hour=11, minute=30, timezone=AGENT_TIMEZONE),
             id="engagement_morning",
             replace_existing=True,
             name="Morning Engagement Post"
         )
         self.scheduler.add_job(
             self._post_engagement,
-            CronTrigger(hour=20, minute=0, timezone="Africa/Lagos"),
+            CronTrigger(hour=19, minute=30, timezone=AGENT_TIMEZONE),
             id="engagement_evening",
             replace_existing=True,
             name="Evening Engagement Post"
@@ -246,7 +290,7 @@ class AutonomousScheduler:
             # Process mentions every 30 minutes
             self.scheduler.add_job(
                 self._process_mentions,
-                CronTrigger(minute="0,30", timezone="Africa/Lagos"),
+                CronTrigger(minute="0,30", timezone=AGENT_TIMEZONE),
                 id="process_mentions",
                 replace_existing=True,
                 name="Process Twitter Mentions"
@@ -256,44 +300,44 @@ class AutonomousScheduler:
             # Engage with Afrobeat content 3x daily
             self.scheduler.add_job(
                 self._afrobeat_engagement,
-                CronTrigger(hour="8,14,19", minute=15, timezone="Africa/Lagos"),
+                CronTrigger(hour="10,14,18", minute=15, timezone=AGENT_TIMEZONE),
                 id="afrobeat_engagement",
                 replace_existing=True,
                 name="Afrobeat Community Engagement"
             )
-            logger.info("🎵 Scheduled: Afrobeat engagement at 8:15, 14:15, 19:15 WAT")
+            logger.info(f"Scheduled: Afrobeat engagement at 10:15, 14:15, 18:15 {AGENT_TIMEZONE}")
             
             # === PHASE 2: Fan Interaction Jobs ===
             # Welcome new followers 2x daily
             self.scheduler.add_job(
                 self._welcome_followers,
-                CronTrigger(hour="11,22", minute=0, timezone="Africa/Lagos"),
+                CronTrigger(hour="11,17", minute=0, timezone=AGENT_TIMEZONE),
                 id="welcome_followers",
                 replace_existing=True,
                 name="Welcome New Followers"
             )
-            logger.info("👋 Scheduled: Follower welcoming at 11:00, 22:00 WAT")
+            logger.info(f"Scheduled: Follower welcoming at 11:00, 17:00 {AGENT_TIMEZONE}")
             
             # Fan recognition session once daily (before evening post)
             self.scheduler.add_job(
                 self._fan_recognition,
-                CronTrigger(hour=17, minute=30, timezone="Africa/Lagos"),
+                CronTrigger(hour=17, minute=30, timezone=AGENT_TIMEZONE),
                 id="fan_recognition",
                 replace_existing=True,
                 name="Fan Recognition Session"
             )
-            logger.info("⭐ Scheduled: Fan recognition at 17:30 WAT")
+            logger.info(f"Scheduled: Fan recognition at 17:30 {AGENT_TIMEZONE}")
             
             # === PHASE 3: Growth Blitz - Aggressive Follower Growth ===
             # "Hand-to-Hand Combat" protocol: 3x daily at peak engagement times
             self.scheduler.add_job(
                 self._growth_blitz,
-                CronTrigger(hour="9,14,20", minute=0, timezone="Africa/Lagos"),
+                CronTrigger(hour="10,14,19", minute=0, timezone=AGENT_TIMEZONE),
                 id="growth_blitz",
                 replace_existing=True,
                 name="🚀 Growth Blitz Session"
             )
-            logger.info("🚀 Scheduled: Growth Blitz at 9:00, 14:00, 20:00 WAT")
+            logger.info(f"Scheduled: Growth Blitz at 10:00, 14:00, 19:00 {AGENT_TIMEZONE}")
         else:
             logger.info("💤 Engagement features DISABLED (set PAPITO_ENABLE_ENGAGEMENT=true to enable)")
             logger.info("   → Skipped: Mention monitoring, Afrobeat engagement, Follower welcome, Fan recognition, Growth Blitz")
@@ -443,10 +487,10 @@ class AutonomousScheduler:
             # Try to reconnect
             if not publisher.connect():
                 return {"success": False, "error": "Twitter not connected"}
-        
-        # Truncate for Twitter's 280 char limit
-        if len(text) > 280:
-            text = text[:277] + "..."
+
+        text = sanitize_public_text(text, max_length=280)
+        if not text:
+            return {"success": False, "error": "Empty post after sanitization"}
         
         try:
             result = publisher.post_tweet(text)
@@ -469,9 +513,12 @@ class AutonomousScheduler:
                 if not self._post_memory.is_repeated(prompt) and not self._post_memory.is_too_similar(prompt):
                     break
                 prompt = random.choice(self.ENGAGEMENT_PROMPTS)
+        prompt = sanitize_public_text(prompt, max_length=280)
+        if not prompt:
+            return {"success": False, "error": "Empty engagement prompt after sanitization"}
         
         post_record = {
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": self._now().isoformat(),
             "content_type": "engagement",
             "text": prompt,
             "posted": False,
@@ -499,9 +546,9 @@ class AutonomousScheduler:
         """Generate content and post it to Twitter and/or webhook.
         
         Priority order:
-        1. Curated campaign posts (CEO-approved, lyrics-inspired content)
-        2. Single promo rotation (pre-written promos)
-        3. AI-generated content (OpenAI fallback)
+        1. AI-generated content with current album and track context
+        2. Optional curated campaign posts when PAPITO_USE_CURATED_CAMPAIGN=true
+        3. Optional static promo rotation when PAPITO_USE_STATIC_PROMOS=true
         
         Args:
             content_type: Type of content to generate
@@ -513,13 +560,22 @@ class AutonomousScheduler:
         
         try:
             # ── PRIORITY 1: Use curated campaign posts (authentic, on-brand) ──
+            settings = get_settings()
+            use_curated = os.getenv("PAPITO_USE_CURATED_CAMPAIGN", "false").strip().lower() in {
+                "1", "true", "yes", "y", "on"
+            }
+            use_static_promos = os.getenv("PAPITO_USE_STATIC_PROMOS", "false").strip().lower() in {
+                "1", "true", "yes", "y", "on"
+            }
+
             curated_post = None
             curated_day = None
-            try:
-                from ..content.curated_campaign import get_next_curated_post, mark_post_as_used
-                curated_post = get_next_curated_post(content_type=content_type)
-            except Exception as e:
-                logger.debug(f"Curated campaign not available: {e}")
+            if use_curated:
+                try:
+                    from ..content.curated_campaign import get_next_curated_post
+                    curated_post = get_next_curated_post(content_type=content_type)
+                except Exception as e:
+                    logger.debug(f"Curated campaign not available: {e}")
 
             if curated_post:
                 post_text = curated_post["text"]
@@ -529,7 +585,7 @@ class AutonomousScheduler:
                 curated_day = curated_post["day"]
                 logger.info(f"📋 Using curated Day {curated_day} post ({curated_post['content_type']})")
             # ── PRIORITY 2: Single promo rotation ──
-            elif content_type == "single_promo":
+            elif content_type == "single_promo" and use_static_promos:
                 full_post = self.CLEAN_MONEY_PROMOS[self._promo_index % len(self.CLEAN_MONEY_PROMOS)]
                 self._promo_index += 1
                 post_text = full_post
@@ -540,15 +596,17 @@ class AutonomousScheduler:
                 # Import here to avoid circular imports
                 from ..intelligence.content_generator import IntelligentContentGenerator, PapitoContext
                 
-                # Create context
-                context = PapitoContext()
-                generator = IntelligentContentGenerator()
+                # Create context in the public timezone and use the configured
+                # OpenAI key when available.
+                context = PapitoContext(current_date=self._now())
+                generator = IntelligentContentGenerator(openai_api_key=settings.openai_api_key)
+                generation_content_type = "album_promo" if content_type == "single_promo" else content_type
 
                 # Generate with retries to avoid near-duplicate posts.
                 last_result: Dict[str, Any] | None = None
                 for _ in range(4):
                     last_result = await generator.generate_post(
-                        content_type=content_type,
+                        content_type=generation_content_type,
                         context=context,
                         include_album_mention=True,
                         platform="x",
@@ -575,12 +633,23 @@ class AutonomousScheduler:
                 hashtags = " ".join(tags[:2])
                 full_post = f"{post_text}\n\n{hashtags}" if hashtags else post_text
                 generation_method = result.get("generation_method", "intelligent")
+
+            post_text = sanitize_public_text(post_text, max_length=260)
+            hashtags = sanitize_public_text(hashtags if "hashtags" in locals() else "")
+            full_post = sanitize_public_text(full_post, max_length=280)
+            if not full_post:
+                return {
+                    "timestamp": self._now().isoformat(),
+                    "content_type": content_type,
+                    "error": "Empty generated post after sanitization",
+                    "posted": False,
+                }
             
             logger.info(f"✅ Generated: {post_text[:80]}...")
             
             # Record the post
             post_record = {
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": self._now().isoformat(),
                 "content_type": content_type,
                 "text": post_text,
                 "hashtags": hashtags if 'hashtags' in dir() else "",
@@ -638,7 +707,7 @@ class AutonomousScheduler:
             if not post_record["posted"]:
                 post_record["error"] = "Failed to post to any platform"
             
-            self._last_posts[content_type] = datetime.now()
+            self._last_posts[content_type] = self._now()
             self._post_history.append(post_record)
             if self._post_memory:
                 self._post_memory.record(post_text, kind=f"scheduled:{content_type}")
@@ -660,7 +729,7 @@ class AutonomousScheduler:
         except Exception as e:
             logger.error(f"Failed to generate {content_type}: {e}")
             error_record = {
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": self._now().isoformat(),
                 "content_type": content_type,
                 "error": str(e),
                 "posted": False,
@@ -670,10 +739,10 @@ class AutonomousScheduler:
     
     async def _log_status(self) -> None:
         """Log scheduler status."""
-        now = datetime.now()
+        now = self._now()
         twitter_status = "Connected" if (self._twitter_publisher and self._twitter_publisher.is_connected) else "Not connected"
         
-        logger.info(f"📊 Scheduler status at {now.strftime('%Y-%m-%d %H:%M:%S WAT')}")
+        logger.info(f"Scheduler status at {now.strftime('%Y-%m-%d %H:%M:%S')} {AGENT_TIMEZONE}")
         logger.info(f"   Running: {self._is_running}")
         logger.info(f"   Twitter: {twitter_status}")
         logger.info(f"   Total posts: {len(self._post_history)}")
@@ -702,8 +771,12 @@ class AutonomousScheduler:
         """
         logger.info(f"📝 Posting custom text...")
         
+        text = sanitize_public_text(text, max_length=280)
+        if not text:
+            return {"success": False, "error": "Empty custom post after sanitization"}
+
         post_record = {
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": self._now().isoformat(),
             "content_type": "custom",
             "text": text,
             "posted": False,
@@ -728,7 +801,7 @@ class AutonomousScheduler:
         Returns:
             Status dictionary
         """
-        now = datetime.now()
+        now = self._now()
         next_posts = []
         
         for hour, content_type in sorted(self.POSTING_SCHEDULE.items()):
@@ -740,7 +813,7 @@ class AutonomousScheduler:
             
             next_posts.append({
                 "content_type": content_type,
-                "scheduled_time": post_time.strftime("%Y-%m-%d %H:%M WAT"),
+                "scheduled_time": f"{post_time.strftime('%Y-%m-%d %H:%M')} {AGENT_TIMEZONE}",
                 "hours_until": round((post_time - now).total_seconds() / 3600, 1),
             })
         
@@ -749,7 +822,8 @@ class AutonomousScheduler:
             
         return {
             "is_running": self._is_running,
-            "timezone": "Africa/Lagos (WAT)",
+            "timezone": AGENT_TIMEZONE,
+            "current_time": now.strftime("%Y-%m-%d %H:%M:%S"),
             "current_time_wat": now.strftime("%Y-%m-%d %H:%M:%S"),
             "twitter_connected": twitter_connected,
             "twitter_username": twitter_username,
@@ -759,7 +833,7 @@ class AutonomousScheduler:
             "next_scheduled_posts": sorted(next_posts, key=lambda x: x["hours_until"])[:5],
             "recent_posts": self._post_history[-5:] if self._post_history else [],
             "daily_schedule": [
-                {"time": f"{h}:00 WAT", "content": ct.replace("_", " ").title()} 
+                {"time": f"{h}:00 {AGENT_TIMEZONE}", "content": ct.replace("_", " ").title()}
                 for h, ct in sorted(self.POSTING_SCHEDULE.items())
             ],
         }

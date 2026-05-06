@@ -537,7 +537,7 @@ class FollowerGrowthEngine:
                 logger.info(f"🎉 MILESTONE REACHED: {name} - {message}")
     
     def reset_daily_metrics(self):
-        """Reset daily counters (call at midnight WAT)."""
+        """Reset daily counters at midnight in the configured agent timezone."""
         self.metrics.followers_this_week += self.metrics.followers_today
         self.metrics.followers_today = 0
         self.metrics.posts_today = 0

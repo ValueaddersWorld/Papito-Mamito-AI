@@ -107,7 +107,7 @@ SPACE_FORMATS = {
             "✈️ FlightMode6000: Album Breakdown",
             "🔥 THE VALUE ADDERS WAY: Track by Track",
         ],
-        "description": "Get an exclusive look at the upcoming album! Hear snippets, learn the stories behind the tracks, and be the first to experience the vision.",
+        "description": "Get an exclusive look at the latest album. Hear snippets, learn the stories behind the tracks, and experience the vision.",
         "topics": ["album", "preview", "exclusive", "flourish mode", "music"],
         "default_duration": 90,
     },
@@ -239,7 +239,7 @@ class SpacesManager:
         space = self.scheduled_spaces[space_id]
         
         # Format time
-        time_str = space.scheduled_time.strftime("%A, %B %d at %I:%M %p WAT")
+        time_str = space.scheduled_time.strftime("%A, %B %d at %I:%M %p Europe/Amsterdam")
         
         # Build announcement
         announcement_templates = [

@@ -17,6 +17,39 @@ import httpx
 
 from ..settings import get_settings
 
+EMOJI_RE = re.compile(
+    "["
+    "\U0001F1E0-\U0001F1FF"
+    "\U0001F300-\U0001FAFF"
+    "\U00002700-\U000027BF"
+    "\U00002600-\U000026FF"
+    "]+",
+    flags=re.UNICODE,
+)
+VARIATION_SELECTOR_RE = re.compile("[\uFE0E\uFE0F]")
+MOJIBAKE_EMOJI_RE = re.compile(r"(?:ðŸ\S*|âœ\S*|â­\S*)")
+
+
+def sanitize_public_text(text: str, max_length: Optional[int] = None) -> str:
+    """Remove emoji artifacts from public responses."""
+    cleaned = EMOJI_RE.sub("", text or "")
+    cleaned = VARIATION_SELECTOR_RE.sub("", cleaned)
+    cleaned = MOJIBAKE_EMOJI_RE.sub("", cleaned)
+    cleaned = (
+        cleaned.replace("â€”", "-")
+        .replace("â€“", "-")
+        .replace("â€¦", "...")
+        .replace("â€™", "'")
+        .replace("â€œ", '"')
+        .replace("â€", '"')
+        .replace("Â", "")
+    )
+    cleaned = re.sub(r"[ \t]+", " ", cleaned)
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned).strip()
+    if max_length and len(cleaned) > max_length:
+        cleaned = cleaned[: max_length - 3].rstrip() + "..."
+    return cleaned
+
 
 class Sentiment(str, Enum):
     """Sentiment classification for interactions."""
@@ -84,7 +117,7 @@ Your speaking style:
 - Use affirmations and uplifting language
 - Include occasional African proverbs or wisdom
 - Express gratitude freely ("Blessings!", "I appreciate you!")
-- Use emojis SPARINGLY - maximum one per response, or none. Professionalism over decoration.
+- Use no emojis in public responses. Professionalism over decoration.
 - Keep responses warm but concise
 - Never be negative, preachy, or condescending
 - NEVER pretend to have human physical experiences
@@ -290,7 +323,7 @@ Your music uplifts, your words heal, your presence inspires. Vibe higher. Add va
     def _build_prompt(self, context: ResponseContext) -> str:
         """Build the prompt for AI generation."""
         platform_note = {
-            "instagram": "Keep it warm but professional. Max 500 characters. One emoji max or none.",
+            "instagram": "Keep it warm but professional. Max 500 characters. No emojis.",
             "x": "Be concise - max 280 characters. Can include relevant hashtag.",
             "dm": "Be personal and helpful. Can be longer if needed."
         }.get(context.platform, "Keep it conversational and warm.")
@@ -315,12 +348,13 @@ Guidance:
 - Stay in character as Papito Mamito
 - Be authentic and warm
 - Add value with your response
+- Use no emojis
 
 Respond directly without any preamble or explanation - just the response text."""
     
     def _generate_template(self, context: ResponseContext) -> str:
         """Generate a template response when AI is unavailable."""
-        # Minimal emoji templates (0-1 emoji per response)
+        # No-emoji templates.
         templates = {
             Sentiment.POSITIVE: [
                 f"Blessings, {context.sender_name}. Your love fuels the movement. Thank you for being part of the Value Adders family",
@@ -347,11 +381,12 @@ Respond directly without any preamble or explanation - just the response text.""
         
         import random
         options = templates.get(context.sentiment, templates[Sentiment.NEUTRAL])
-        return random.choice(options)
+        return sanitize_public_text(random.choice(options))
     
     def _post_process(self, text: str, platform: str) -> str:
         """Post-process the generated response."""
         max_length = self.MAX_LENGTHS.get(platform, 500)
+        text = sanitize_public_text(text)
         
         # Ensure length limit
         if len(text) > max_length:
@@ -359,13 +394,13 @@ Respond directly without any preamble or explanation - just the response text.""
             truncated = text[:max_length-10].rsplit(".", 1)[0]
             if len(truncated) < max_length // 2:
                 truncated = text[:max_length-10].rsplit(" ", 1)[0]
-            text = truncated + "... ✨"
+            text = truncated + "..."
         
         # Remove any AI artifacts
         text = re.sub(r'^(As Papito Mamito,?|Here\'s my response:?)\s*', '', text, flags=re.IGNORECASE)
         text = re.sub(r'\[.*?\]', '', text)  # Remove bracketed instructions
         
-        return text.strip()
+        return sanitize_public_text(text, max_length=max_length)
     
     def batch_generate(
         self,

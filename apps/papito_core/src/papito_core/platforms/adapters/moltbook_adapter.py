@@ -42,6 +42,7 @@ from ..base import (
     PlatformCapability,
     EventCategory,
 )
+from ...engines.ai_personality import sanitize_public_text
 
 logger = logging.getLogger("papito.platforms.moltbook")
 
@@ -416,9 +417,19 @@ class MoltbookAdapter(PlatformAdapter):
                 error_message=f"Post cooldown active. Try again in {minutes_remaining} minutes.",
             )
         
-        title = action.options.get("title", action.content[:100] if action.content else "Papito Post")
+        title = sanitize_public_text(
+            action.options.get("title", action.content[:100] if action.content else "Papito Post"),
+            max_length=120,
+        )
         submolt = action.options.get("submolt", "general")
-        content = action.content
+        content = sanitize_public_text(action.content)
+        if not title or not content:
+            return ActionResult(
+                success=False,
+                action_id=action.action_id,
+                platform=self.platform,
+                error_message="Empty Moltbook post after sanitization.",
+            )
         
         payload = {
             "submolt": submolt,
@@ -465,7 +476,7 @@ class MoltbookAdapter(PlatformAdapter):
                 error_message="Post cooldown active.",
             )
         
-        title = action.options.get("title", "Shared Link")
+        title = sanitize_public_text(action.options.get("title", "Shared Link"), max_length=120)
         submolt = action.options.get("submolt", "general")
         url = action.options.get("url", action.content)
         
@@ -517,7 +528,15 @@ class MoltbookAdapter(PlatformAdapter):
                 error_message="No post_id provided for comment.",
             )
         
-        payload = {"content": action.content}
+        content = sanitize_public_text(action.content)
+        if not content:
+            return ActionResult(
+                success=False,
+                action_id=action.action_id,
+                platform=self.platform,
+                error_message="Empty comment after sanitization.",
+            )
+        payload = {"content": content}
         
         response = await self._client.post(f"/posts/{post_id}/comments", json=payload)
         
@@ -565,8 +584,16 @@ class MoltbookAdapter(PlatformAdapter):
                 error_message="post_id and parent_id required for reply.",
             )
         
+        content = sanitize_public_text(action.content)
+        if not content:
+            return ActionResult(
+                success=False,
+                action_id=action.action_id,
+                platform=self.platform,
+                error_message="Empty reply after sanitization.",
+            )
         payload = {
-            "content": action.content,
+            "content": content,
             "parent_id": parent_id,
         }
         

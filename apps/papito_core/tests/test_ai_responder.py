@@ -201,7 +201,7 @@ class TestAIResponder:
         response = responder._generate_template(context)
         
         assert "TestFan" in response
-        # Templates may or may not include emoji per minimal emoji policy
+        # Templates should be concise and public-safe.
         assert len(response) > 10  # Has substantial content
     
     @patch("papito_core.content.ai_responder.get_settings")

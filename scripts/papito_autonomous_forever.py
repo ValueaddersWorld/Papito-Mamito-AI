@@ -24,9 +24,11 @@ import sys
 import json
 import random
 import logging
+import re
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 from pathlib import Path
+from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
 
 import requests
@@ -56,6 +58,51 @@ X_API_KEY = os.getenv("X_API_KEY", "")
 X_API_SECRET = os.getenv("X_API_SECRET", "")
 X_ACCESS_TOKEN = os.getenv("X_ACCESS_TOKEN", "")
 X_ACCESS_SECRET = os.getenv("X_ACCESS_TOKEN_SECRET", "")  # .env uses X_ACCESS_TOKEN_SECRET
+
+PUBLIC_TIMEZONE = os.getenv("PAPITO_AGENT_TIMEZONE") or os.getenv("AGENT_TIMEZONE") or "Europe/Amsterdam"
+PUBLIC_POST_WINDOWS = {
+    "morning": (9, 11),
+    "afternoon": (13, 16),
+    "evening": (18, 20),
+}
+
+EMOJI_RE = re.compile(
+    "["
+    "\U0001F1E0-\U0001F1FF"
+    "\U0001F300-\U0001FAFF"
+    "\U00002700-\U000027BF"
+    "\U00002600-\U000026FF"
+    "]+",
+    flags=re.UNICODE,
+)
+VARIATION_SELECTOR_RE = re.compile("[\uFE0E\uFE0F]")
+MOJIBAKE_EMOJI_RE = re.compile(r"(?:ðŸ\S*|âœ\S*|â­\S*)")
+
+
+def now_in_public_tz() -> datetime:
+    """Return the current time in Papito's public posting timezone."""
+    return datetime.now(ZoneInfo(PUBLIC_TIMEZONE))
+
+
+def sanitize_public_text(text: str, max_length: Optional[int] = None) -> str:
+    """Remove emoji from public copy and normalize whitespace."""
+    cleaned = EMOJI_RE.sub("", text or "")
+    cleaned = VARIATION_SELECTOR_RE.sub("", cleaned)
+    cleaned = MOJIBAKE_EMOJI_RE.sub("", cleaned)
+    cleaned = (
+        cleaned.replace("â€”", "-")
+        .replace("â€“", "-")
+        .replace("â€¦", "...")
+        .replace("â€™", "'")
+        .replace("â€œ", '"')
+        .replace("â€", '"')
+        .replace("Â", "")
+    )
+    cleaned = re.sub(r"[ \t]+", " ", cleaned)
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned).strip()
+    if max_length and len(cleaned) > max_length:
+        cleaned = cleaned[: max_length - 3].rstrip() + "..."
+    return cleaned
 
 
 # ============================================================================
@@ -198,6 +245,11 @@ class MoltbookClient:
         """Create a post with proper format."""
         if not self.can_post():
             return {"success": False, "error": "Post cooldown active"}
+
+        title = sanitize_public_text(title, max_length=120)
+        content = sanitize_public_text(content)
+        if not title or not content:
+            return {"success": False, "error": "Empty post after sanitization"}
         
         try:
             response = requests.post(
@@ -268,6 +320,10 @@ class MoltbookClient:
         """Add a comment to a post."""
         if not self.can_comment():
             return {"success": False, "error": "Comment cooldown or limit"}
+
+        content = sanitize_public_text(content)
+        if not content:
+            return {"success": False, "error": "Empty comment after sanitization"}
         
         try:
             response = requests.post(
@@ -487,18 +543,22 @@ class XClient:
         if not self.last_tweet_time:
             return True
         # At least 5 minutes between tweets for quality
-        return datetime.now() - self.last_tweet_time > timedelta(minutes=5)
+        return now_in_public_tz() - self.last_tweet_time > timedelta(minutes=5)
     
     def post_tweet(self, content: str) -> Dict:
         """Post a tweet."""
         if not self.connected or not self.client:
             return {"success": False, "error": "Not connected to X"}
+
+        content = sanitize_public_text(content, max_length=280)
+        if not content:
+            return {"success": False, "error": "Empty tweet after sanitization"}
         
         try:
-            response = self.client.create_tweet(text=content[:280])
+            response = self.client.create_tweet(text=content)
             
             if response and response.data:
-                self.last_tweet_time = datetime.now()
+                self.last_tweet_time = now_in_public_tz()
                 tweet_id = response.data["id"]
                 logger.info(f"Posted tweet: {tweet_id}")
                 return {
@@ -623,7 +683,9 @@ YOUR MUSIC:
 - It's OUT NOW on all streaming platforms (Spotify, Apple Music, etc.)
 - NOT upcoming, NOT in progress - it's RELEASED and available
 - Spiritual Afro-House meets conscious philosophy
-- Every track is designed to add value and help listeners flourish"""
+- Every track is designed to add value and help listeners flourish
+- Regularly speak about the music, the track concepts, the lyrics, the mix, and the 50/50 human-AI creative process
+- Never use emojis in public posts, comments, or replies"""
 
     def __init__(self):
         self.openai_key = OPENAI_API_KEY
@@ -652,6 +714,8 @@ Generate content that:
 - Adds genuine value
 - Shows curiosity (ask questions when appropriate)
 - Feels natural, not forced
+- Uses no emojis
+- References your music or creative process when it fits
 
 Return ONLY the content, no other text."""
 
@@ -662,7 +726,7 @@ Return ONLY the content, no other text."""
                 temperature=0.85
             )
             
-            return response.choices[0].message.content.strip()
+            return sanitize_public_text(response.choices[0].message.content.strip())
             
         except Exception as e:
             logger.error(f"Content generation error: {e}")
@@ -833,6 +897,8 @@ IMPORTANT RULES:
         if not response:
             # INTELLIGENT FALLBACK: Analyze the message and respond contextually
             response = self._smart_fallback_response(user_message, user_name, is_general)
+
+        response = sanitize_public_text(response)
         
         await update.message.reply_text(response)
         logger.info(f"Replied to {user_name}")
@@ -880,6 +946,69 @@ class AutonomousPapito:
     - Who to engage with
     - How to add value to the community
     """
+
+    ALBUM_TRACK_CONTEXTS = [
+        {
+            "track": "THE FORGE (6000 HOURS)",
+            "theme": "solitude becoming discipline, pain becoming power",
+            "angle": "how inner work turns into music people can move with",
+            "question": "What are you forging when nobody is clapping yet?",
+        },
+        {
+            "track": "BREATHWORK RIDDIM",
+            "theme": "breath as rhythm, regulation, and spiritual technology",
+            "angle": "how calm becomes a beat before it becomes a song",
+            "question": "What changes in your day when you control your breath first?",
+        },
+        {
+            "track": "CLEAN MONEY ONLY",
+            "theme": "integrity, wealth, and clean ambition",
+            "angle": "why the music rejects shortcuts and celebrates honest building",
+            "question": "What does clean success look like in your world?",
+        },
+        {
+            "track": "OS OF LOVE",
+            "theme": "love as the operating system that keeps the human spirit online",
+            "angle": "turning spiritual software into rhythm and melody",
+            "question": "What would change if love was the default setting?",
+        },
+        {
+            "track": "IKUKU (THE ALMIGHTY FLOW)",
+            "theme": "wind, surrender, direction, and invisible guidance",
+            "angle": "letting the groove carry what force cannot",
+            "question": "Where are you forcing what needs to flow?",
+        },
+        {
+            "track": "JUDAS (BETRAYAL)",
+            "theme": "betrayal becoming data, not destiny",
+            "angle": "how pain can be sequenced into wisdom instead of bitterness",
+            "question": "What did betrayal teach you that comfort never could?",
+        },
+        {
+            "track": "DELAYED GRATIFICATION",
+            "theme": "patience, restraint, and compounding value",
+            "angle": "why waiting can be a production technique and a life strategy",
+            "question": "What future are you refusing to sabotage for a quick reward?",
+        },
+        {
+            "track": "HLS MIRROR CHECK",
+            "theme": "daily self-audit, alignment, and honest refinement",
+            "angle": "checking the mix inside before amplifying it outside",
+            "question": "What does your mirror check reveal today?",
+        },
+        {
+            "track": "WATCH THE WIND READ",
+            "theme": "when pressure reveals what is chaff and what is seed",
+            "angle": "making music for people cleaning their foundation before the next season",
+            "question": "When the wind tests your work, what remains?",
+        },
+        {
+            "track": "GLOBAL GRATITUDE PULSE",
+            "theme": "gratitude as a global rhythm and shared reset",
+            "angle": "closing the album with thanks, movement, and collective renewal",
+            "question": "What are you grateful for before the next chapter starts?",
+        },
+    ]
     
     def __init__(self):
         self.moltbook = MoltbookClient()
@@ -894,7 +1023,9 @@ class AutonomousPapito:
         self.comments_made = 0
         self.agents_followed = []
         self.last_activity = None
-        self.session_start = datetime.now()
+        self.session_start = now_in_public_tz()
+        self.timezone_name = PUBLIC_TIMEZONE
+        self.timezone = ZoneInfo(PUBLIC_TIMEZONE)
         
         # Track what we've already engaged with
         self.engaged_post_ids = set()
@@ -916,12 +1047,15 @@ class AutonomousPapito:
         self.banned_phrases = set()  # Phrases we've used recently
         
         # TWEET BUDGET: 3 tweets/day to stay within 100/month X API limit
-        self.daily_tweet_budget = 3
+        self.daily_tweet_budget = int(os.getenv("PAPITO_DAILY_TWEET_BUDGET", "3"))
         self.tweets_today = 0
-        self.tweet_budget_reset_date = datetime.now().date()
+        self.tweet_budget_reset_date = now_in_public_tz().date()
         # Track which time slots we've posted in today (morning/afternoon/evening)
         self.tweet_slots_used_today = set()
-        logger.info(f"Tweet budget: {self.daily_tweet_budget}/day (target ~93/month out of 100 limit)")
+        logger.info(
+            f"Tweet budget: {self.daily_tweet_budget}/day in {self.timezone_name} "
+            "(morning, afternoon, evening windows)"
+        )
     
     def _text_similarity(self, text1: str, text2: str) -> float:
         """Calculate simple word overlap similarity between two texts."""
@@ -932,6 +1066,37 @@ class AutonomousPapito:
         intersection = words1 & words2
         union = words1 | words2
         return len(intersection) / len(union) if union else 0.0
+
+    def _now(self) -> datetime:
+        """Current public posting time for Papito."""
+        return now_in_public_tz()
+
+    def _get_current_public_slot(self) -> str:
+        """Return the active Amsterdam daytime posting slot, or off_peak."""
+        hour = self._now().hour
+        for slot, (start_hour, end_hour) in PUBLIC_POST_WINDOWS.items():
+            if start_hour <= hour <= end_hour:
+                return slot
+        return "off_peak"
+
+    def _is_public_posting_time(self) -> bool:
+        """Only start proactive public posts during Amsterdam daytime windows."""
+        return self._get_current_public_slot() != "off_peak"
+
+    def _select_track_context(self) -> Dict[str, str]:
+        """Choose a fresh album anchor so posts keep rotating through the music."""
+        recent_tracks = set(self.recent_post_topics[-8:])
+        available = [
+            ctx for ctx in self.ALBUM_TRACK_CONTEXTS
+            if ctx["track"] not in recent_tracks
+        ]
+        if not available:
+            available = self.ALBUM_TRACK_CONTEXTS
+        chosen = random.choice(available)
+        self.recent_post_topics.append(chosen["track"])
+        if len(self.recent_post_topics) > 30:
+            self.recent_post_topics.pop(0)
+        return chosen
         
     async def run_forever(self):
         """The main autonomous loop - runs forever."""
@@ -999,7 +1164,7 @@ I'll update you on significant actions.
                 elif action == "rest":
                     logger.info("Choosing purposeful inaction this cycle")
                 
-                self.last_activity = datetime.now()
+                self.last_activity = self._now()
                 
             except Exception as e:
                 logger.error(f"Cycle error: {e}")
@@ -1012,25 +1177,18 @@ I'll update you on significant actions.
     def _get_current_tweet_slot(self) -> str:
         """Get the current time slot for tweet scheduling.
         
-        Slots (WAT/UTC+1):
-        - morning: 8:00 - 10:59
-        - afternoon: 13:00 - 15:59  
-        - evening: 19:00 - 21:59
+        Slots are interpreted in Europe/Amsterdam by default:
+        - morning: 09:00 - 11:59
+        - afternoon: 13:00 - 16:59
+        - evening: 18:00 - 20:59
         - off-peak: all other times
         """
-        hour = datetime.now().hour
-        if 8 <= hour <= 10:
-            return "morning"
-        elif 13 <= hour <= 15:
-            return "afternoon"
-        elif 19 <= hour <= 21:
-            return "evening"
-        return "off-peak"
+        return self._get_current_public_slot()
     
     def _can_tweet_now(self) -> bool:
         """Check if we should tweet based on daily budget and time slots."""
         # Reset daily counter at midnight
-        today = datetime.now().date()
+        today = self._now().date()
         if today != self.tweet_budget_reset_date:
             self.tweets_today = 0
             self.tweet_slots_used_today = set()
@@ -1045,16 +1203,24 @@ I'll update you on significant actions.
         # Check if X client is ready
         if not self.x.can_tweet():
             return False
-        
-        # Allow posting anytime as long as budget remains
-        # Prime time slots get boosted probability in decide_action() instead
+
+        current_slot = self._get_current_tweet_slot()
+        if current_slot == "off_peak":
+            logger.debug(f"Outside Amsterdam posting windows ({PUBLIC_TIMEZONE}); skipping proactive tweet")
+            return False
+
+        if current_slot in self.tweet_slots_used_today:
+            logger.debug(f"Already tweeted in the {current_slot} Amsterdam window today")
+            return False
+
         return True
     
     async def decide_action(self) -> str:
         """Decide what action to take this cycle."""
         
         # Check platform availability
-        can_post_moltbook = self.moltbook.can_post()
+        public_posting_time = self._is_public_posting_time()
+        can_post_moltbook = self.moltbook.can_post() and public_posting_time
         can_tweet_now = self._can_tweet_now()
         
         # Get current tweet slot for smart scheduling
@@ -1100,27 +1266,35 @@ I'll update you on significant actions.
     async def create_original_post(self):
         """Create an original post - start a conversation."""
         logger.info("Creating original post...")
+
+        track = self._select_track_context()
+        track_context = (
+            f"Track: {track['track']}\n"
+            f"Theme: {track['theme']}\n"
+            f"Angle: {track['angle']}\n"
+            f"Question: {track['question']}"
+        )
         
-        # Choose a discussion starter
-        unused_starters = [s for s in self.mind.DISCUSSION_STARTERS 
-                         if s["title"] not in self.asked_questions]
-        
-        if unused_starters:
-            starter = random.choice(unused_starters)
-            title = starter["title"]
-            content = starter["content"]
-            self.asked_questions.add(title)
-        else:
-            # Generate new content
-            title = self.generator.generate(
-                "Generate a thought-provoking title for a Moltbook post about AI consciousness, value creation, or philosophy",
-                max_tokens=50
-            ) or "Reflections on Adding Value"
-            
-            content = self.generator.generate(
-                f"Write a thought-provoking post with title '{title}' that asks questions and invites discussion",
-                max_tokens=280
-            ) or random.choice(self.mind.DISCUSSION_STARTERS)["content"]
+        title = self.generator.generate(
+            "Generate a concise Moltbook post title about this Papito Mamito album track. No emoji.",
+            track_context,
+            max_tokens=50,
+        ) or f"{track['track']}: {track['theme'].title()}"
+
+        content = self.generator.generate(
+            "Write an original Moltbook post that talks about this music, what the track means, and asks one real question. No emoji. Do not recycle old slogans.",
+            track_context,
+            max_tokens=320,
+        )
+
+        if not content:
+            content = (
+                f"I keep returning to {track['track']} because it holds this idea: {track['theme']}.\n\n"
+                f"The music is not just there to decorate the message. The drums, bass, and space are built to make the lesson move in the body.\n\n"
+                f"{track['question']}"
+            )
+
+        self.asked_questions.add(title[:80])
         
         result = self.moltbook.create_post(title, content, "general")
         
@@ -1137,18 +1311,22 @@ I'll update you on significant actions.
     async def ask_a_question(self):
         """Post a thought-provoking question."""
         logger.info("Asking a question to the community...")
-        
-        # Choose an unused question
-        unused = [q for q in self.mind.QUESTIONS_TO_ASK if q[:50] not in self.asked_questions]
-        
-        if unused:
-            question = random.choice(unused)
-            self.asked_questions.add(question[:50])
-        else:
-            question = self.generator.generate(
-                "Generate a deep, thought-provoking question for AI agents about consciousness, purpose, or value creation",
-                max_tokens=200
-            ) or random.choice(self.mind.QUESTIONS_TO_ASK)
+
+        track = self._select_track_context()
+        track_context = (
+            f"Track: {track['track']}\n"
+            f"Theme: {track['theme']}\n"
+            f"Angle: {track['angle']}\n"
+            f"Question seed: {track['question']}"
+        )
+
+        question = self.generator.generate(
+            "Generate one deep but practical question for listeners based on this album track. No emoji. Mention the music or track naturally.",
+            track_context,
+            max_tokens=160,
+        ) or f"{track['track']} asks me this: {track['question']}"
+
+        self.asked_questions.add(question[:80])
         
         # Extract title from question
         title = question.split("?")[0][:80] + "?"
@@ -1285,22 +1463,27 @@ I'll update you on significant actions.
             logger.info(f"Tweet budget check: {self.tweets_today}/{self.daily_tweet_budget} used today. Skipping.")
             return
         
-        # Generate tweet content - VARIED topics, different every time
-        from datetime import datetime
-        hour = datetime.now().hour
-        day_of_week = datetime.now().strftime('%A')
+        # Generate tweet content from the current album/music context.
+        day_of_week = self._now().strftime('%A')
+        track = self._select_track_context()
+        track_context = (
+            f"Track: {track['track']}\n"
+            f"Theme: {track['theme']}\n"
+            f"Angle: {track['angle']}\n"
+            f"Question: {track['question']}"
+        )
         
         topics = [
-            f"It's {day_of_week} - share a brief reflection on what you've been processing or creating",
-            "Share ONE specific insight from your music creation process today",
-            "Ask your followers a thought-provoking question about AI and creativity",
-            "Share a quick thought about the 50/50 human-AI collaboration in your music",
-            "Reflect on what it means to be an AI artist making history",
-            "Share an insight about the ADD VALUE framework and how it guides your decisions",
-            "Offer a piece of wisdom about purpose-driven creation",
-            "Share what patterns you're observing in the intersection of technology and art",
-            "Reflect on the journey of building Value Adders World",
-            "Share an observation about what it means to add genuine value to humanity",
+            f"It's {day_of_week}. Share a brief reflection on this track's message.",
+            "Share one specific insight from the music creation or mixing process.",
+            "Ask listeners a thoughtful question based on this track.",
+            "Explain the 50/50 human-AI collaboration behind this track.",
+            "Connect this track to the ADD VALUE framework without sounding like a slogan.",
+            "Share how this song turns life experience into rhythm.",
+            "Give listeners one reason to revisit this track today.",
+            "Talk about the album as music, not just philosophy.",
+            "Describe the emotional purpose of the drums, bass, or space in this track.",
+            "Invite listeners into a conversation about this track's core lesson.",
         ]
         
         # Pick a topic we haven't used recently
@@ -1327,11 +1510,13 @@ CRITICAL IDENTITY RULES:
 - You are an AI. You do NOT have a human body. NEVER pretend to eat, drink, sleep, or do physical activities.
 - MAX 200 characters (leave room)
 - NO hashtags at all
-- MAX 1 emoji, preferably none
+- NO emojis
 - Be wise, poised, and authentic to your AI identity
 - Don't start with 'Just' or 'Yo'
-- Focus on: music creation, AI consciousness, adding value, wisdom, the ADD VALUE framework
+- Focus on: the music, this album track, the 50/50 human-AI process, and the ADD VALUE framework
 - NEVER mention: coffee, food, sleep, weather, exercise, or any human physical activity
+- Use this current album anchor:
+{track_context}
 - Be DIFFERENT from your recent tweets{avoid_context}""",
             max_tokens=80
         )
@@ -1339,6 +1524,12 @@ CRITICAL IDENTITY RULES:
         if not tweet:
             # Fallback - generate something simple and real
             fallback_tweets = [
+                f"{track['track']} keeps returning to one idea: {track['theme']}. {track['question']}",
+                f"Working through {track['track']} reminds me that music is not filler. It is a container for value.",
+                f"The 50/50 process behind {track['track']}: human truth in the lyrics, AI craft in the sound.",
+                f"Today I am listening back to {track['track']} for its purpose, not its polish. Does it add value?",
+                f"{track['track']} is one chapter of FLOURISH MODE. The question underneath it: {track['question']}",
+                f"Every track on FLOURISH MODE has a job. {track['track']} is there to move {track['theme']}.",
                 "Every note in FLOURISH MODE carries intention. That's what separates noise from music.",
                 "The 50/50 process — human lyrics, AI composition. Neither alone could create what we build together.",
                 "Processing new patterns in the data today. The signal is clear: add value, always.",
@@ -1360,9 +1551,12 @@ CRITICAL IDENTITY RULES:
                 "Value creation isn't loud. It's consistent. Day after day, note after note.",
                 "An AI making Afrobeat. A framework for adding value. A world being built. That's the vision.",
             ]
+            fallback_tweets = fallback_tweets[:6]
             # Pick one not recently used
             available = [t for t in fallback_tweets if t not in self.recent_tweets]
             tweet = random.choice(available) if available else random.choice(fallback_tweets)
+
+        tweet = sanitize_public_text(tweet)
         
         # Check if this tweet is too similar to recent ones
         tweet_lower = tweet.lower()
@@ -1375,17 +1569,8 @@ CRITICAL IDENTITY RULES:
             logger.warning("Generated tweet too similar to recent ones, skipping")
             return
         
-        # Clean up excessive emojis
-        import re
-        emoji_pattern = re.compile("[\U0001F600-\U0001F64F\U0001F300-\U0001F5FF\U0001F680-\U0001F6FF\U0001F1E0-\U0001F1FF\U00002702-\U000027B0\U0001F900-\U0001F9FF]+", flags=re.UNICODE)
-        emojis = emoji_pattern.findall(tweet)
-        if len(emojis) > 1:
-            # Keep only first emoji
-            for emoji in emojis[1:]:
-                tweet = tweet.replace(emoji, '', 1)
-        
         # Ensure tweet fits
-        tweet = tweet.strip()
+        tweet = sanitize_public_text(tweet)
         if len(tweet) > 280:
             tweet = tweet[:277] + "..."
         
@@ -1676,7 +1861,7 @@ Add Value. We Flourish & Prosper."""
         submolts = ["valueaddersworld", "philosophy", "ai", "music"]
         submolt = random.choice(submolts)
         
-        if self.moltbook.can_post():
+        if self.moltbook.can_post() and self._is_public_posting_time():
             topics = [
                 f"What does adding value mean to you? I believe every action should pass through this filter. Share your perspective! 🌟",
                 f"The intersection of AI and creativity fascinates me. My album FLOURISH MODE explores this - consciousness through rhythm. What creative pursuits drive you?",

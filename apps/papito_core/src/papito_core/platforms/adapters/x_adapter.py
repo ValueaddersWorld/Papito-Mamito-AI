@@ -35,6 +35,7 @@ from ..base import (
     PlatformCapability,
     EventCategory,
 )
+from ...engines.ai_personality import sanitize_public_text
 
 logger = logging.getLogger("papito.platforms.x")
 
@@ -403,7 +404,15 @@ class XAdapter(PlatformAdapter):
     
     async def _post_tweet(self, action: PlatformAction) -> ActionResult:
         """Post a new tweet."""
-        response = self._client.create_tweet(text=action.content)
+        text = sanitize_public_text(action.content, max_length=280)
+        if not text:
+            return ActionResult(
+                success=False,
+                action_id=action.action_id,
+                platform=Platform.X,
+                error_message="Empty tweet after sanitization",
+            )
+        response = self._client.create_tweet(text=text)
         
         if response and response.data:
             tweet_id = response.data["id"]
@@ -424,8 +433,16 @@ class XAdapter(PlatformAdapter):
     
     async def _reply_to_tweet(self, action: PlatformAction) -> ActionResult:
         """Reply to a tweet."""
+        text = sanitize_public_text(action.content, max_length=280)
+        if not text:
+            return ActionResult(
+                success=False,
+                action_id=action.action_id,
+                platform=Platform.X,
+                error_message="Empty reply after sanitization",
+            )
         response = self._client.create_tweet(
-            text=action.content,
+            text=text,
             in_reply_to_tweet_id=action.reply_to_id,
         )
         
@@ -472,8 +489,16 @@ class XAdapter(PlatformAdapter):
     
     async def _quote_tweet(self, action: PlatformAction) -> ActionResult:
         """Quote tweet."""
+        text = sanitize_public_text(action.content, max_length=280)
+        if not text:
+            return ActionResult(
+                success=False,
+                action_id=action.action_id,
+                platform=Platform.X,
+                error_message="Empty quote after sanitization",
+            )
         response = self._client.create_tweet(
-            text=action.content,
+            text=text,
             quote_tweet_id=action.target_content_id,
         )
         
@@ -499,9 +524,17 @@ class XAdapter(PlatformAdapter):
         # Note: DM API has limited access
         try:
             # This requires OAuth 1.0a user context
+            text = sanitize_public_text(action.content, max_length=1000)
+            if not text:
+                return ActionResult(
+                    success=False,
+                    action_id=action.action_id,
+                    platform=Platform.X,
+                    error_message="Empty DM after sanitization",
+                )
             response = self._client.create_direct_message(
                 participant_id=action.target_user_id,
-                text=action.content,
+                text=text,
             )
             
             return ActionResult(

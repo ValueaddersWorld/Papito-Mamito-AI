@@ -18,7 +18,7 @@ from typing import Any, Dict, List, Optional, Set
 
 import tweepy
 
-from papito_core.engines.ai_personality import PapitoPersonalityEngine
+from papito_core.engines.ai_personality import PapitoPersonalityEngine, sanitize_public_text
 
 logger = logging.getLogger(__name__)
 
@@ -325,12 +325,13 @@ class FollowerManager:
             return False
         
         try:
-            message = self.generate_welcome_message(follower)
+            message = sanitize_public_text(self.generate_welcome_message(follower), max_length=280)
+            if not message:
+                return False
             
-            # Ensure under 280 characters
-            if len(message) > 280:
-                message = message[:277] + "..."
-            
+            message = sanitize_public_text(message, max_length=280)
+            if not message:
+                return False
             result = self.client.create_tweet(text=message)
             
             if result and result.data:

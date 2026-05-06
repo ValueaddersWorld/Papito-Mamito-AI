@@ -105,10 +105,10 @@ class PapitoSettings(BaseSettings):
     discord_webhook_url: str | None = Field(default=None, alias="DISCORD_WEBHOOK_URL")
 
     # ============== Agent Configuration ==============
-    agent_timezone: str = Field(default="Africa/Lagos", alias="AGENT_TIMEZONE")
-    agent_morning_hour: int = Field(default=8, alias="AGENT_MORNING_HOUR")
-    agent_afternoon_hour: int = Field(default=14, alias="AGENT_AFTERNOON_HOUR")
-    agent_evening_hour: int = Field(default=20, alias="AGENT_EVENING_HOUR")
+    agent_timezone: str = Field(default="Europe/Amsterdam", alias="AGENT_TIMEZONE")
+    agent_morning_hour: int = Field(default=9, alias="AGENT_MORNING_HOUR")
+    agent_afternoon_hour: int = Field(default=13, alias="AGENT_AFTERNOON_HOUR")
+    agent_evening_hour: int = Field(default=18, alias="AGENT_EVENING_HOUR")
     agent_auto_approve_ratio: float = Field(
         default=0.8, 
         alias="AGENT_AUTO_APPROVE_RATIO",
@@ -225,4 +225,3 @@ def get_settings() -> PapitoSettings:
     if os.getenv("PYTEST_CURRENT_TEST") or os.getenv("PAPITO_DISABLE_ENV_FILE") == "1":
         return PapitoSettings(_env_file=None)
     return PapitoSettings()
-

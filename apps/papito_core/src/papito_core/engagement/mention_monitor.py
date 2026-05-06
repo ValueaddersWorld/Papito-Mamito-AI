@@ -20,7 +20,7 @@ from typing import Any, Dict, List, Optional
 
 import tweepy
 
-from papito_core.engines.ai_personality import PapitoPersonalityEngine
+from papito_core.engines.ai_personality import PapitoPersonalityEngine, sanitize_public_text
 
 logger = logging.getLogger(__name__)
 
@@ -384,9 +384,9 @@ class MentionMonitor:
             if not response_text.startswith(f"@{mention.author_username}"):
                 response_text = f"@{mention.author_username} {response_text}"
             
-            # Truncate if too long
-            if len(response_text) > 280:
-                response_text = response_text[:277] + "..."
+            response_text = sanitize_public_text(response_text, max_length=280)
+            if not response_text:
+                return False
             
             result = self.client.create_tweet(
                 text=response_text,

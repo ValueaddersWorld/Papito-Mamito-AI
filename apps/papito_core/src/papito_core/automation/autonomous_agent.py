@@ -521,21 +521,21 @@ class AutonomousAgent:
         """Check if scheduled content should be generated.
         
         Args:
-            current_hour: Current hour in WAT
+            current_hour: Current hour in the configured agent timezone
         """
         morning_hour = self.settings.agent_morning_hour
         afternoon_hour = self.settings.agent_afternoon_hour
         evening_hour = self.settings.agent_evening_hour
         
-        # Morning blessing (around 8am WAT)
+        # Morning blessing in the Amsterdam daytime window
         if current_hour == morning_hour and self._should_run("morning_blessing", minutes=120):
             self._generate_morning_blessing()
         
-        # Afternoon engagement (around 2pm WAT)
+        # Afternoon engagement in the Amsterdam daytime window
         if current_hour == afternoon_hour and self._should_run("afternoon_engagement", minutes=120):
             self._generate_afternoon_content()
         
-        # Evening spotlight (around 8pm WAT)
+        # Evening spotlight in the Amsterdam daytime window
         if current_hour == evening_hour and self._should_run("evening_spotlight", minutes=120):
             self._generate_evening_content()
     

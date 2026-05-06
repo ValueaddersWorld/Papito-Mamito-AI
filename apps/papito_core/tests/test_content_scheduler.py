@@ -49,20 +49,25 @@ class TestSchedulingConfig:
     """Tests for SchedulingConfig dataclass."""
     
     def test_default_timezone(self):
-        """Verify default timezone is West Africa Time."""
+        """Verify default timezone is Amsterdam."""
         config = SchedulingConfig()
-        assert config.timezone == "Africa/Lagos"
+        assert config.timezone == "Europe/Amsterdam"
     
     def test_default_post_frequency(self):
         """Verify default post frequency range."""
         config = SchedulingConfig()
         assert config.min_posts_per_day == 3
-        assert config.max_posts_per_day == 5
+        assert config.max_posts_per_day == 3
     
     def test_has_posting_slots(self):
         """Verify default slots are configured."""
         config = SchedulingConfig()
         assert len(config.posting_slots) >= 3
+
+    def test_default_slots_are_amsterdam_daytime(self):
+        """Verify default slots stay inside Amsterdam daytime hours."""
+        config = SchedulingConfig()
+        assert all(9 <= slot.hour <= 20 for slot in config.posting_slots)
 
 
 class TestContentScheduler:
@@ -74,10 +79,10 @@ class TestContentScheduler:
         return ContentScheduler()
     
     def test_get_current_time_wat(self, scheduler):
-        """Verify current time is in WAT timezone."""
+        """Verify current time is in the configured timezone."""
         now = scheduler.get_current_time_wat()
         assert now.tzinfo is not None
-        assert str(now.tzinfo) == "Africa/Lagos"
+        assert str(now.tzinfo) == "Europe/Amsterdam"
     
     def test_get_slots_for_today_respects_range(self, scheduler):
         """Verify slots returned are within configured range."""
@@ -117,7 +122,7 @@ class TestContentScheduler:
         """Verify generated posts have correct timezone."""
         schedule = scheduler.generate_schedule(days=1)
         if schedule:
-            assert schedule[0].timezone == "Africa/Lagos"
+            assert schedule[0].timezone == "Europe/Amsterdam"
     
     def test_get_content_generation_prompt_returns_dict(self, scheduler):
         """Verify prompt generation returns config dict."""

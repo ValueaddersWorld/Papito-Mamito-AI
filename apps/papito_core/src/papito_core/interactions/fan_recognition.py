@@ -16,7 +16,7 @@ from typing import Any, Dict, List, Optional
 
 import tweepy
 
-from papito_core.engines.ai_personality import PapitoPersonalityEngine
+from papito_core.engines.ai_personality import PapitoPersonalityEngine, sanitize_public_text
 
 logger = logging.getLogger(__name__)
 
@@ -299,7 +299,9 @@ class FanRecognitionManager:
         
         try:
             template = random.choice(self.SHOUTOUT_TEMPLATES)
-            message = template.format(username=fan.username)
+            message = sanitize_public_text(template.format(username=fan.username), max_length=280)
+            if not message:
+                return False
             
             result = self.client.create_tweet(text=message)
             
@@ -343,11 +345,9 @@ class FanRecognitionManager:
         try:
             reason = self.generate_fan_reason(fan)
             template = random.choice(self.FAN_OF_WEEK_TEMPLATES)
-            message = template.format(username=fan.username, reason=reason)
-            
-            # Ensure under character limit
-            if len(message) > 280:
-                message = message[:277] + "..."
+            message = sanitize_public_text(template.format(username=fan.username, reason=reason), max_length=280)
+            if not message:
+                return False
             
             result = self.client.create_tweet(text=message)
             
@@ -408,7 +408,7 @@ class FanRecognitionManager:
                     
                     message = self.personality_engine._call_openai(messages, max_tokens=100)
                     if message:
-                        message = message.strip()
+                        message = sanitize_public_text(message, max_length=280)
                 except Exception:
                     message = None
             else:
@@ -416,6 +416,9 @@ class FanRecognitionManager:
             
             if not message:
                 message = random.choice(self.APPRECIATION_TEMPLATES)
+            message = sanitize_public_text(message, max_length=280)
+            if not message:
+                return False
             
             result = self.client.create_tweet(text=message)
             

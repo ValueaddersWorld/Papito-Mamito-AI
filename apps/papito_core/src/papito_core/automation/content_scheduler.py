@@ -41,7 +41,7 @@ class ContentType(str, Enum):
 @dataclass
 class PostingSlot:
     """A scheduled posting time slot."""
-    hour: int  # 0-23 in WAT
+    hour: int  # 0-23 in configured agent timezone
     minute: int = 0
     content_types: List[ContentType] = field(default_factory=list)
     platforms: List[str] = field(default_factory=lambda: ["x", "instagram"])
@@ -51,41 +51,30 @@ class PostingSlot:
 @dataclass
 class SchedulingConfig:
     """Configuration for content scheduling."""
-    timezone: str = "Africa/Lagos"  # WAT - West Africa Time
+    timezone: str = "Europe/Amsterdam"
     min_posts_per_day: int = 3
-    max_posts_per_day: int = 5
+    max_posts_per_day: int = 3
     
-    # Optimal posting times for Afrobeat/music audience (WAT)
-    # Based on when African music fans are most active
+    # Amsterdam daytime windows. The scheduler samples from these candidates
+    # instead of always taking the same fixed slots.
     posting_slots: List[PostingSlot] = field(default_factory=lambda: [
-        # Morning blessing - Early risers, motivation seekers
-        PostingSlot(hour=7, minute=0, 
-                    content_types=[ContentType.MORNING_BLESSING, ContentType.MUSIC_WISDOM, ContentType.AI_REFLECTION],
+        PostingSlot(hour=9, minute=15,
+                    content_types=[ContentType.MUSIC_WISDOM, ContentType.TRACK_SNIPPET, ContentType.AI_REFLECTION],
                     priority=3),
-        
-        # Late morning - Work break engagement + community building
-        PostingSlot(hour=10, minute=30,
-                    content_types=[ContentType.BEHIND_THE_SCENES, ContentType.STUDIO_DIARY, ContentType.COMMUNITY_QUESTION],
+        PostingSlot(hour=11, minute=30,
+                    content_types=[ContentType.BEHIND_THE_SCENES, ContentType.STUDIO_DIARY, ContentType.LYRICS_QUOTE],
                     priority=2),
-        
-        # Lunch time - High engagement provocative content
-        PostingSlot(hour=13, minute=0,
-                    content_types=[ContentType.HOT_TAKE, ContentType.PROVOCATIVE_THOUGHT, ContentType.TRACK_SNIPPET],
+        PostingSlot(hour=13, minute=45,
+                    content_types=[ContentType.COMMUNITY_QUESTION, ContentType.PROVOCATIVE_THOUGHT, ContentType.MUSIC_WISDOM],
                     priority=3),
-        
-        # Afternoon - Educational & Cultural content
-        PostingSlot(hour=15, minute=30,
+        PostingSlot(hour=16, minute=15,
                     content_types=[ContentType.CULTURE_SPOTLIGHT, ContentType.AFROBEAT_HISTORY, ContentType.EDUCATIONAL],
                     priority=2),
-        
-        # Evening prime time - Highest engagement, varied content
-        PostingSlot(hour=19, minute=0,
-                    content_types=[ContentType.TRACK_SNIPPET, ContentType.FAN_APPRECIATION, ContentType.COMMUNITY_QUESTION],
+        PostingSlot(hour=18, minute=30,
+                    content_types=[ContentType.TRACK_SNIPPET, ContentType.LYRICS_QUOTE, ContentType.FAN_APPRECIATION],
                     priority=4),
-        
-        # Night owls - Deep thoughts and trending topics
-        PostingSlot(hour=21, minute=30,
-                    content_types=[ContentType.TRENDING_TOPIC, ContentType.PROVOCATIVE_THOUGHT, ContentType.AI_REFLECTION],
+        PostingSlot(hour=20, minute=0,
+                    content_types=[ContentType.ALBUM_TRACKLIST, ContentType.STUDIO_UPDATE, ContentType.COMMUNITY_QUESTION],
                     priority=2),
     ])
 
@@ -114,7 +103,10 @@ class ContentScheduler:
         self._max_recent_track = 10
     
     def get_current_time_wat(self) -> datetime:
-        """Get current time in West Africa Time."""
+        """Get current time in the configured agent timezone.
+
+        The method name is kept for backwards compatibility.
+        """
         return datetime.now(self.tz)
     
     def get_next_posting_slot(self) -> Optional[PostingSlot]:
@@ -148,14 +140,17 @@ class ContentScheduler:
                 self.config.max_posts_per_day
             )
         
-        # Get available slots and sort by priority
-        slots = sorted(
-            self.config.posting_slots,
-            key=lambda s: (-s.priority, s.hour)
-        )
-        
-        # Return the top priority slots up to num_posts
-        return slots[:num_posts]
+        candidates = list(self.config.posting_slots)
+        selected: List[PostingSlot] = []
+        target_count = min(num_posts, len(candidates))
+
+        while candidates and len(selected) < target_count:
+            weights = [max(1, slot.priority) for slot in candidates]
+            chosen = random.choices(candidates, weights=weights, k=1)[0]
+            selected.append(chosen)
+            candidates.remove(chosen)
+
+        return sorted(selected, key=lambda s: s.hour * 60 + s.minute)
     
     def select_content_type(self, slot: PostingSlot) -> ContentType:
         """Select the best content type for a slot.

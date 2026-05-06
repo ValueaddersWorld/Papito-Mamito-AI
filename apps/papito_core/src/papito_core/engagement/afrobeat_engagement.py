@@ -18,7 +18,7 @@ from typing import Any, Dict, List, Optional, Set
 
 import tweepy
 
-from papito_core.engines.ai_personality import PapitoPersonalityEngine
+from papito_core.engines.ai_personality import PapitoPersonalityEngine, sanitize_public_text
 
 logger = logging.getLogger(__name__)
 
@@ -97,7 +97,7 @@ class AfrobeatEngager:
     MAX_FOLLOWS_PER_RUN = 3
     
     # Reply templates for engaging with Afrobeat content
-    # Keep them specific-friendly, low-emoji, and value-adding.
+    # Keep them specific-friendly, no-emoji, and value-adding.
     REPLY_TEMPLATES = [
         "This is strong. The groove is doing real storytelling. What inspired this moment?",
         "Love the intent here. Afrobeat is joy with backbone — keep pushing the culture forward.",
@@ -380,7 +380,7 @@ class AfrobeatEngager:
                     Keep it under 200 characters.
                     Reference something specific from their tweet if possible.
                     Add one small insight (music or life) that adds value.
-                    Use 0-1 emoji max.
+                    Use no emojis.
                     """
                     
                     messages = [
@@ -394,14 +394,16 @@ class AfrobeatEngager:
             
             if not text:
                 text = random.choice(self.REPLY_TEMPLATES)
+        text = sanitize_public_text(text, max_length=260)
+        if not text:
+            return False
         
         try:
             # Ensure we mention the user
             if not text.startswith(f"@{tweet.author_username}"):
                 text = f"@{tweet.author_username} {text}"
             
-            if len(text) > 280:
-                text = text[:277] + "..."
+            text = sanitize_public_text(text, max_length=280)
             
             result = self.client.create_tweet(
                 text=text,

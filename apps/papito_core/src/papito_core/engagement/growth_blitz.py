@@ -18,7 +18,7 @@ from datetime import datetime, timedelta
 from dataclasses import dataclass, field
 import tweepy
 
-from ..engines.ai_personality import PapitoPersonalityEngine
+from ..engines.ai_personality import PapitoPersonalityEngine, sanitize_public_text
 
 logger = logging.getLogger("papito.growth_blitz")
 
@@ -356,7 +356,9 @@ class GrowthBlitz:
                     # Reply to some tweets
                     if replies_left > 0 and engagement_score >= 5:
                         try:
-                            reply_text = self._get_reply_for_context(tweet.text)
+                            reply_text = sanitize_public_text(self._get_reply_for_context(tweet.text), max_length=280)
+                            if not reply_text:
+                                continue
                             self.client.create_tweet(
                                 text=reply_text,
                                 in_reply_to_tweet_id=tweet.id,
@@ -375,7 +377,9 @@ class GrowthBlitz:
                     # Quote tweet high-value content
                     if quotes_left > 0 and engagement_score >= 20:
                         try:
-                            quote_text = random.choice(QUOTE_TEMPLATES)
+                            quote_text = sanitize_public_text(random.choice(QUOTE_TEMPLATES), max_length=280)
+                            if not quote_text:
+                                continue
                             self.client.create_tweet(
                                 text=quote_text,
                                 quote_tweet_id=tweet.id,

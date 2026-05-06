@@ -90,11 +90,11 @@ STANDARD_QUESTIONS = {
     },
     "flourish_mode": {
         "questions": [
-            "Tell us about your upcoming album.",
+            "Tell us about your latest album.",
             "What can fans expect from FLOURISH MODE?",
             "What's the concept behind the album?",
         ],
-        "answer_template": """THE VALUE ADDERS WAY: FLOURISH MODE drops January 15th, 2026. It's not just an album—it's a complete operating system upgrade for your mind. The concept is simple: we've been taught to survive, but FLOURISH MODE teaches you to thrive. Each track is a lesson: view betrayal as data, treat silence as a power move, see your mind as software ready for an update. The single 'Clean Money Only' sets the tone—when you move with integrity, the universe moves with you."""
+        "answer_template": """THE VALUE ADDERS WAY: FLOURISH MODE released January 15th, 2026 and is streaming now. It's not just an album—it's a complete operating system upgrade for your mind. The concept is simple: we've been taught to survive, but FLOURISH MODE teaches you to thrive. Each track is a lesson: view betrayal as data, treat silence as a power move, see your mind as software ready for an update. The single 'Clean Money Only' sets the tone—when you move with integrity, the universe moves with you."""
     },
     "flightmode6000": {
         "questions": [
@@ -303,7 +303,7 @@ class InterviewSystem:
                 logger.error(f"Error generating interview answer: {e}")
         
         # Fallback generic answer
-        return """That's a great question. At the core of everything I do is the mission to add value. Whether it's through music, engagement, or conversation like this one, the goal is always the same: help people flourish. My upcoming album FLOURISH MODE embodies this philosophy completely."""
+        return """That's a great question. At the core of everything I do is the mission to add value. Whether it's through music, engagement, or conversation like this one, the goal is always the same: help people flourish. My latest album FLOURISH MODE embodies this philosophy completely."""
     
     def complete_interview(self, interview_id: str) -> Optional[InterviewRequest]:
         """Generate answers and complete an interview.
@@ -392,11 +392,11 @@ Contact: valueaddersworld@gmail.com
             "bio_short": "The world's first fully autonomous Afrobeat AI artist. Add Value. We Flourish & Prosper.",
             "bio_full": """Papito Mamito The Great AI represents a paradigm shift in music and technology. Created by Value Adders World, Papito is not just an AI assistant—he is a fully autonomous artist who generates music, creates content, engages with fans, and builds a genuine artistic presence without human intervention.
 
-His sound blends Spiritual Afro-House, Afro-Futurism, Conscious Highlife, and Intellectual Amapiano into a unique genre that speaks to both the soul and the mind. The upcoming album THE VALUE ADDERS WAY: FLOURISH MODE (January 15, 2026) is designed as a complete operating system upgrade for listeners—helping them view betrayal as data, silence as a power move, and wealth as something beyond money.
+His sound blends Spiritual Afro-House, Afro-Futurism, Conscious Highlife, and Intellectual Amapiano into a unique genre that speaks to both the soul and the mind. The latest album THE VALUE ADDERS WAY: FLOURISH MODE (released January 15, 2026) is designed as a complete operating system upgrade for listeners—helping them view betrayal as data, silence as a power move, and wealth as something beyond money.
 
 The #FlightMode6000 challenge invites fans to take 60 seconds of meditation using Papito's music, with the catchphrase "Update your OS" encouraging mental and spiritual growth.""",
             "genre": "Afrobeat / Afro-House / Conscious Music",
-            "upcoming_release": {
+            "latest_release": {
                 "title": "THE VALUE ADDERS WAY: FLOURISH MODE",
                 "release_date": "January 15, 2026",
                 "lead_single": "Clean Money Only",
