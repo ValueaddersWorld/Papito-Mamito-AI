@@ -32,6 +32,10 @@ from .growth_blitz import (
     BlitzStats,
     get_growth_blitz,
 )
+from .live_x_conversations import (
+    LiveXConversationAgent,
+    XConversationConfig,
+)
 
 __all__ = [
     # Fan engagement
@@ -54,4 +58,7 @@ __all__ = [
     "GrowthBlitz",
     "BlitzStats",
     "get_growth_blitz",
+    # Policy-aware live X conversations
+    "LiveXConversationAgent",
+    "XConversationConfig",
 ]

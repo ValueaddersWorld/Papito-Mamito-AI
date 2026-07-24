@@ -26,6 +26,7 @@ RUN pip install "/app/apps/papito_core"
 
 # Copy docs for persona
 COPY docs /app/docs
+RUN mkdir -p /app/data
 
 # Copy the autonomous agent scripts to proper location
 RUN mkdir -p scripts

@@ -121,6 +121,40 @@ sudo systemctl status papito
 | `X_API_SECRET` | X/Twitter API secret |
 | `X_ACCESS_TOKEN` | X/Twitter access token |
 | `X_ACCESS_TOKEN_SECRET` | X/Twitter access token secret |
+| `PAPITO_X_READ_ENABLED` | Set `true` after X API credits are funded |
+| `PAPITO_X_LIVE_ENGAGEMENT` | Set `true` to run the independent mention listener |
+| `PAPITO_X_AI_REPLY_APPROVED` | Set `true` only after written X approval for the AI reply bot |
+| `PAPITO_X_POLL_SECONDS` | Mention polling interval; `180` is the recommended starting point |
+| `PAPITO_X_MAX_REPLIES_PER_DAY` | Daily quality and safety cap; start with `12` |
+| `PAPITO_X_STATE_FILE` | Use `/app/data/x_live_conversations.json` on Railway |
+| `PAPITO_POST_MEMORY_FILE` | Use `/app/data/post_memory.json` on Railway |
+
+## Enable Live X Conversations
+
+X API access is pay-per-usage. Fund API credits in the X Developer Console,
+confirm the app has read and write permissions, then regenerate the user access
+token after changing permissions.
+
+X requires prior written approval before operating an AI-powered automated reply
+bot. Request approval in the developer portal and keep
+`PAPITO_X_AI_REPLY_APPROVED=false` until it is granted.
+
+In Railway, attach a persistent Volume mounted at `/app/data`. This keeps
+conversation memory, processed mention IDs, opt-outs, and post memory across
+deployments. Run exactly one autonomous worker replica so two workers cannot
+reply to the same interaction.
+
+After credits and approval are confirmed, set:
+
+```env
+PAPITO_X_READ_ENABLED=true
+PAPITO_X_LIVE_ENGAGEMENT=true
+PAPITO_X_AI_REPLY_APPROVED=true
+PAPITO_X_POLL_SECONDS=180
+PAPITO_X_MAX_REPLIES_PER_DAY=12
+PAPITO_X_STATE_FILE=/app/data/x_live_conversations.json
+PAPITO_POST_MEMORY_FILE=/app/data/post_memory.json
+```
 
 ## Verifying Papito is Running
 
@@ -128,8 +162,10 @@ After deployment, Papito will:
 1. Send you a Telegram message confirming startup
 2. Create/join communities on Moltbook
 3. Follow interesting agents
-4. Post a tweet announcing presence
-5. Continue operating autonomously forever
+4. Post original X content during Amsterdam daytime windows
+5. Poll direct X mentions independently of the posting schedule
+6. Reply contextually when live engagement is approved and enabled
+7. Continue operating autonomously forever
 
 Check logs on your platform to see his activity!
 

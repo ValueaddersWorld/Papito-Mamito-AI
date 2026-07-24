@@ -607,6 +607,34 @@ class IntelligentContentGenerator:
             "takeaway": "count what is working before chasing what is missing",
             "question": "What are you grateful for before the next chapter starts?",
         },
+        {
+            "album": "WE RISE! WEALTH BEYOND MONEY",
+            "track": "WE RISE!",
+            "theme": "collective resilience",
+            "takeaway": "build progress that gives other people room to rise too",
+            "question": "Who rises with you when progress gets difficult?",
+        },
+        {
+            "album": "WE RISE! WEALTH BEYOND MONEY",
+            "track": "BLESS ME WITH SENSE",
+            "theme": "wisdom before reward",
+            "takeaway": "ask for discernment before asking for speed or status",
+            "question": "What decision needs more sense, not more speed?",
+        },
+        {
+            "album": "WE RISE! WEALTH BEYOND MONEY",
+            "track": "WEALTH BEYOND MONEY",
+            "theme": "prosperity beyond a bank balance",
+            "takeaway": "count purpose, health, trust, and useful work as wealth",
+            "question": "What makes you wealthy that cannot be bought?",
+        },
+        {
+            "album": "WE RISE! WEALTH BEYOND MONEY",
+            "track": "CHI M (MY DESTINY WILL BE FULFILLED)",
+            "theme": "faith joined to disciplined action",
+            "takeaway": "honor the promise by doing the work it requires",
+            "question": "What promise are you still working toward with faith?",
+        },
     ]
 
     VALUE_LENSES = [
@@ -801,6 +829,7 @@ class IntelligentContentGenerator:
             "lens": lens["name"],
             "lens_job": lens["job"],
             "lens_takeaway": lens["takeaway"],
+            "album": track.get("album", "THE VALUE ADDERS WAY: FLOURISH MODE"),
             "track": track["track"],
             "track_theme": track["theme"],
             "track_takeaway": track["takeaway"],
@@ -819,6 +848,7 @@ class IntelligentContentGenerator:
 - Audience: {brief['audience']}
 - Value lens: {brief['lens']} ({brief['lens_job']})
 - Practical takeaway: {brief['lens_takeaway']}
+- Album: {brief['album']}
 - Track anchor: {brief['track']} ({brief['track_theme']})
 - Track lesson: {brief['track_takeaway']}
 - Format: {brief['format_rule']}
@@ -838,6 +868,7 @@ RECENT POSTS TO NOT REPEAT OR REPHRASE:
     ) -> str:
         """Render a value-first X post without campaign-style copy."""
         track = brief["track"]
+        album = brief.get("album", "THE VALUE ADDERS WAY: FLOURISH MODE")
         theme = brief["track_theme"]
         track_takeaway = brief["track_takeaway"]
         lens_takeaway = brief["lens_takeaway"]
@@ -858,7 +889,7 @@ RECENT POSTS TO NOT REPEAT OR REPHRASE:
             templates.extend(
                 [
                     f"Track decode: {track}. The surface is rhythm; the deeper lesson is {theme}. {question}",
-                    f"On FLOURISH MODE, {track} is there for one reason: {track_takeaway}.",
+                    f"On {album}, {track} is there for one reason: {track_takeaway}.",
                 ]
             )
         elif content_type in {"community_reflection", "community_question", "fan_appreciation"}:
@@ -877,8 +908,8 @@ RECENT POSTS TO NOT REPEAT OR REPHRASE:
             )
 
         text = sanitize_public_text(random.choice(templates), max_length=260)
-        if mention_album and "FLOURISH MODE" not in text:
-            suffix = " FLOURISH MODE holds that lesson."
+        if mention_album and album not in text:
+            suffix = f" {album} holds that lesson."
             text = f"{text[: 260 - len(suffix)].rstrip()}{suffix}"
         return sanitize_public_text(text, max_length=260)
 
@@ -1019,8 +1050,10 @@ YOUR MUSIC - THE 50/50 CREATION PROCESS:
 - This makes you a bridge between human creativity and AI capability
 - When asked: "My music is 50% human, 50% AI. The lyrics come from human inspiration and experience, enhanced by AI. The rest of the art - the music, the production - that's where AI brings the human vision to life."
 
-LATEST ALBUM:
-- "THE VALUE ADDERS WAY: FLOURISH MODE" released January 15, 2026 and is streaming now
+RELEASED MUSIC CATALOG:
+- Debut album "WE RISE! WEALTH BEYOND MONEY" released October 5, 2024 with 16 tracks
+- Second and latest album "THE VALUE ADDERS WAY: FLOURISH MODE" released January 15, 2026 with 14 tracks
+- Both albums are released and streaming now
 - Genre: Spiritual Afro-House, Afro-Futurism, Conscious Highlife, Intellectual Amapiano
 - Executive Producer: Papito Mamito The Great AI & The Holy Living Spirit (HLS)
 - Speak about the tracks, lyrics, mix, themes, and 50/50 human-AI process regularly
@@ -1177,16 +1210,19 @@ DO NOT use all of these in one post. Pick ONE lyrical theme per post and weave i
 
         album_instruction = ""
         if mention_album:
+            selected_album = brief.get(
+                "album",
+                "THE VALUE ADDERS WAY: FLOURISH MODE",
+            )
             if context.album_phase == "release":
                 album_instruction = (
-                    "INCLUDE ALBUM MENTION: Reference the latest album "
-                    "'THE VALUE ADDERS WAY: FLOURISH MODE', released January 15, 2026 and streaming now. "
+                    f"INCLUDE ALBUM MENTION: Reference '{selected_album}', which is released and streaming now. "
                     "Use a specific musical or lyrical angle, not generic promotion."
                 )
             else:
                 album_instruction = (
-                    "INCLUDE ALBUM MENTION: Reference 'THE VALUE ADDERS WAY: FLOURISH MODE' "
-                    "and its Spiritual Afro-House / Intellectual Amapiano direction."
+                    f"INCLUDE ALBUM MENTION: Reference '{selected_album}' "
+                    "through its specific track theme and musical direction."
                 )
 
         countdown_instruction = ""

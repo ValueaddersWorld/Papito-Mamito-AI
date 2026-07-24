@@ -6,7 +6,7 @@ builder = "DOCKERFILE"
 dockerfilePath = "./Dockerfile.autonomous"
 
 [deploy]
-startCommand = "python papito_autonomous_forever.py"
+startCommand = "python scripts/papito_autonomous_forever.py"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 

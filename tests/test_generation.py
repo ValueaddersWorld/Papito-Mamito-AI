@@ -50,7 +50,7 @@ def test_album_template_is_released_and_no_emoji(monkeypatch):
     )
 
     text = result["text"]
-    assert "FLOURISH MODE" in text
+    assert "FLOURISH MODE" in text or "WE RISE! WEALTH BEYOND MONEY" in text
     assert "days until" not in text.lower()
     assert "coming" not in text.lower()
     assert "\U0001F525" not in text
@@ -86,6 +86,7 @@ def test_x_template_uses_wisdom_brief_not_campaign_copy(monkeypatch):
         "lens": "self_audit",
         "lens_job": "turn the idea into a mirror check",
         "lens_takeaway": "audit the motive before the move",
+        "album": "THE VALUE ADDERS WAY: FLOURISH MODE",
         "track": "HLS MIRROR CHECK",
         "track_theme": "honest self-audit",
         "track_takeaway": "clean the signal inside before amplifying it outside",
