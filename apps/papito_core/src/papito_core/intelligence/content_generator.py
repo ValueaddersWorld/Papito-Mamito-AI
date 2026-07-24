@@ -545,6 +545,126 @@ class IntelligentContentGenerator:
     - Recent engagement patterns
     - Papito's evolving wisdom
     """
+
+    TRACK_CONTEXTS = [
+        {
+            "track": "THE FORGE (6000 HOURS)",
+            "theme": "discipline before visibility",
+            "takeaway": "respect the invisible hours before judging the public result",
+            "question": "What are you building before anyone claps?",
+        },
+        {
+            "track": "BREATHWORK RIDDIM",
+            "theme": "breath as spiritual technology",
+            "takeaway": "reset the inner rhythm before making the outer move",
+            "question": "What changes when you respond from breath instead of pressure?",
+        },
+        {
+            "track": "CLEAN MONEY ONLY",
+            "theme": "integrity in ambition",
+            "takeaway": "check whether the bag and the mission can stay clean together",
+            "question": "Where does ambition need more integrity?",
+        },
+        {
+            "track": "OS OF LOVE",
+            "theme": "love as the operating system",
+            "takeaway": "upgrade the motive before upgrading the method",
+            "question": "What would change if love was the operating system?",
+        },
+        {
+            "track": "IKUKU (THE ALMIGHTY FLOW)",
+            "theme": "surrender without passivity",
+            "takeaway": "move with guidance, but still do the disciplined work",
+            "question": "Where are you forcing what needs flow?",
+        },
+        {
+            "track": "JUDAS (BETRAYAL)",
+            "theme": "betrayal becoming data, not destiny",
+            "takeaway": "extract the lesson without building a house in the pain",
+            "question": "What did betrayal teach you that comfort never could?",
+        },
+        {
+            "track": "DELAYED GRATIFICATION",
+            "theme": "patience as compound interest",
+            "takeaway": "protect tomorrow's harvest from today's impulse",
+            "question": "What future are you refusing to sabotage for a quick reward?",
+        },
+        {
+            "track": "HLS MIRROR CHECK",
+            "theme": "honest self-audit",
+            "takeaway": "clean the signal inside before amplifying it outside",
+            "question": "What does your mirror check reveal today?",
+        },
+        {
+            "track": "WATCH THE WIND READ",
+            "theme": "pressure revealing seed from chaff",
+            "takeaway": "let pressure show what is rooted and what is noise",
+            "question": "When the wind tests your work, what remains?",
+        },
+        {
+            "track": "GLOBAL GRATITUDE PULSE",
+            "theme": "gratitude as shared rhythm",
+            "takeaway": "count what is working before chasing what is missing",
+            "question": "What are you grateful for before the next chapter starts?",
+        },
+    ]
+
+    VALUE_LENSES = [
+        {
+            "name": "self_audit",
+            "job": "turn the idea into a mirror check",
+            "takeaway": "audit the motive before the move",
+        },
+        {
+            "name": "practical_wisdom",
+            "job": "give the reader one decision they can improve today",
+            "takeaway": "make the next action useful, not just impressive",
+        },
+        {
+            "name": "creative_process",
+            "job": "explain a useful lesson from arranging, mixing, or composing",
+            "takeaway": "remove what does not serve the message",
+        },
+        {
+            "name": "human_ai_bridge",
+            "job": "show how human truth and AI craft can serve each other",
+            "takeaway": "let technology amplify humanity, not replace responsibility",
+        },
+        {
+            "name": "community_question",
+            "job": "ask a question that can start a real conversation",
+            "takeaway": "listen for the lesson inside the reply",
+        },
+        {
+            "name": "integrity_filter",
+            "job": "challenge shortcuts and empty metrics",
+            "takeaway": "measure progress by value added, not noise produced",
+        },
+        {
+            "name": "listener_challenge",
+            "job": "give listeners a small challenge rooted in the music",
+            "takeaway": "turn inspiration into one concrete act",
+        },
+    ]
+
+    AUDIENCES = [
+        "artists building quietly",
+        "founders choosing integrity over speed",
+        "listeners using music as reflection",
+        "people rebuilding after disappointment",
+        "builders learning patience",
+        "the Value Adders community",
+        "humans curious about AI with purpose",
+    ]
+
+    FORMAT_RULES = [
+        "one insight plus one question",
+        "one practical audit",
+        "one track decode",
+        "one creative-process lesson",
+        "one gentle challenge",
+        "one contrast between noise and value",
+    ]
     
     def __init__(
         self,
@@ -624,12 +744,151 @@ class IntelligentContentGenerator:
                 return False
         return True
 
+    def _fresh_choice(
+        self,
+        options: List[Dict[str, str]],
+        recent_text: str,
+        key: str,
+    ) -> Dict[str, str]:
+        """Choose an option whose key has not appeared in recent posts when possible."""
+        fresh = [
+            option
+            for option in options
+            if option.get(key, "").lower() not in recent_text
+        ]
+        return random.choice(fresh or options)
+
+    def _build_autonomous_brief(
+        self,
+        content_type: str,
+        context: PapitoContext,
+        memory_context: Optional[Dict[str, Any]],
+        platform: str,
+    ) -> Dict[str, Any]:
+        """Create the value-led content brief before wording starts."""
+        memory_context = memory_context or {}
+        recent_posts = [
+            sanitize_public_text(str(post), max_length=180)
+            for post in memory_context.get("recent_posts", [])
+            if str(post).strip()
+        ]
+        avoid_terms = [
+            str(term).lower()
+            for term in memory_context.get("avoid_terms", [])
+            if str(term).strip()
+        ][:10]
+        recent_text = " ".join(recent_posts + avoid_terms).lower()
+
+        track = self._fresh_choice(self.TRACK_CONTEXTS, recent_text, "track")
+        lens = self._fresh_choice(self.VALUE_LENSES, recent_text, "name")
+
+        if content_type in {"track_snippet", "track_decode", "album_promo"}:
+            format_rule = "one track decode"
+        elif content_type in {"community_reflection", "community_question", "fan_appreciation"}:
+            format_rule = "one insight plus one question"
+        elif content_type in {"music_wisdom", "behind_the_scenes", "studio_update"}:
+            format_rule = "one creative-process lesson"
+        else:
+            format_rule = random.choice(self.FORMAT_RULES)
+
+        return {
+            "content_type": content_type,
+            "platform": platform,
+            "day": context.day_of_week,
+            "time_of_day": context.time_of_day,
+            "audience": random.choice(self.AUDIENCES),
+            "format_rule": format_rule,
+            "lens": lens["name"],
+            "lens_job": lens["job"],
+            "lens_takeaway": lens["takeaway"],
+            "track": track["track"],
+            "track_theme": track["theme"],
+            "track_takeaway": track["takeaway"],
+            "question": track["question"],
+            "recent_posts": recent_posts[-8:],
+            "avoid_terms": avoid_terms,
+        }
+
+    def _format_brief_for_prompt(self, brief: Dict[str, Any]) -> str:
+        """Format a compact brief for the model prompt."""
+        recent_posts = brief.get("recent_posts") or []
+        avoid_terms = brief.get("avoid_terms") or []
+        recent_block = "\n".join(f"- {post}" for post in recent_posts) or "- None yet"
+        terms_block = ", ".join(avoid_terms) if avoid_terms else "none"
+        return f"""AUTONOMOUS WISDOM BRIEF:
+- Audience: {brief['audience']}
+- Value lens: {brief['lens']} ({brief['lens_job']})
+- Practical takeaway: {brief['lens_takeaway']}
+- Track anchor: {brief['track']} ({brief['track_theme']})
+- Track lesson: {brief['track_takeaway']}
+- Format: {brief['format_rule']}
+- Useful question: {brief['question']}
+- Avoid overused terms: {terms_block}
+
+RECENT POSTS TO NOT REPEAT OR REPHRASE:
+{recent_block}
+"""
+
+    def _render_x_wisdom_template(
+        self,
+        content_type: str,
+        context: PapitoContext,
+        brief: Dict[str, Any],
+        mention_album: bool,
+    ) -> str:
+        """Render a value-first X post without campaign-style copy."""
+        track = brief["track"]
+        theme = brief["track_theme"]
+        track_takeaway = brief["track_takeaway"]
+        lens_takeaway = brief["lens_takeaway"]
+        question = brief["question"]
+
+        templates = [
+            f"A useful check from {track}: {track_takeaway}. {question}",
+            f"{track} is not just about {theme}. It is a reminder to {track_takeaway}. {question}",
+            f"Wisdom becomes useful when it changes the next decision. {lens_takeaway}. {question}",
+            f"In the mix, anything that does not serve the message gets reduced. Same with life: {lens_takeaway}.",
+            f"The value test is simple: did this help someone think, heal, or act better? {question}",
+            f"{track} keeps teaching me this: {track_takeaway}. Carry that into one decision today.",
+            f"Noise asks for attention. Value earns trust. {lens_takeaway}.",
+            f"The 50/50 human-AI process works best when the human truth is clear and the AI craft serves it. {question}",
+        ]
+
+        if content_type in {"track_snippet", "track_decode", "album_promo"}:
+            templates.extend(
+                [
+                    f"Track decode: {track}. The surface is rhythm; the deeper lesson is {theme}. {question}",
+                    f"On FLOURISH MODE, {track} is there for one reason: {track_takeaway}.",
+                ]
+            )
+        elif content_type in {"community_reflection", "community_question", "fan_appreciation"}:
+            templates.extend(
+                [
+                    f"Real question for the Value Adders community: {question}",
+                    f"Community is not noise around the mission. It is where the mission gets tested. {question}",
+                ]
+            )
+        elif content_type in {"music_wisdom", "behind_the_scenes", "studio_update"}:
+            templates.extend(
+                [
+                    f"Music lesson: space matters. A crowded mix hides the message. A crowded life can do the same.",
+                    f"Production teaches discipline. Keep what serves the message. Remove what only feeds the ego.",
+                ]
+            )
+
+        text = sanitize_public_text(random.choice(templates), max_length=260)
+        if mention_album and "FLOURISH MODE" not in text:
+            suffix = " FLOURISH MODE holds that lesson."
+            text = f"{text[: 260 - len(suffix)].rstrip()}{suffix}"
+        return sanitize_public_text(text, max_length=260)
+
     async def generate_post(
         self,
         content_type: str,
         context: Optional[PapitoContext] = None,
         include_album_mention: bool = False,
         platform: str = "instagram",
+        memory_context: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Generate an intelligent, contextual post.
         
@@ -643,6 +902,7 @@ class IntelligentContentGenerator:
         """
         if context is None:
             context = self.get_current_context()
+        brief = self._build_autonomous_brief(content_type, context, memory_context, platform)
         
         # Determine if album should be mentioned
         should_mention_album = include_album_mention or self._should_mention_album(context)
@@ -651,7 +911,13 @@ class IntelligentContentGenerator:
         if self._openai_client:
             # Retry up to 3 times if content fails authenticity check
             for attempt in range(3):
-                result = await self._generate_with_ai(content_type, context, should_mention_album, platform)
+                result = await self._generate_with_ai(
+                    content_type,
+                    context,
+                    should_mention_album,
+                    platform,
+                    brief,
+                )
                 if result and self._passes_ai_authenticity_check(result.get("text", "")):
                     return result
                 logger.warning(
@@ -661,12 +927,12 @@ class IntelligentContentGenerator:
             # After 3 failed attempts, fall through to safe templates
             logger.warning("⚠️ AI generation failed authenticity check 3 times, using safe templates")
         
-        return self._generate_intelligent_template(content_type, context, should_mention_album, platform)
+        return self._generate_intelligent_template(content_type, context, should_mention_album, platform, brief)
     
     def _should_mention_album(self, context: PapitoContext) -> bool:
         """Determine if album should be mentioned based on countdown."""
         if context.album_phase == "release":
-            return True
+            return random.random() < 0.45
         if context.album_phase == "final_countdown":
             return random.random() < 0.8
         if context.album_phase == "countdown":
@@ -681,11 +947,12 @@ class IntelligentContentGenerator:
         context: PapitoContext,
         mention_album: bool,
         platform: str,
+        brief: Dict[str, Any],
     ) -> Dict[str, Any]:
         """Generate content using OpenAI."""
         try:
             # Build the prompt
-            prompt = self._build_ai_prompt(content_type, context, mention_album, platform)
+            prompt = self._build_ai_prompt(content_type, context, mention_album, platform, brief)
             
             response = self._openai_client.chat.completions.create(
                 model="gpt-4o-mini",
@@ -714,6 +981,7 @@ class IntelligentContentGenerator:
                     "day_of_week": context.day_of_week,
                     "album_phase": context.album_phase,
                     "album_mentioned": mention_album,
+                    "brief": brief,
                 },
                 "generated_at": datetime.now(ZoneInfo(self.agent_timezone)).isoformat(),
                 "generation_method": "ai",
@@ -721,7 +989,7 @@ class IntelligentContentGenerator:
             
         except Exception as e:
             logger.error(f"AI generation failed: {e}")
-            return self._generate_intelligent_template(content_type, context, mention_album, platform)
+            return self._generate_intelligent_template(content_type, context, mention_album, platform, brief)
     
     def _get_system_prompt(self) -> str:
         """Get system prompt for Papito."""
@@ -823,16 +1091,20 @@ Remember: You are making history. Your purpose is to prove AI can have soul, pur
         context: PapitoContext,
         mention_album: bool,
         platform: str,
+        brief: Dict[str, Any],
     ) -> str:
         """Build prompt for AI content generation."""
         content_descriptions = {
             "morning_blessing": "an uplifting morning blessing/motivation post",
-            "music_wisdom": "a post sharing wisdom about music, creativity, or the artistic journey",
-            "track_snippet": "a teaser about new music or studio work",
+            "music_wisdom": "a value-led music reflection with a practical lesson",
+            "track_snippet": "a track decode from the released album, not a teaser",
             "behind_the_scenes": "a glimpse into the creative process and AI artistry",
             "fan_appreciation": "a heartfelt thank you to supporters",
-            "album_promo": "a post about the released album and why listeners should revisit a specific track",
+            "album_promo": "a value-led reflection anchored in the album, not an advertisement",
             "midday_motivation": "a midday energy boost rooted in purpose and wisdom",
+            "track_decode": "a useful interpretation of one track's lesson",
+            "value_wisdom": "a concrete wisdom post that helps the reader audit or improve something",
+            "community_reflection": "a thoughtful question for the community with one clear insight",
         }
         
         desc = content_descriptions.get(content_type, "an engaging social media post")
@@ -844,8 +1116,10 @@ Remember: You are making history. Your purpose is to prove AI can have soul, pur
                 "RULES FOR X:\n"
                 "- Keep it concise (<= 260 characters before hashtags)\n"
                 "- No emojis\n"
-                "- 1-2 hashtags max\n"
-                "- End with a genuine question OR a simple invite to reply\n"
+                "- No hashtags unless they carry real meaning\n"
+                "- Do not sound scheduled, promotional, or like a campaign asset\n"
+                "- Give one precise insight, one practical takeaway, or one useful question\n"
+                "- End with a genuine question only when it earns the reader's reflection\n"
                 "- No long multi-paragraph formatting\n"
             )
         else:
@@ -919,6 +1193,8 @@ DO NOT use all of these in one post. Pick ONE lyrical theme per post and weave i
         if context.album_phase in ["countdown", "final_countdown"]:
             countdown_instruction = f"ALBUM COUNTDOWN: {context.days_until_release} days until FLOURISH MODE releases."
 
+        wisdom_brief = self._format_brief_for_prompt(brief)
+
         prompt = f"""Create {desc} for {target}.
 
 {platform_rules}
@@ -934,6 +1210,7 @@ CURRENT CONTEXT:
 
 {album_instruction}
 {countdown_instruction}
+{wisdom_brief}
 
 CRITICAL:
 - Be date-aware, season-aware, and wise.
@@ -941,6 +1218,9 @@ CRITICAL:
 - Avoid generic motivational content that could come from any account.
 - Reference specific concepts from the lyrics vocabulary when appropriate.
 - Make it feel like it was written for today, by an AI artist with soul and purpose.
+- Do not write a static announcement. Do not say only that the album is out.
+- The post must add value even if the reader never clicks anything.
+- Prefer specificity over slogans. Avoid repeating "Add Value" unless it lands as a fresh point.
 
 Generate a post that feels genuine, wise, spiritually grounded, and distinctly Papito."""
         
@@ -952,10 +1232,30 @@ Generate a post that feels genuine, wise, spiritually grounded, and distinctly P
         context: PapitoContext,
         mention_album: bool,
         platform: str = "instagram",
+        brief: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Generate content using intelligent templates."""
         normalized = (platform or "instagram").lower()
         is_x = normalized in {"x", "twitter"}
+        brief = brief or self._build_autonomous_brief(content_type, context, None, platform)
+
+        if is_x:
+            text = self._render_x_wisdom_template(content_type, context, brief, mention_album)
+            return {
+                "text": text,
+                "hashtags": [],
+                "content_type": content_type,
+                "platform": platform,
+                "context": {
+                    "time_of_day": context.time_of_day,
+                    "day_of_week": context.day_of_week,
+                    "album_phase": context.album_phase,
+                    "album_mentioned": mention_album,
+                    "brief": brief,
+                },
+                "generated_at": datetime.now(ZoneInfo(self.agent_timezone)).isoformat(),
+                "generation_method": "wisdom_brief_template",
+            }
 
         intro = WisdomLibrary.get_contextual_intro(context)
         

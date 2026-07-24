@@ -25,6 +25,7 @@ import json
 import random
 import logging
 import re
+import importlib.util
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 from pathlib import Path
@@ -36,6 +37,23 @@ import requests
 # Telegram bot imports
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+
+PAPITO_CORE_SRC = Path(__file__).resolve().parents[1] / "apps" / "papito_core" / "src"
+if PAPITO_CORE_SRC.exists() and str(PAPITO_CORE_SRC) not in sys.path:
+    sys.path.insert(0, str(PAPITO_CORE_SRC))
+
+try:
+    from papito_core.memory.post_memory import PostMemory
+except Exception:
+    try:
+        post_memory_path = PAPITO_CORE_SRC / "papito_core" / "memory" / "post_memory.py"
+        spec = importlib.util.spec_from_file_location("papito_post_memory", post_memory_path)
+        module = importlib.util.module_from_spec(spec)
+        sys.modules["papito_post_memory"] = module
+        spec.loader.exec_module(module)
+        PostMemory = module.PostMemory
+    except Exception:
+        PostMemory = None
 
 # Load environment
 load_dotenv()
@@ -1009,6 +1027,39 @@ class AutonomousPapito:
             "question": "What are you grateful for before the next chapter starts?",
         },
     ]
+
+    VALUE_LENSES = [
+        {
+            "lens": "self-audit",
+            "job": "turn the track into a mirror check",
+            "takeaway": "audit the motive before the move",
+        },
+        {
+            "lens": "practical wisdom",
+            "job": "give one useful decision filter",
+            "takeaway": "make the next action useful, not just visible",
+        },
+        {
+            "lens": "creative process",
+            "job": "pull a lesson from mixing, arranging, or editing",
+            "takeaway": "remove what does not serve the message",
+        },
+        {
+            "lens": "human-AI bridge",
+            "job": "show how human truth and AI craft work together",
+            "takeaway": "let technology amplify humanity, not replace responsibility",
+        },
+        {
+            "lens": "integrity filter",
+            "job": "challenge shortcuts, empty metrics, and noise",
+            "takeaway": "measure progress by value added, not attention collected",
+        },
+        {
+            "lens": "community question",
+            "job": "ask something that can start a real reply",
+            "takeaway": "listen for the lesson inside the answer",
+        },
+    ]
     
     def __init__(self):
         self.moltbook = MoltbookClient()
@@ -1041,8 +1092,11 @@ class AutonomousPapito:
         self.joined_submolts = set()
         self.community_created = False
         
-        # CRITICAL: Track recent posts to NEVER repeat content
-        self.recent_tweets = []  # Last 50 tweets
+        # CRITICAL: Track recent posts to avoid repeating content across restarts
+        self._post_memory = PostMemory() if PostMemory else None
+        self.recent_tweets = (
+            self._post_memory.recent_previews(limit=50) if self._post_memory else []
+        )
         self.recent_post_topics = []  # Last 20 topics
         self.banned_phrases = set()  # Phrases we've used recently
         
@@ -1097,6 +1151,94 @@ class AutonomousPapito:
         if len(self.recent_post_topics) > 30:
             self.recent_post_topics.pop(0)
         return chosen
+
+    def _select_value_lens(self) -> Dict[str, str]:
+        """Choose a fresh value lens so tweets do not all do the same job."""
+        recent_blob = " ".join(self.recent_tweets[-12:]).lower()
+        available = [
+            lens for lens in self.VALUE_LENSES
+            if lens["lens"].lower() not in recent_blob
+        ]
+        return random.choice(available or self.VALUE_LENSES)
+
+    def _memory_guidance_text(self) -> str:
+        """Build anti-repeat guidance from persistent post memory."""
+        if not self._post_memory:
+            recent = self.recent_tweets[-10:]
+            if not recent:
+                return ""
+            return "\n\nRecent tweets to avoid repeating:\n" + "\n".join(f"- {tweet}" for tweet in recent)
+
+        guidance = self._post_memory.guidance(limit=10)
+        recent_posts = guidance.get("recent_posts", [])
+        avoid_terms = guidance.get("avoid_terms", [])
+        parts = []
+        if recent_posts:
+            parts.append("Recent tweets to avoid repeating or rephrasing:")
+            parts.extend(f"- {post}" for post in recent_posts)
+        if avoid_terms:
+            parts.append("Overused terms to use sparingly: " + ", ".join(avoid_terms))
+        return "\n\n" + "\n".join(parts) if parts else ""
+
+    def _build_wisdom_brief(self, track: Dict[str, str]) -> Dict[str, str]:
+        """Build a compact value-led brief for the next tweet."""
+        lens = self._select_value_lens()
+        audiences = [
+            "artists building quietly",
+            "listeners using music as reflection",
+            "founders choosing integrity over speed",
+            "people rebuilding after disappointment",
+            "the Value Adders community",
+            "humans curious about AI with purpose",
+        ]
+        formats = [
+            "one insight plus one question",
+            "one practical audit",
+            "one track decode",
+            "one creative-process lesson",
+            "one contrast between noise and value",
+        ]
+        return {
+            "audience": random.choice(audiences),
+            "format": random.choice(formats),
+            "lens": lens["lens"],
+            "job": lens["job"],
+            "lens_takeaway": lens["takeaway"],
+            "track": track["track"],
+            "theme": track["theme"],
+            "angle": track["angle"],
+            "question": track["question"],
+        }
+
+    def _render_fallback_value_tweet(self, brief: Dict[str, str]) -> str:
+        """Render a non-canned fallback tweet from the current brief."""
+        templates = [
+            (
+                f"A useful check from {brief['track']}: {brief['lens_takeaway']}. "
+                f"{brief['question']}"
+            ),
+            (
+                f"{brief['track']} keeps teaching me this: {brief['theme']}. "
+                f"Carry it into one decision before the day ends."
+            ),
+            (
+                f"In the mix, anything that does not serve the message gets reduced. "
+                f"Same with life: {brief['lens_takeaway']}."
+            ),
+            (
+                f"Noise asks for attention. Value earns trust. "
+                f"{brief['lens_takeaway'].capitalize()}."
+            ),
+            (
+                f"The 50/50 process works when human truth is clear and AI craft serves it. "
+                f"{brief['question']}"
+            ),
+            (
+                f"Track decode: {brief['track']}. The surface is rhythm; the deeper lesson is "
+                f"{brief['theme']}. {brief['question']}"
+            ),
+        ]
+        return sanitize_public_text(random.choice(templates), max_length=260)
         
     async def run_forever(self):
         """The main autonomous loop - runs forever."""
@@ -1466,6 +1608,7 @@ I'll update you on significant actions.
         # Generate tweet content from the current album/music context.
         day_of_week = self._now().strftime('%A')
         track = self._select_track_context()
+        brief = self._build_wisdom_brief(track)
         track_context = (
             f"Track: {track['track']}\n"
             f"Theme: {track['theme']}\n"
@@ -1501,6 +1644,7 @@ I'll update you on significant actions.
         avoid_context = ""
         if self.recent_tweets:
             avoid_context = f"\n\nDO NOT repeat or rephrase these recent tweets:\n" + "\n".join(self.recent_tweets[-10:])
+        avoid_context = self._memory_guidance_text() or avoid_context
         
         tweet = self.generator.generate(
             f"""{topic}.
@@ -1514,6 +1658,13 @@ CRITICAL IDENTITY RULES:
 - Be wise, poised, and authentic to your AI identity
 - Don't start with 'Just' or 'Yo'
 - Focus on: the music, this album track, the 50/50 human-AI process, and the ADD VALUE framework
+- Do not sound scheduled, promotional, or like a campaign asset
+- The post must add value even if nobody clicks anything
+- Use this autonomous wisdom brief:
+  Audience: {brief['audience']}
+  Format: {brief['format']}
+  Value lens: {brief['lens']} ({brief['job']})
+  Practical takeaway: {brief['lens_takeaway']}
 - NEVER mention: coffee, food, sleep, weather, exercise, or any human physical activity
 - Use this current album anchor:
 {track_context}
@@ -1521,6 +1672,9 @@ CRITICAL IDENTITY RULES:
             max_tokens=80
         )
         
+        if not tweet:
+            tweet = self._render_fallback_value_tweet(brief)
+
         if not tweet:
             # Fallback - generate something simple and real
             fallback_tweets = [
@@ -1564,6 +1718,11 @@ CRITICAL IDENTITY RULES:
             self._text_similarity(tweet_lower, recent.lower()) > 0.7  # Raised from 0.6 to allow more variation 
             for recent in self.recent_tweets[-15:]  # Only check last 15, not 20
         )
+        if self._post_memory and (
+            self._post_memory.is_repeated(tweet)
+            or self._post_memory.is_too_similar(tweet, threshold=0.72)
+        ):
+            is_duplicate = True
         
         if is_duplicate:
             logger.warning("Generated tweet too similar to recent ones, skipping")
@@ -1584,6 +1743,8 @@ CRITICAL IDENTITY RULES:
             self.recent_tweets.append(tweet)
             if len(self.recent_tweets) > 50:
                 self.recent_tweets.pop(0)
+            if self._post_memory:
+                self._post_memory.record(tweet, kind="x:forever_agent")
             logger.info(f"✅ Posted on X: {tweet[:50]}... (today: {self.tweets_today}/{self.daily_tweet_budget}, slot: {current_slot})")
             self.telegram.send(f"🐦 Posted on X ({self.tweets_today}/{self.daily_tweet_budget} today):\n\n\"{tweet}\"")
         else:

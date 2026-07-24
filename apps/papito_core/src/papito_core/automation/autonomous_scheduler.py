@@ -75,12 +75,12 @@ class AutonomousScheduler:
     the default public timezone.
     """
     
-    # Core autonomous public schedule. Keep this to 3 posts/day and vary the
-    # content through generation, not by dumping more fixed slots into the day.
+    # Core autonomous public schedule. Keep this to 3 posts/day and make each
+    # slot a value-led thinking opportunity, not a static campaign post.
     POSTING_SCHEDULE = {
-        9: "music_wisdom",
-        13: "track_snippet",
-        18: "album_promo",
+        9: "value_wisdom",
+        13: "track_decode",
+        18: "community_reflection",
     }
     
     # Legacy static promotional content. Overridden below with no-emoji copy and
@@ -601,28 +601,47 @@ class AutonomousScheduler:
                 context = PapitoContext(current_date=self._now())
                 generator = IntelligentContentGenerator(openai_api_key=settings.openai_api_key)
                 generation_content_type = "album_promo" if content_type == "single_promo" else content_type
+                memory_context = self._post_memory.guidance(limit=10) if self._post_memory else {}
+                force_album_mention = generation_content_type in {"track_decode", "track_snippet"} and random.random() < 0.65
 
                 # Generate with retries to avoid near-duplicate posts.
                 last_result: Dict[str, Any] | None = None
-                for _ in range(4):
+                duplicate_candidate = False
+                for _ in range(5):
                     last_result = await generator.generate_post(
                         content_type=generation_content_type,
                         context=context,
-                        include_album_mention=True,
+                        include_album_mention=force_album_mention,
                         platform="x",
+                        memory_context=memory_context,
                     )
                     candidate = (last_result or {}).get("text", "")
                     if self._post_memory and (
-                        self._post_memory.is_repeated(candidate) or self._post_memory.is_too_similar(candidate)
+                        self._post_memory.is_repeated(candidate)
+                        or self._post_memory.is_too_similar(candidate, threshold=0.72)
                     ):
+                        duplicate_candidate = True
+                        memory_context.setdefault("recent_posts", []).append(candidate[:180])
                         continue
+                    duplicate_candidate = False
                     break
 
                 result = last_result or {}
 
                 post_text = result.get("text", "")
+                if duplicate_candidate and self._post_memory and post_text:
+                    return {
+                        "timestamp": self._now().isoformat(),
+                        "content_type": content_type,
+                        "text": post_text,
+                        "error": "Generated post too similar to recent memory",
+                        "posted": False,
+                    }
                 # Strictly limit hashtags for X (avoid spam / repetition)
-                raw_tags = result.get("hashtags", [])
+                include_hashtags = os.getenv("PAPITO_X_HASHTAGS", "false").strip().lower() in {
+                    "1", "true", "yes", "y", "on"
+                }
+                raw_tags = result.get("hashtags", []) if include_hashtags else []
                 tags: List[str]
                 if isinstance(raw_tags, list):
                     tags = [str(t) for t in raw_tags if t]
