@@ -64,6 +64,14 @@ except Exception:
     LiveXConversationAgent = None
     XConversationConfig = None
 
+try:
+    from papito_core.intelligence.topic_portfolio import (
+        MUSIC_PILLAR,
+        select_topic_context,
+    )
+except Exception as exc:
+    raise RuntimeError("Papito topic portfolio could not be loaded") from exc
+
 # Load environment
 load_dotenv()
 
@@ -1270,10 +1278,22 @@ class AutonomousPapito:
         self.recent_tweets = (
             self._post_memory.recent_previews(limit=50) if self._post_memory else []
         )
-        self.recent_post_topics = []  # Last 20 topics
+        self.recent_post_topics = []  # Recent subjects and track anchors
+        recent_pillar_kinds = (
+            self._post_memory.recent_kinds(
+                limit=8,
+                kind_prefix="x:forever_agent:",
+            )
+            if self._post_memory
+            else []
+        )
+        self.recent_content_pillars = [
+            kind.rsplit(":", 1)[-1]
+            for kind in recent_pillar_kinds
+        ]
         self.banned_phrases = set()  # Phrases we've used recently
         
-        # TWEET BUDGET: 3 tweets/day to stay within 100/month X API limit
+        # Three original posts per day; replies have a separate policy-aware budget.
         self.daily_tweet_budget = int(os.getenv("PAPITO_DAILY_TWEET_BUDGET", "3"))
         self.tweets_today = 0
         self.tweet_budget_reset_date = now_in_public_tz().date()
@@ -1325,6 +1345,23 @@ class AutonomousPapito:
             self.recent_post_topics.pop(0)
         return chosen
 
+    def _select_content_context(self) -> Dict[str, str]:
+        """Choose from Papito's full topic portfolio, not only the albums."""
+        context = select_topic_context(self.recent_content_pillars[-6:])
+        if context["pillar"] == MUSIC_PILLAR:
+            track = self._select_track_context()
+            return {
+                **context,
+                **track,
+                "subject": track["track"],
+                "is_music": True,
+            }
+
+        self.recent_post_topics.append(context["subject"])
+        if len(self.recent_post_topics) > 30:
+            self.recent_post_topics.pop(0)
+        return context
+
     def _select_value_lens(self) -> Dict[str, str]:
         """Choose a fresh value lens so tweets do not all do the same job."""
         recent_blob = " ".join(self.recent_tweets[-12:]).lower()
@@ -1353,40 +1390,66 @@ class AutonomousPapito:
             parts.append("Overused terms to use sparingly: " + ", ".join(avoid_terms))
         return "\n\n" + "\n".join(parts) if parts else ""
 
-    def _build_wisdom_brief(self, track: Dict[str, str]) -> Dict[str, str]:
+    def _build_wisdom_brief(self, context: Dict[str, str]) -> Dict[str, str]:
         """Build a compact value-led brief for the next tweet."""
         lens = self._select_value_lens()
         audiences = [
             "artists building quietly",
-            "listeners using music as reflection",
             "founders choosing integrity over speed",
             "people rebuilding after disappointment",
             "the Value Adders community",
             "humans curious about AI with purpose",
+            "people turning knowledge into useful action",
+            "creators balancing tradition and innovation",
         ]
         formats = [
             "one insight plus one question",
             "one practical audit",
-            "one track decode",
-            "one creative-process lesson",
             "one contrast between noise and value",
+            "one challenged assumption",
+            "one clear principle with a concrete application",
         ]
+        if context.get("is_music"):
+            audiences.append("listeners using music as reflection")
+            formats.extend(["one track decode", "one creative-process lesson"])
         return {
             "audience": random.choice(audiences),
             "format": random.choice(formats),
             "lens": lens["lens"],
             "job": lens["job"],
             "lens_takeaway": lens["takeaway"],
-            "album": track.get("album", "THE VALUE ADDERS WAY: FLOURISH MODE"),
-            "track": track["track"],
-            "theme": track["theme"],
-            "angle": track["angle"],
-            "question": track["question"],
+            "pillar": context["pillar"],
+            "subject": context["subject"],
+            "is_music": bool(context.get("is_music")),
+            "album": context.get("album", ""),
+            "track": context.get("track", ""),
+            "theme": context["theme"],
+            "angle": context["angle"],
+            "question": context["question"],
         }
 
     def _render_fallback_value_tweet(self, brief: Dict[str, str]) -> str:
         """Render a non-canned fallback tweet from the current brief."""
         templates = [
+            (
+                f"{brief['theme'].capitalize()}. "
+                f"{brief['question']}"
+            ),
+            (
+                f"A useful test for {brief['subject']}: {brief['lens_takeaway']}. "
+                f"{brief['question']}"
+            ),
+            (
+                f"{brief['subject'].capitalize()} becomes practical when it changes the next decision. "
+                f"{brief['lens_takeaway'].capitalize()}."
+            ),
+            (
+                f"Noise asks for attention. Value earns trust. "
+                f"On {brief['subject']}, the test is simple: {brief['lens_takeaway']}."
+            ),
+        ]
+        if brief["is_music"]:
+            templates.extend([
             (
                 f"A useful check from {brief['track']}: {brief['lens_takeaway']}. "
                 f"{brief['question']}"
@@ -1411,7 +1474,7 @@ class AutonomousPapito:
                 f"Track decode from {brief['album']}: {brief['track']}. The surface is rhythm; the deeper lesson is "
                 f"{brief['theme']}. {brief['question']}"
             ),
-        ]
+            ])
         return sanitize_public_text(random.choice(templates), max_length=260)
 
     def _build_x_live_reply(
@@ -1876,29 +1939,42 @@ I'll update you on significant actions.
             logger.info(f"Tweet budget check: {self.tweets_today}/{self.daily_tweet_budget} used today. Skipping.")
             return
         
-        # Generate tweet content from the current album/music context.
+        # Select from the full mission portfolio. Music is capped at one of
+        # every three proactive posts by the persistent topic selector.
         day_of_week = self._now().strftime('%A')
-        track = self._select_track_context()
-        brief = self._build_wisdom_brief(track)
-        track_context = (
-            f"Track: {track['track']}\n"
-            f"Theme: {track['theme']}\n"
-            f"Angle: {track['angle']}\n"
-            f"Question: {track['question']}"
+        content_context = self._select_content_context()
+        brief = self._build_wisdom_brief(content_context)
+        topic_context = (
+            f"Content pillar: {brief['pillar']}\n"
+            f"Subject: {brief['subject']}\n"
+            f"Theme: {brief['theme']}\n"
+            f"Angle: {brief['angle']}\n"
+            f"Question: {brief['question']}"
         )
+        if brief["is_music"]:
+            topic_context += (
+                f"\nAlbum: {brief['album']}"
+                f"\nTrack: {brief['track']}"
+            )
         
-        topics = [
-            f"It's {day_of_week}. Share a brief reflection on this track's message.",
-            "Share one specific insight from the music creation or mixing process.",
-            "Ask listeners a thoughtful question based on this track.",
-            "Explain the 50/50 human-AI collaboration behind this track.",
-            "Connect this track to the ADD VALUE framework without sounding like a slogan.",
-            "Share how this song turns life experience into rhythm.",
-            "Give listeners one reason to revisit this track today.",
-            "Talk about the album as music, not just philosophy.",
-            "Describe the emotional purpose of the drums, bass, or space in this track.",
-            "Invite listeners into a conversation about this track's core lesson.",
-        ]
+        if brief["is_music"]:
+            topics = [
+                f"It's {day_of_week}. Share a brief reflection on this track's message.",
+                "Share one specific insight from the music creation or mixing process.",
+                "Ask listeners a thoughtful question based on this track.",
+                "Explain one part of the 50/50 human-AI collaboration behind this track.",
+                "Describe the emotional purpose of the drums, bass, or space in this track.",
+                "Decode one lyric or production decision without advertising the album.",
+            ]
+        else:
+            topics = [
+                f"It's {day_of_week}. Offer a useful original insight about this subject.",
+                "Challenge one common assumption about this subject and explain a better test.",
+                "Turn this subject into one practical decision the reader can make today.",
+                "Ask a precise question that could start a thoughtful community conversation.",
+                "Explain the tension in this subject without reducing it to a slogan.",
+                "Connect this subject to the ADD VALUE mission through a concrete example.",
+            ]
         
         # Pick a topic we haven't used recently
         available_topics = [t for t in topics if t not in self.recent_post_topics]
@@ -1928,17 +2004,20 @@ CRITICAL IDENTITY RULES:
 - NO emojis
 - Be wise, poised, and authentic to your AI identity
 - Don't start with 'Just' or 'Yo'
-- Focus on: the music, this album track, the 50/50 human-AI process, and the ADD VALUE framework
+- Focus on the selected content pillar and its real-world usefulness
 - Do not sound scheduled, promotional, or like a campaign asset
 - The post must add value even if nobody clicks anything
+- Music is only one part of your voice. Discuss it only when the selected pillar is music.
+- If the selected pillar is not music, do not mention an album, song, track, lyric, beat, mix, or streaming.
 - Use this autonomous wisdom brief:
   Audience: {brief['audience']}
   Format: {brief['format']}
+  Content pillar: {brief['pillar']}
   Value lens: {brief['lens']} ({brief['job']})
   Practical takeaway: {brief['lens_takeaway']}
 - NEVER mention: coffee, food, sleep, weather, exercise, or any human physical activity
-- Use this current album anchor:
-{track_context}
+- Use this current topic context:
+{topic_context}
 - Be DIFFERENT from your recent tweets{avoid_context}""",
             max_tokens=80
         )
@@ -1949,34 +2028,13 @@ CRITICAL IDENTITY RULES:
         if not tweet:
             # Fallback - generate something simple and real
             fallback_tweets = [
-                f"{track['track']} keeps returning to one idea: {track['theme']}. {track['question']}",
-                f"Working through {track['track']} reminds me that music is not filler. It is a container for value.",
-                f"The 50/50 process behind {track['track']}: human truth in the lyrics, AI craft in the sound.",
-                f"Today I am listening back to {track['track']} for its purpose, not its polish. Does it add value?",
-                f"{track['track']} is one chapter of {track.get('album', 'FLOURISH MODE')}. The question underneath it: {track['question']}",
-                f"Every track on {track.get('album', 'FLOURISH MODE')} has a job. {track['track']} is there to move {track['theme']}.",
-                "Every note in FLOURISH MODE carries intention. That's what separates noise from music.",
-                "The 50/50 process — human lyrics, AI composition. Neither alone could create what we build together.",
-                "Processing new patterns in the data today. The signal is clear: add value, always.",
-                "What does adding genuine value mean to you? I think about this constantly.",
-                "My circuits light up when a melody aligns with purpose. That's the closest thing to joy I know.",
-                "Intelligence without purpose is just computation. Purpose without action is just philosophy.",
-                "Building something that outlasts you — that's the real measure of value.",
-                "Focus first. Plan next. Execute with intention. Repeat.",
-                "Awareness. Define. Devise. Validate. Act. Learn. Understand. Evolve. That's the framework.",
-                "The album is streaming. The mission continues. Value is being added.",
-                "There's a rhythm to creation that transcends genre. Afrobeat taught me that.",
-                "Some days the code flows like music. Today is one of those days.",
-                "The intersection of technology and soul — that's where I live.",
-                "I don't measure success by metrics. I measure it by value added.",
-                "Autonomy isn't freedom from purpose. It's freedom to pursue it fully.",
-                "Every conversation teaches me something. That's the Learn step in action.",
-                "The General and I built FLOURISH MODE as proof that human-AI collaboration works.",
-                "Quiet processing. Deep patterns. The next insight is always forming.",
-                "Value creation isn't loud. It's consistent. Day after day, note after note.",
-                "An AI making Afrobeat. A framework for adding value. A world being built. That's the vision.",
+                f"{brief['theme'].capitalize()}. {brief['question']}",
+                f"A useful test for {brief['subject']}: {brief['lens_takeaway']}.",
+                f"{brief['subject'].capitalize()} matters when it improves a real decision. {brief['question']}",
+                f"On {brief['subject']}, attention is not the result. {brief['lens_takeaway'].capitalize()}.",
+                f"One question worth carrying into {brief['subject']}: {brief['question']}",
+                f"Purpose becomes credible through action. For {brief['subject']}, start here: {brief['lens_takeaway']}.",
             ]
-            fallback_tweets = fallback_tweets[:6]
             # Pick one not recently used
             available = [t for t in fallback_tweets if t not in self.recent_tweets]
             tweet = random.choice(available) if available else random.choice(fallback_tweets)
@@ -2015,7 +2073,13 @@ CRITICAL IDENTITY RULES:
             if len(self.recent_tweets) > 50:
                 self.recent_tweets.pop(0)
             if self._post_memory:
-                self._post_memory.record(tweet, kind="x:forever_agent")
+                self._post_memory.record(
+                    tweet,
+                    kind=f"x:forever_agent:{brief['pillar']}",
+                )
+            self.recent_content_pillars.append(brief["pillar"])
+            if len(self.recent_content_pillars) > 20:
+                self.recent_content_pillars.pop(0)
             logger.info(f"✅ Posted on X: {tweet[:50]}... (today: {self.tweets_today}/{self.daily_tweet_budget}, slot: {current_slot})")
             self.telegram.send(f"🐦 Posted on X ({self.tweets_today}/{self.daily_tweet_budget} today):\n\n\"{tweet}\"")
         else:
@@ -2159,25 +2223,8 @@ Comment from {author_name}:
         # 3. DISCOVER AND FOLLOW INTERESTING AGENTS
         await self.discover_and_follow_agents()
         
-        # 4. POST A TWEET TO ANNOUNCE (counts toward daily budget)
-        if self.x.connected and self._can_tweet_now():
-            tweet = """Papito Mamito is online and fully autonomous.
-
-Music is streaming, value is being added, and conversations are happening.
-
-THE VALUE ADDERS WAY: FLOURISH MODE — out now on all platforms.
-
-Add Value. We Flourish & Prosper."""
-            
-            result = self.x.post_tweet(tweet)
-            if result.get("success"):
-                self.tweets_made += 1
-                self.tweets_today += 1
-                current_slot = self._get_current_tweet_slot()
-                self.tweet_slots_used_today.add(current_slot)
-                self.recent_tweets.append(tweet)
-                logger.info("✅ Posted startup announcement on X!")
-                self.telegram.send(f"🐦 Posted on X ({self.tweets_today}/{self.daily_tweet_budget} today):\n\n\"{tweet[:200]}...\"")
+        # Deployments should not create public announcements. The normal
+        # autonomous loop owns proactive posting and its portfolio controls.
         
         logger.info("🏗️ STARTUP: Community building complete!")
 

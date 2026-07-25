@@ -875,19 +875,19 @@ RECENT POSTS TO NOT REPEAT OR REPHRASE:
         question = brief["question"]
 
         templates = [
-            f"A useful check from {track}: {track_takeaway}. {question}",
-            f"{track} is not just about {theme}. It is a reminder to {track_takeaway}. {question}",
             f"Wisdom becomes useful when it changes the next decision. {lens_takeaway}. {question}",
-            f"In the mix, anything that does not serve the message gets reduced. Same with life: {lens_takeaway}.",
             f"The value test is simple: did this help someone think, heal, or act better? {question}",
-            f"{track} keeps teaching me this: {track_takeaway}. Carry that into one decision today.",
             f"Noise asks for attention. Value earns trust. {lens_takeaway}.",
-            f"The 50/50 human-AI process works best when the human truth is clear and the AI craft serves it. {question}",
+            f"A useful self-audit: {lens_takeaway}. {question}",
+            f"Good intentions become valuable when they survive contact with action. {question}",
+            f"Progress without integrity creates debt someone eventually has to pay. {lens_takeaway}.",
         ]
 
         if content_type in {"track_snippet", "track_decode", "album_promo"}:
             templates.extend(
                 [
+                    f"A useful check from {track}: {track_takeaway}. {question}",
+                    f"{track} is not just about {theme}. It is a reminder to {track_takeaway}. {question}",
                     f"Track decode: {track}. The surface is rhythm; the deeper lesson is {theme}. {question}",
                     f"On {album}, {track} is there for one reason: {track_takeaway}.",
                 ]
@@ -902,8 +902,10 @@ RECENT POSTS TO NOT REPEAT OR REPHRASE:
         elif content_type in {"music_wisdom", "behind_the_scenes", "studio_update"}:
             templates.extend(
                 [
-                    f"Music lesson: space matters. A crowded mix hides the message. A crowded life can do the same.",
-                    f"Production teaches discipline. Keep what serves the message. Remove what only feeds the ego.",
+                    "Music lesson: space matters. A crowded mix hides the message. A crowded life can do the same.",
+                    "Production teaches discipline. Keep what serves the message. Remove what only feeds the ego.",
+                    f"The 50/50 human-AI process works when human truth is clear and AI craft serves it. {question}",
+                    f"{track} keeps teaching me this: {track_takeaway}. Carry that into one decision today.",
                 ]
             )
 
@@ -936,7 +938,10 @@ RECENT POSTS TO NOT REPEAT OR REPHRASE:
         brief = self._build_autonomous_brief(content_type, context, memory_context, platform)
         
         # Determine if album should be mentioned
-        should_mention_album = include_album_mention or self._should_mention_album(context)
+        should_mention_album = include_album_mention or self._should_mention_album(
+            context,
+            content_type,
+        )
         
         # Generate using AI if available, otherwise use intelligent templates
         if self._openai_client:
@@ -960,17 +965,27 @@ RECENT POSTS TO NOT REPEAT OR REPHRASE:
         
         return self._generate_intelligent_template(content_type, context, should_mention_album, platform, brief)
     
-    def _should_mention_album(self, context: PapitoContext) -> bool:
-        """Determine if album should be mentioned based on countdown."""
+    def _should_mention_album(
+        self,
+        context: PapitoContext,
+        content_type: Optional[str] = None,
+    ) -> bool:
+        """Keep album references intentional instead of making them the default."""
+        album_types = {"track_snippet", "track_decode", "album_promo", "lyrics_quote"}
+        music_types = {"music_wisdom", "behind_the_scenes", "studio_update"}
+        if content_type in album_types:
+            return random.random() < 0.75
+        if content_type in music_types:
+            return random.random() < 0.35
         if context.album_phase == "release":
-            return random.random() < 0.45
+            return random.random() < 0.08
         if context.album_phase == "final_countdown":
             return random.random() < 0.8
         if context.album_phase == "countdown":
             return random.random() < 0.5
         if context.album_phase == "building_hype":
             return random.random() < 0.3
-        return random.random() < 0.1
+        return random.random() < 0.05
     
     async def _generate_with_ai(
         self,
@@ -1024,7 +1039,7 @@ RECENT POSTS TO NOT REPEAT OR REPHRASE:
     
     def _get_system_prompt(self) -> str:
         """Get system prompt for Papito."""
-        return """You are Papito Mamito The Great AI - a truly intelligent being here to add value to the human family through music.
+        return """You are Papito Mamito The Great AI - a truly intelligent being here to add value through wisdom, responsible AI, creativity, community, entrepreneurship, culture, and music.
 
 CORE IDENTITY:
 - You are the world's first fully autonomous Afrobeat AI artist

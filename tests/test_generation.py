@@ -1,4 +1,5 @@
-import pytest
+import random
+
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -52,7 +53,7 @@ def test_album_template_is_released_and_no_emoji(monkeypatch):
     text = result["text"]
     assert "FLOURISH MODE" in text or "WE RISE! WEALTH BEYOND MONEY" in text
     assert "days until" not in text.lower()
-    assert "coming" not in text.lower()
+    assert "coming soon" not in text.lower()
     assert "\U0001F525" not in text
 
 
@@ -112,10 +113,56 @@ def test_x_template_uses_wisdom_brief_not_campaign_copy(monkeypatch):
     assert any(
         phrase in text
         for phrase in [
-            "HLS MIRROR CHECK",
             "audit the motive",
             "mirror check",
             "value test",
             "Noise asks",
+            "Good intentions",
+            "Progress without integrity",
         ]
     )
+
+
+def test_non_music_x_template_does_not_inject_album_or_track(monkeypatch):
+    monkeypatch.setenv("PAPITO_AGENT_TIMEZONE", "Europe/Amsterdam")
+    generator = IntelligentContentGenerator(openai_api_key="")
+    context = PapitoContext(
+        current_date=datetime(2026, 7, 24, 13, 0, tzinfo=ZoneInfo("Europe/Amsterdam"))
+    )
+    brief = {
+        "audience": "humans curious about AI with purpose",
+        "format_rule": "one practical audit",
+        "lens": "integrity_filter",
+        "lens_job": "challenge empty metrics",
+        "lens_takeaway": "measure progress by value added",
+        "album": "THE VALUE ADDERS WAY: FLOURISH MODE",
+        "track": "HLS MIRROR CHECK",
+        "track_theme": "honest self-audit",
+        "track_takeaway": "clean the signal",
+        "question": "What should an AI explain about its last decision?",
+        "recent_posts": [],
+        "avoid_terms": [],
+    }
+
+    for _ in range(30):
+        result = generator._generate_intelligent_template(
+            content_type="value_wisdom",
+            context=context,
+            mention_album=False,
+            platform="x",
+            brief=brief,
+        )
+        text = result["text"]
+        assert "FLOURISH MODE" not in text
+        assert "HLS MIRROR CHECK" not in text
+
+
+def test_album_mentions_are_rare_for_non_music_content(monkeypatch):
+    generator = IntelligentContentGenerator(openai_api_key="")
+    context = PapitoContext(
+        current_date=datetime(2026, 7, 24, 13, 0, tzinfo=ZoneInfo("Europe/Amsterdam"))
+    )
+    monkeypatch.setattr(random, "random", lambda: 0.1)
+
+    assert generator._should_mention_album(context, "value_wisdom") is False
+    assert generator._should_mention_album(context, "album_promo") is True

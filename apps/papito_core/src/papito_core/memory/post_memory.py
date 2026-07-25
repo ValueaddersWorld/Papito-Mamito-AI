@@ -173,6 +173,13 @@ class PostMemory:
             items = [item for item in items if item.kind.startswith(kind_prefix)]
         return [item.preview for item in items[-limit:] if item.preview]
 
+    def recent_kinds(self, limit: int = 8, kind_prefix: Optional[str] = None) -> List[str]:
+        """Return recent content kinds for persistent portfolio decisions."""
+        items = self._items
+        if kind_prefix:
+            items = [item for item in items if item.kind.startswith(kind_prefix)]
+        return [item.kind for item in items[-limit:] if item.kind]
+
     def overused_terms(self, limit: int = 10, recent: int = 80) -> List[str]:
         """Return recurring terms from recent memory to steer generation away."""
         counter: Counter[str] = Counter()
