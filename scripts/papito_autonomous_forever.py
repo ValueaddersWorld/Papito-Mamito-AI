@@ -1607,7 +1607,9 @@ I'll update you on significant actions.
         # STARTUP ACTIONS - Do these once at the beginning
         await self.startup_community_building()
 
-        if self.x_live and self.x_live.config.enabled:
+        if self.x_live and (
+            self.x_live.config.monitor_enabled or self.x_live.config.enabled
+        ):
             self._x_live_task = asyncio.create_task(
                 self._run_x_live_loop(),
                 name="papito-x-live-conversations",

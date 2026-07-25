@@ -38,6 +38,7 @@ def sanitize(text, max_length=None):
 
 def config(tmp_path, **overrides):
     values = {
+        "monitor_enabled": True,
         "enabled": True,
         "ai_reply_approved": True,
         "poll_seconds": 60,
@@ -74,6 +75,41 @@ def test_live_replies_are_approval_gated(tmp_path):
     result = asyncio.run(agent.process(force=True))
 
     assert result["reason"] == "x_ai_reply_approval_required"
+    assert result["pending"] == 1
+    assert client.fetch_calls == 1
+    assert client.replies == []
+
+
+def test_monitor_only_queues_mentions_without_replying(tmp_path):
+    client = FakeXClient([mention()])
+    agent = LiveXConversationAgent(
+        client=client,
+        reply_builder=lambda item, history: "This must never be sent.",
+        sanitizer=sanitize,
+        config=config(tmp_path, enabled=False, ai_reply_approved=False),
+    )
+
+    result = asyncio.run(agent.process(force=True))
+
+    assert result["fetched"] == 1
+    assert result["pending"] == 1
+    assert result["reason"] == "live_engagement_disabled"
+    assert client.fetch_calls == 1
+    assert client.replies == []
+
+
+def test_monitoring_can_be_disabled_independently(tmp_path):
+    client = FakeXClient([mention()])
+    agent = LiveXConversationAgent(
+        client=client,
+        reply_builder=lambda item, history: "This must never be sent.",
+        sanitizer=sanitize,
+        config=config(tmp_path, monitor_enabled=False),
+    )
+
+    result = asyncio.run(agent.process(force=True))
+
+    assert result["reason"] == "x_monitoring_disabled"
     assert client.fetch_calls == 0
     assert client.replies == []
 

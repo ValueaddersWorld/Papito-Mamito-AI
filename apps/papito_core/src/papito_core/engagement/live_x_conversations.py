@@ -39,6 +39,7 @@ def _bounded_int(name: str, default: int, minimum: int, maximum: int) -> int:
 class XConversationConfig:
     """Runtime controls for live X conversations."""
 
+    monitor_enabled: bool = False
     enabled: bool = False
     ai_reply_approved: bool = False
     poll_seconds: int = 180
@@ -50,6 +51,10 @@ class XConversationConfig:
     @classmethod
     def from_env(cls) -> "XConversationConfig":
         return cls(
+            monitor_enabled=_env_bool(
+                "PAPITO_X_MONITOR_ENABLED",
+                _env_bool("PAPITO_X_READ_ENABLED", False),
+            ),
             enabled=_env_bool("PAPITO_X_LIVE_ENGAGEMENT", False),
             ai_reply_approved=_env_bool("PAPITO_X_AI_REPLY_APPROVED", False),
             poll_seconds=_bounded_int("PAPITO_X_POLL_SECONDS", 180, 60, 3600),
@@ -296,6 +301,7 @@ class LiveXConversationAgent:
         """Poll and process direct mentions once."""
 
         result = {
+            "monitoring": self.config.monitor_enabled,
             "enabled": self.config.enabled,
             "approved": self.config.ai_reply_approved,
             "fetched": 0,
@@ -304,11 +310,8 @@ class LiveXConversationAgent:
             "pending": len(self._state.get("pending_mentions", [])),
             "reason": None,
         }
-        if not self.config.enabled:
-            result["reason"] = "live_engagement_disabled"
-            return result
-        if not self.config.ai_reply_approved:
-            result["reason"] = "x_ai_reply_approval_required"
+        if not self.config.monitor_enabled:
+            result["reason"] = "x_monitoring_disabled"
             return result
 
         now = self._now()
@@ -332,6 +335,16 @@ class LiveXConversationAgent:
         result["fetched"] = len(mentions)
         self._advance_since_id(mentions)
         self._add_pending_mentions(mentions)
+        result["pending"] = len(self._state.get("pending_mentions", []))
+
+        if not self.config.enabled:
+            result["reason"] = "live_engagement_disabled"
+            self._save_state()
+            return result
+        if not self.config.ai_reply_approved:
+            result["reason"] = "x_ai_reply_approval_required"
+            self._save_state()
+            return result
 
         pending = list(self._state.get("pending_mentions", []))
         pending.sort(
@@ -398,6 +411,7 @@ class LiveXConversationAgent:
         """Return non-secret operational state for logs and health checks."""
 
         return {
+            "monitoring": self.config.monitor_enabled,
             "enabled": self.config.enabled,
             "approved": self.config.ai_reply_approved,
             "poll_seconds": self.config.poll_seconds,
