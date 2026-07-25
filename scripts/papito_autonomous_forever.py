@@ -65,7 +65,7 @@ except Exception:
     XConversationConfig = None
 
 try:
-    from papito_core.intelligence.topic_portfolio import (
+    from papito_core.topic_portfolio import (
         MUSIC_PILLAR,
         select_topic_context,
     )

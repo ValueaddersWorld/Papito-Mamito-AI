@@ -1,6 +1,6 @@
 import random
 
-from papito_core.intelligence.topic_portfolio import (
+from papito_core.topic_portfolio import (
     MUSIC_PILLAR,
     TOPIC_CONTEXTS,
     select_topic_context,
