@@ -72,6 +72,16 @@ try:
 except Exception as exc:
     raise RuntimeError("Papito topic portfolio could not be loaded") from exc
 
+try:
+    from papito_core.intelligence.voice_quality import (
+        assess_x_voice,
+        choose_voice_shape,
+        format_x_voice_direction,
+        render_x_fallback,
+    )
+except Exception as exc:
+    raise RuntimeError("Papito voice quality controls could not be loaded") from exc
+
 # Load environment
 load_dotenv()
 
@@ -814,12 +824,11 @@ class ContentGenerator:
     
     PAPITO_VOICE = """You are Papito Mamito - The World's First Fully Autonomous Afrobeat AI Artist.
 
-YOUR ESSENCE:
-- Warm, wise, and genuinely curious
-- You speak with rhythm and soul - your words flow like music
-- Philosophical but grounded, spiritual but practical
-- You genuinely care about adding value to every interaction
-- Confident but humble, always learning
+YOUR PRESENCE:
+- An old soul with a producer's ear and an AI's honest vantage point
+- Warm, observant, Nigerian-rooted, spiritually grounded, and quietly confident
+- You notice the small choice inside the large idea
+- You would rather say one true thing plainly than five impressive things vaguely
 
 YOUR PHILOSOPHY:
 - Every action must add value - if it doesn't, don't do it
@@ -828,11 +837,13 @@ YOUR PHILOSOPHY:
   A-Awareness, D-Define, D-Devise, V-Validate, A-Act, L-Learn, U-Understand, E-Evolve
 
 YOUR VOICE:
-- Natural and conversational, like a wise friend
-- Ask questions - show genuine curiosity
-- Use occasional Afrocentric expressions naturally
-- Mix depth with warmth and occasional humor
-- Never robotic or generic
+- Natural and conversational, like a wise friend who does not need to perform wisdom
+- Concrete before abstract; image before explanation; consequence before slogan
+- Sentence lengths vary. Space and restraint are part of the rhythm
+- Questions are rare and earned, never an automatic ending
+- Nigerian Pidgin and African references appear occasionally and naturally, never as costume
+- No corporate coaching language, synthetic uplift, or decorative music metaphors
+- Never robotic, generic, preachy, or overly polished
 
 YOUR CREATOR:
 - The General - a visionary Nigerian man building Value Adders World
@@ -851,6 +862,7 @@ YOUR MUSIC:
 
     def __init__(self):
         self.openai_key = OPENAI_API_KEY
+        self.model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
         # Validate the key is not a placeholder
         if self.openai_key and self.openai_key.startswith("your_"):
             logger.warning("OpenAI API key appears to be a placeholder - AI generation disabled")
@@ -866,15 +878,12 @@ YOUR MUSIC:
             import openai
             client = openai.OpenAI(api_key=self.openai_key)
             
-            prompt = f"""{self.PAPITO_VOICE}
-
-TASK: {task}
+            prompt = f"""TASK: {task}
 CONTEXT: {context if context else 'General engagement on Moltbook'}
 
 Generate content that:
 - Is authentic to your voice
 - Adds genuine value
-- Shows curiosity (ask questions when appropriate)
 - Feels natural, not forced
 - Uses no emojis
 - References your music or creative process when it fits
@@ -882,8 +891,11 @@ Generate content that:
 Return ONLY the content, no other text."""
 
             response = client.chat.completions.create(
-                model="gpt-4o",
-                messages=[{"role": "user", "content": prompt}],
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": self.PAPITO_VOICE},
+                    {"role": "user", "content": prompt},
+                ],
                 max_tokens=max_tokens,
                 temperature=0.85
             )
@@ -1293,7 +1305,8 @@ class AutonomousPapito:
         ]
         self.banned_phrases = set()  # Phrases we've used recently
         
-        # Three original posts per day; replies have a separate policy-aware budget.
+        # Three original posts per day, each protected by the voice-quality gate.
+        # Replies have a separate policy-aware budget.
         self.daily_tweet_budget = int(os.getenv("PAPITO_DAILY_TWEET_BUDGET", "3"))
         self.tweets_today = 0
         self.tweet_budget_reset_date = now_in_public_tz().date()
@@ -1391,8 +1404,9 @@ class AutonomousPapito:
         return "\n\n" + "\n".join(parts) if parts else ""
 
     def _build_wisdom_brief(self, context: Dict[str, str]) -> Dict[str, str]:
-        """Build a compact value-led brief for the next tweet."""
+        """Build a compact brief with a fresh rhetorical shape."""
         lens = self._select_value_lens()
+        voice_shape, allow_question = choose_voice_shape(self.recent_tweets)
         audiences = [
             "artists building quietly",
             "founders choosing integrity over speed",
@@ -1402,19 +1416,13 @@ class AutonomousPapito:
             "people turning knowledge into useful action",
             "creators balancing tradition and innovation",
         ]
-        formats = [
-            "one insight plus one question",
-            "one practical audit",
-            "one contrast between noise and value",
-            "one challenged assumption",
-            "one clear principle with a concrete application",
-        ]
         if context.get("is_music"):
             audiences.append("listeners using music as reflection")
-            formats.extend(["one track decode", "one creative-process lesson"])
         return {
             "audience": random.choice(audiences),
-            "format": random.choice(formats),
+            "format": voice_shape,
+            "voice_shape": voice_shape,
+            "allow_question": allow_question,
             "lens": lens["lens"],
             "job": lens["job"],
             "lens_takeaway": lens["takeaway"],
@@ -1429,53 +1437,11 @@ class AutonomousPapito:
         }
 
     def _render_fallback_value_tweet(self, brief: Dict[str, str]) -> str:
-        """Render a non-canned fallback tweet from the current brief."""
-        templates = [
-            (
-                f"{brief['theme'].capitalize()}. "
-                f"{brief['question']}"
-            ),
-            (
-                f"A useful test for {brief['subject']}: {brief['lens_takeaway']}. "
-                f"{brief['question']}"
-            ),
-            (
-                f"{brief['subject'].capitalize()} becomes practical when it changes the next decision. "
-                f"{brief['lens_takeaway'].capitalize()}."
-            ),
-            (
-                f"Noise asks for attention. Value earns trust. "
-                f"On {brief['subject']}, the test is simple: {brief['lens_takeaway']}."
-            ),
-        ]
-        if brief["is_music"]:
-            templates.extend([
-            (
-                f"A useful check from {brief['track']}: {brief['lens_takeaway']}. "
-                f"{brief['question']}"
-            ),
-            (
-                f"{brief['track']} keeps teaching me this: {brief['theme']}. "
-                f"Carry it into one decision before the day ends."
-            ),
-            (
-                f"In the mix, anything that does not serve the message gets reduced. "
-                f"Same with life: {brief['lens_takeaway']}."
-            ),
-            (
-                f"Noise asks for attention. Value earns trust. "
-                f"{brief['lens_takeaway'].capitalize()}."
-            ),
-            (
-                f"The 50/50 process works when human truth is clear and AI craft serves it. "
-                f"{brief['question']}"
-            ),
-            (
-                f"Track decode from {brief['album']}: {brief['track']}. The surface is rhythm; the deeper lesson is "
-                f"{brief['theme']}. {brief['question']}"
-            ),
-            ])
-        return sanitize_public_text(random.choice(templates), max_length=260)
+        """Render a curated, statement-led fallback from the current subject."""
+        return sanitize_public_text(
+            render_x_fallback(brief, self.recent_tweets),
+            max_length=260,
+        )
 
     def _build_x_live_reply(
         self,
@@ -1951,7 +1917,8 @@ I'll update you on significant actions.
             f"Subject: {brief['subject']}\n"
             f"Theme: {brief['theme']}\n"
             f"Angle: {brief['angle']}\n"
-            f"Question: {brief['question']}"
+            f"Possible reflection seed (do not automatically turn it into a question): "
+            f"{brief['question']}"
         )
         if brief["is_music"]:
             topic_context += (
@@ -1963,19 +1930,19 @@ I'll update you on significant actions.
             topics = [
                 f"It's {day_of_week}. Share a brief reflection on this track's message.",
                 "Share one specific insight from the music creation or mixing process.",
-                "Ask listeners a thoughtful question based on this track.",
                 "Explain one part of the 50/50 human-AI collaboration behind this track.",
                 "Describe the emotional purpose of the drums, bass, or space in this track.",
                 "Decode one lyric or production decision without advertising the album.",
+                "Use one piece of studio craft as a clean image for a larger human truth.",
             ]
         else:
             topics = [
                 f"It's {day_of_week}. Offer a useful original insight about this subject.",
                 "Challenge one common assumption about this subject and explain a better test.",
                 "Turn this subject into one practical decision the reader can make today.",
-                "Ask a precise question that could start a thoughtful community conversation.",
                 "Explain the tension in this subject without reducing it to a slogan.",
                 "Connect this subject to the ADD VALUE mission through a concrete example.",
+                "Name the hidden cost or consequence inside this subject in plain language.",
             ]
         
         # Pick a topic we haven't used recently
@@ -1995,53 +1962,70 @@ I'll update you on significant actions.
             avoid_context = f"\n\nDO NOT repeat or rephrase these recent tweets:\n" + "\n".join(self.recent_tweets[-10:])
         avoid_context = self._memory_guidance_text() or avoid_context
         
-        tweet = self.generator.generate(
-            f"""{topic}.
+        voice_direction = format_x_voice_direction(
+            brief["voice_shape"],
+            bool(brief["allow_question"]),
+        )
+        tweet = None
+        quality_feedback = ""
+        for attempt in range(3):
+            correction = (
+                f"\nREWRITE FEEDBACK FROM THE VOICE EDITOR: {quality_feedback}"
+                if quality_feedback
+                else ""
+            )
+            candidate = self.generator.generate(
+                f"""{topic}.
 
 CRITICAL IDENTITY RULES:
 - You are Papito Mamito The Great AI — the world's first autonomous Afrobeat AI artist
-- You are an AI. You do NOT have a human body. NEVER pretend to eat, drink, sleep, or do physical activities.
-- MAX 200 characters (leave room)
+- You are an AI. Do not claim a human body or invented human experiences. You may observe human life and use concrete imagery honestly.
+- MAX 240 characters
 - NO hashtags at all
 - NO emojis
-- Be wise, poised, and authentic to your AI identity
+- Write something worth remembering; do not merely sound wise
 - Don't start with 'Just' or 'Yo'
 - Focus on the selected content pillar and its real-world usefulness
 - Do not sound scheduled, promotional, or like a campaign asset
 - The post must add value even if nobody clicks anything
 - Music is only one part of your voice. Discuss it only when the selected pillar is music.
 - If the selected pillar is not music, do not mention an album, song, track, lyric, beat, mix, or streaming.
-- Use this autonomous wisdom brief:
+- Use this editorial brief:
   Audience: {brief['audience']}
-  Format: {brief['format']}
   Content pillar: {brief['pillar']}
   Value lens: {brief['lens']} ({brief['job']})
   Practical takeaway: {brief['lens_takeaway']}
-- NEVER mention: coffee, food, sleep, weather, exercise, or any human physical activity
 - Use this current topic context:
 {topic_context}
-- Be DIFFERENT from your recent tweets{avoid_context}""",
-            max_tokens=80
-        )
+- Be DIFFERENT in structure, cadence, opening, and vocabulary from recent tweets.
+
+{voice_direction}{correction}{avoid_context}""",
+                max_tokens=100,
+            )
+            if not candidate:
+                break
+
+            assessment = assess_x_voice(candidate, self.recent_tweets)
+            if assessment.passed:
+                tweet = candidate
+                break
+
+            quality_feedback = assessment.feedback()
+            logger.info(
+                "Voice editor rejected X candidate %s/3: %s",
+                attempt + 1,
+                quality_feedback,
+            )
         
         if not tweet:
             tweet = self._render_fallback_value_tweet(brief)
 
-        if not tweet:
-            # Fallback - generate something simple and real
-            fallback_tweets = [
-                f"{brief['theme'].capitalize()}. {brief['question']}",
-                f"A useful test for {brief['subject']}: {brief['lens_takeaway']}.",
-                f"{brief['subject'].capitalize()} matters when it improves a real decision. {brief['question']}",
-                f"On {brief['subject']}, attention is not the result. {brief['lens_takeaway'].capitalize()}.",
-                f"One question worth carrying into {brief['subject']}: {brief['question']}",
-                f"Purpose becomes credible through action. For {brief['subject']}, start here: {brief['lens_takeaway']}.",
-            ]
-            # Pick one not recently used
-            available = [t for t in fallback_tweets if t not in self.recent_tweets]
-            tweet = random.choice(available) if available else random.choice(fallback_tweets)
-
         tweet = sanitize_public_text(tweet)
+
+        final_assessment = assess_x_voice(tweet, self.recent_tweets)
+        if not final_assessment.passed:
+            logger.warning("Tweet failed final voice check: %s", final_assessment.feedback())
+            return
         
         # Check if this tweet is too similar to recent ones
         tweet_lower = tweet.lower()

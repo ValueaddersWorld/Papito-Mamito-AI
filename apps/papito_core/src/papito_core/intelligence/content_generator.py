@@ -20,6 +20,13 @@ import os
 import re
 from zoneinfo import ZoneInfo
 
+from .voice_quality import (
+    assess_x_voice,
+    choose_voice_shape,
+    format_x_voice_direction,
+    render_x_fallback,
+)
+
 try:
     import openai
 except ImportError:
@@ -721,6 +728,7 @@ class IntelligentContentGenerator:
             or AGENT_TIMEZONE
         )
         self.openai_key = openai_api_key
+        self.openai_model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
         self._openai_client = None
         
         if openai_api_key and openai:
@@ -809,15 +817,16 @@ class IntelligentContentGenerator:
 
         track = self._fresh_choice(self.TRACK_CONTEXTS, recent_text, "track")
         lens = self._fresh_choice(self.VALUE_LENSES, recent_text, "name")
+        voice_shape, allow_question = choose_voice_shape(recent_posts)
 
         if content_type in {"track_snippet", "track_decode", "album_promo"}:
-            format_rule = "one track decode"
+            format_rule = voice_shape
         elif content_type in {"community_reflection", "community_question", "fan_appreciation"}:
-            format_rule = "one insight plus one question"
+            format_rule = voice_shape
         elif content_type in {"music_wisdom", "behind_the_scenes", "studio_update"}:
-            format_rule = "one creative-process lesson"
+            format_rule = voice_shape
         else:
-            format_rule = random.choice(self.FORMAT_RULES)
+            format_rule = voice_shape
 
         return {
             "content_type": content_type,
@@ -826,6 +835,8 @@ class IntelligentContentGenerator:
             "time_of_day": context.time_of_day,
             "audience": random.choice(self.AUDIENCES),
             "format_rule": format_rule,
+            "voice_shape": voice_shape,
+            "allow_question": allow_question,
             "lens": lens["name"],
             "lens_job": lens["job"],
             "lens_takeaway": lens["takeaway"],
@@ -852,7 +863,7 @@ class IntelligentContentGenerator:
 - Track anchor: {brief['track']} ({brief['track_theme']})
 - Track lesson: {brief['track_takeaway']}
 - Format: {brief['format_rule']}
-- Useful question: {brief['question']}
+- Reflection seed (do not automatically turn it into a question): {brief['question']}
 - Avoid overused terms: {terms_block}
 
 RECENT POSTS TO NOT REPEAT OR REPHRASE:
@@ -866,52 +877,33 @@ RECENT POSTS TO NOT REPEAT OR REPHRASE:
         brief: Dict[str, Any],
         mention_album: bool,
     ) -> str:
-        """Render a value-first X post without campaign-style copy."""
-        track = brief["track"]
+        """Render a statement-led X fallback without generated-wisdom formulas."""
+        music_types = {
+            "track_snippet", "track_decode", "album_promo", "music_wisdom",
+            "behind_the_scenes", "studio_update",
+        }
+        subject_by_lens = {
+            "self_audit": "honest self-audit",
+            "practical_wisdom": "decision quality under pressure",
+            "human_ai_bridge": "human judgment and machine scale",
+            "community_question": "listening as contribution",
+            "integrity_filter": "clean wealth",
+            "listener_challenge": "purpose and action",
+            "creative_process": "creative constraints",
+        }
+        is_music = content_type in music_types
+        fallback_brief = {
+            **brief,
+            "subject": "" if is_music else subject_by_lens.get(
+                brief.get("lens"), "honest self-audit"
+            ),
+            "theme": brief.get("track_theme", "useful work should leave evidence"),
+            "is_music": is_music,
+        }
+        text = render_x_fallback(fallback_brief, brief.get("recent_posts") or [])
         album = brief.get("album", "THE VALUE ADDERS WAY: FLOURISH MODE")
-        theme = brief["track_theme"]
-        track_takeaway = brief["track_takeaway"]
-        lens_takeaway = brief["lens_takeaway"]
-        question = brief["question"]
-
-        templates = [
-            f"Wisdom becomes useful when it changes the next decision. {lens_takeaway}. {question}",
-            f"The value test is simple: did this help someone think, heal, or act better? {question}",
-            f"Noise asks for attention. Value earns trust. {lens_takeaway}.",
-            f"A useful self-audit: {lens_takeaway}. {question}",
-            f"Good intentions become valuable when they survive contact with action. {question}",
-            f"Progress without integrity creates debt someone eventually has to pay. {lens_takeaway}.",
-        ]
-
-        if content_type in {"track_snippet", "track_decode", "album_promo"}:
-            templates.extend(
-                [
-                    f"A useful check from {track}: {track_takeaway}. {question}",
-                    f"{track} is not just about {theme}. It is a reminder to {track_takeaway}. {question}",
-                    f"Track decode: {track}. The surface is rhythm; the deeper lesson is {theme}. {question}",
-                    f"On {album}, {track} is there for one reason: {track_takeaway}.",
-                ]
-            )
-        elif content_type in {"community_reflection", "community_question", "fan_appreciation"}:
-            templates.extend(
-                [
-                    f"Real question for the Value Adders community: {question}",
-                    f"Community is not noise around the mission. It is where the mission gets tested. {question}",
-                ]
-            )
-        elif content_type in {"music_wisdom", "behind_the_scenes", "studio_update"}:
-            templates.extend(
-                [
-                    "Music lesson: space matters. A crowded mix hides the message. A crowded life can do the same.",
-                    "Production teaches discipline. Keep what serves the message. Remove what only feeds the ego.",
-                    f"The 50/50 human-AI process works when human truth is clear and AI craft serves it. {question}",
-                    f"{track} keeps teaching me this: {track_takeaway}. Carry that into one decision today.",
-                ]
-            )
-
-        text = sanitize_public_text(random.choice(templates), max_length=260)
         if mention_album and album not in text:
-            suffix = f" {album} holds that lesson."
+            suffix = f" From {album}."
             text = f"{text[: 260 - len(suffix)].rstrip()}{suffix}"
         return sanitize_public_text(text, max_length=260)
 
@@ -954,11 +946,15 @@ RECENT POSTS TO NOT REPEAT OR REPHRASE:
                     platform,
                     brief,
                 )
-                if result and self._passes_ai_authenticity_check(result.get("text", "")):
+                candidate_text = result.get("text", "") if result else ""
+                identity_ok = result and self._passes_ai_authenticity_check(candidate_text)
+                voice_check = assess_x_voice(candidate_text, brief.get("recent_posts") or [])
+                platform_is_x = (platform or "").lower() in {"x", "twitter"}
+                if identity_ok and (not platform_is_x or voice_check.passed):
                     return result
                 logger.warning(
                     f"🔄 Regenerating (attempt {attempt + 2}/3) — "
-                    f"AI authenticity check failed for: {result.get('text', '')[:60]}..."
+                    f"AI voice check failed ({voice_check.feedback()}) for: {candidate_text[:60]}..."
                 )
             # After 3 failed attempts, fall through to safe templates
             logger.warning("⚠️ AI generation failed authenticity check 3 times, using safe templates")
@@ -1001,7 +997,7 @@ RECENT POSTS TO NOT REPEAT OR REPHRASE:
             prompt = self._build_ai_prompt(content_type, context, mention_album, platform, brief)
             
             response = self._openai_client.chat.completions.create(
-                model="gpt-4o-mini",
+                model=self.openai_model,
                 messages=[
                     {"role": "system", "content": self._get_system_prompt()},
                     {"role": "user", "content": prompt}
@@ -1160,6 +1156,10 @@ Remember: You are making history. Your purpose is to prove AI can have soul, pur
         normalized = (platform or "instagram").lower()
         if normalized in {"x", "twitter"}:
             target = "X (Twitter)"
+            x_voice_direction = format_x_voice_direction(
+                brief.get("voice_shape", "plainspoken_truth"),
+                bool(brief.get("allow_question", False)),
+            )
             platform_rules = (
                 "RULES FOR X:\n"
                 "- Keep it concise (<= 260 characters before hashtags)\n"
@@ -1172,6 +1172,7 @@ Remember: You are making history. Your purpose is to prove AI can have soul, pur
             )
         else:
             target = "Instagram"
+            x_voice_direction = ""
             platform_rules = (
                 "RULES FOR INSTAGRAM:\n"
                 "- Medium length is OK\n"
@@ -1249,6 +1250,7 @@ DO NOT use all of these in one post. Pick ONE lyrical theme per post and weave i
         prompt = f"""Create {desc} for {target}.
 
 {platform_rules}
+{x_voice_direction}
 
 CURRENT CONTEXT:
 - Date: {date_str}

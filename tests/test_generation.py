@@ -10,6 +10,13 @@ from papito_core.intelligence.content_generator import (
     PapitoContext,
     sanitize_public_text,
 )
+from papito_core.intelligence.voice_quality import (
+    SUBJECT_FALLBACKS,
+    assess_x_voice,
+    choose_voice_shape,
+    format_x_voice_direction,
+    render_x_fallback,
+)
 from papito_core.memory.post_memory import PostMemory
 from papito_core.settings import get_settings
 
@@ -113,14 +120,73 @@ def test_x_template_uses_wisdom_brief_not_campaign_copy(monkeypatch):
     assert any(
         phrase in text
         for phrase in [
-            "audit the motive",
-            "mirror check",
-            "value test",
-            "Noise asks",
-            "Good intentions",
-            "Progress without integrity",
+            "mirror is useful",
+            "inspect the steering",
         ]
     )
+
+
+def test_voice_editor_rejects_the_live_feed_robotic_pattern():
+    recent = [
+        "What decision improves when you remove the pressure to look fast? Audit your motive.",
+        "Who gains capacity when you make progress? Design your achievements for others.",
+        "Where are you forcing what needs to flow? Surrender to the groove.",
+    ]
+    candidate = (
+        "What belief shapes your work's essence? Originality is a clear point of view. "
+        "What principle makes your voice distinct in the symphony of ideas?"
+    )
+
+    assessment = assess_x_voice(candidate, recent)
+
+    assert assessment.passed is False
+    assert "more than one question" in assessment.feedback()
+    assert "symphony of" in assessment.feedback()
+
+
+def test_voice_editor_accepts_spare_memorable_wisdom():
+    candidate = (
+        "Speed is useful after clarity. Before clarity, it is only a faster way "
+        "to inherit regret."
+    )
+
+    assessment = assess_x_voice(candidate, [])
+
+    assert assessment.passed is True
+    assert assessment.issues == ()
+
+
+def test_question_heavy_history_forces_a_statement_shape():
+    class FirstChoice:
+        @staticmethod
+        def choice(options):
+            assert "earned_question" not in options
+            return options[0]
+
+    recent = [f"What should we learn from attempt {i}?" for i in range(6)]
+
+    shape, allow_question = choose_voice_shape(recent, rng=FirstChoice())
+    direction = format_x_voice_direction(shape, allow_question)
+
+    assert allow_question is False
+    assert "Use no questions" in direction
+
+
+def test_all_curated_subject_fallbacks_pass_the_voice_editor():
+    class FirstChoice:
+        @staticmethod
+        def choice(options):
+            return options[0]
+
+    for subject in SUBJECT_FALLBACKS:
+        text = render_x_fallback(
+            {"subject": subject, "theme": "a useful truth", "is_music": False},
+            rng=FirstChoice(),
+        )
+        assessment = assess_x_voice(text, [])
+        assert assessment.passed, f"{subject}: {assessment.feedback()}"
+        assert len(text) <= 260
+        assert "?" not in text
 
 
 def test_non_music_x_template_does_not_inject_album_or_track(monkeypatch):
