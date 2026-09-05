@@ -10,7 +10,7 @@ from papito_core.intelligence.content_generator import (
     PapitoContext,
     sanitize_public_text,
 )
-from papito_core.intelligence.voice_quality import (
+from papito_core.voice_quality import (
     SUBJECT_FALLBACKS,
     assess_x_voice,
     choose_voice_shape,

@@ -33,5 +33,9 @@ RUN mkdir -p scripts
 COPY scripts/papito_autonomous_forever.py scripts/
 COPY scripts/run_papito_autonomous.py scripts/
 
+# Import the real entrypoint with worker-only dependencies before deployment.
+# A non-main run name checks startup imports without starting bots or posting.
+RUN PYTHON_DOTENV_DISABLED=1 python -c "import runpy; runpy.run_path('scripts/papito_autonomous_forever.py', run_name='papito_import_check')"
+
 # Papito runs FOREVER - using scripts/ path for consistency
 CMD ["python", "scripts/papito_autonomous_forever.py"]

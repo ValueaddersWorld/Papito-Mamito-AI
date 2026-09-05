@@ -3,6 +3,9 @@
 The old generator could avoid exact duplicates while still repeating the same
 *shape*: an abstract question, an aphorism, and another abstract question.
 This module treats cadence and language habits as part of repetition too.
+
+Keep this module outside ``intelligence``: the standalone posting worker does
+not install the optional web/API dependencies imported by that package.
 """
 
 from __future__ import annotations

@@ -20,7 +20,7 @@ import os
 import re
 from zoneinfo import ZoneInfo
 
-from .voice_quality import (
+from ..voice_quality import (
     assess_x_voice,
     choose_voice_shape,
     format_x_voice_direction,

@@ -73,7 +73,7 @@ except Exception as exc:
     raise RuntimeError("Papito topic portfolio could not be loaded") from exc
 
 try:
-    from papito_core.intelligence.voice_quality import (
+    from papito_core.voice_quality import (
         assess_x_voice,
         choose_voice_shape,
         format_x_voice_direction,
