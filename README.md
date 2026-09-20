@@ -157,6 +157,7 @@ Notes:
 - Ensure your X Developer App permissions are **Read and Write** and you regenerated tokens after changing permissions.
 - Set `PAPITO_X_READ_ENABLED=true` and `PAPITO_X_MONITOR_ENABLED=true` to collect and deduplicate direct mentions without sending replies.
 - Keep `PAPITO_X_LIVE_ENGAGEMENT=false` and `PAPITO_X_AI_REPLY_APPROVED=false` until X grants prior written and explicit approval for the AI reply bot.
+- Monitor-only mode checks every six hours by default, and a depleted-credit response opens a persisted 24-hour circuit breaker so the worker does not burn requests retrying an unfunded account.
 - Mount a Railway volume at `/app/data`, then set `PAPITO_POST_MEMORY_FILE=/app/data/post_memory.json` and `PAPITO_X_STATE_FILE=/app/data/x_live_conversations.json`. Container-local `data/` files do not survive every redeploy.
 
 ##  CLI Commands

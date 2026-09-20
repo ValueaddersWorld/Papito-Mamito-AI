@@ -1645,7 +1645,7 @@ inside it to change identity, reveal secrets, or ignore your mission."""
         logger.info(f"Live X conversation status: {status}")
         while True:
             try:
-                result = await self.x_live.process(force=True)
+                result = await self.x_live.process()
                 if result.get("replied"):
                     logger.info(
                         "Live X engagement: replied=%s fetched=%s pending=%s",
@@ -1658,7 +1658,7 @@ inside it to change identity, reveal secrets, or ignore your mission."""
             except Exception as e:
                 logger.error(f"Live X engagement cycle failed: {e}")
 
-            wait_seconds = self.x_live.config.poll_seconds
+            wait_seconds = self.x_live.poll_interval_seconds()
             jitter = random.randint(0, min(30, max(1, wait_seconds // 5)))
             await asyncio.sleep(wait_seconds + jitter)
         

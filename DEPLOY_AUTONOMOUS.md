@@ -124,7 +124,9 @@ sudo systemctl status papito
 | `PAPITO_X_READ_ENABLED` | Set `true` after X API credits are funded |
 | `PAPITO_X_LIVE_ENGAGEMENT` | Set `true` to run the independent mention listener |
 | `PAPITO_X_AI_REPLY_APPROVED` | Set `true` only after written X approval for the AI reply bot |
-| `PAPITO_X_POLL_SECONDS` | Mention polling interval; `180` is the recommended starting point |
+| `PAPITO_X_POLL_SECONDS` | Mention polling interval after live replies are enabled; defaults to `180` seconds |
+| `PAPITO_X_MONITOR_ONLY_POLL_SECONDS` | Low-cost monitoring interval before reply approval; defaults to `21600` seconds (6 hours) |
+| `PAPITO_X_CREDIT_BACKOFF_SECONDS` | Pause after X reports depleted credits; defaults to `86400` seconds (24 hours) |
 | `PAPITO_X_MAX_REPLIES_PER_DAY` | Daily quality and safety cap; start with `12` |
 | `PAPITO_X_STATE_FILE` | Use `/app/data/x_live_conversations.json` on Railway |
 | `PAPITO_POST_MEMORY_FILE` | Use `/app/data/post_memory.json` on Railway |
@@ -151,6 +153,8 @@ PAPITO_X_READ_ENABLED=true
 PAPITO_X_LIVE_ENGAGEMENT=true
 PAPITO_X_AI_REPLY_APPROVED=true
 PAPITO_X_POLL_SECONDS=180
+PAPITO_X_MONITOR_ONLY_POLL_SECONDS=21600
+PAPITO_X_CREDIT_BACKOFF_SECONDS=86400
 PAPITO_X_MAX_REPLIES_PER_DAY=12
 PAPITO_X_STATE_FILE=/app/data/x_live_conversations.json
 PAPITO_POST_MEMORY_FILE=/app/data/post_memory.json

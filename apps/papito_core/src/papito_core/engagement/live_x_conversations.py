@@ -11,7 +11,7 @@ import json
 import logging
 import os
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 from zoneinfo import ZoneInfo
@@ -43,6 +43,8 @@ class XConversationConfig:
     enabled: bool = False
     ai_reply_approved: bool = False
     poll_seconds: int = 180
+    monitor_only_poll_seconds: int = 21600
+    credit_backoff_seconds: int = 86400
     max_replies_per_day: int = 12
     max_replies_per_cycle: int = 3
     state_file: str = os.path.join("data", "x_live_conversations.json")
@@ -58,6 +60,12 @@ class XConversationConfig:
             enabled=_env_bool("PAPITO_X_LIVE_ENGAGEMENT", False),
             ai_reply_approved=_env_bool("PAPITO_X_AI_REPLY_APPROVED", False),
             poll_seconds=_bounded_int("PAPITO_X_POLL_SECONDS", 180, 60, 3600),
+            monitor_only_poll_seconds=_bounded_int(
+                "PAPITO_X_MONITOR_ONLY_POLL_SECONDS", 21600, 900, 86400
+            ),
+            credit_backoff_seconds=_bounded_int(
+                "PAPITO_X_CREDIT_BACKOFF_SECONDS", 86400, 3600, 604800
+            ),
             max_replies_per_day=_bounded_int(
                 "PAPITO_X_MAX_REPLIES_PER_DAY", 12, 1, 50
             ),
@@ -128,6 +136,8 @@ class LiveXConversationAgent:
             "replies_today": 0,
             "last_poll_at": None,
             "last_reply_at": None,
+            "fetch_backoff_until": None,
+            "last_fetch_error": None,
         }
 
     def _load_state(self) -> Dict[str, Any]:
@@ -179,6 +189,16 @@ class LiveXConversationAgent:
             self._state["reply_day"] = today
             self._state["replies_today"] = 0
 
+    def poll_interval_seconds(self) -> int:
+        """Return the cost-aware polling interval for the current mode."""
+
+        if self.config.enabled and self.config.ai_reply_approved:
+            return self.config.poll_seconds
+        return max(
+            self.config.poll_seconds,
+            self.config.monitor_only_poll_seconds,
+        )
+
     def _is_due(self, now: datetime) -> bool:
         last_poll = self._state.get("last_poll_at")
         if not last_poll:
@@ -188,10 +208,35 @@ class LiveXConversationAgent:
             if previous.tzinfo is None:
                 previous = previous.replace(tzinfo=self._timezone)
             return (now - previous.astimezone(self._timezone)).total_seconds() >= (
-                self.config.poll_seconds
+                self.poll_interval_seconds()
             )
         except (TypeError, ValueError):
             return True
+
+    def _credit_backoff_active(self, now: datetime) -> bool:
+        raw_until = self._state.get("fetch_backoff_until")
+        if not raw_until:
+            return False
+        try:
+            until = datetime.fromisoformat(str(raw_until))
+            if until.tzinfo is None:
+                until = until.replace(tzinfo=self._timezone)
+            if now < until.astimezone(self._timezone):
+                return True
+        except (TypeError, ValueError):
+            pass
+
+        self._state["fetch_backoff_until"] = None
+        return False
+
+    @staticmethod
+    def _is_credit_error(error: Any) -> bool:
+        lowered = str(error or "").lower()
+        return (
+            "402" in lowered
+            or "credits depleted" in lowered
+            or "payment required" in lowered
+        )
 
     @staticmethod
     def _mention_id(mention: Dict[str, Any]) -> str:
@@ -316,6 +361,9 @@ class LiveXConversationAgent:
 
         now = self._now()
         self._reset_daily_budget(now)
+        if self._credit_backoff_active(now):
+            result["reason"] = "x_credit_backoff_active"
+            return result
         if not force and not self._is_due(now):
             result["reason"] = "poll_not_due"
             return result
@@ -326,9 +374,18 @@ class LiveXConversationAgent:
             limit=50,
         )
         if not fetch_result.get("success"):
-            result["reason"] = fetch_result.get("error") or "mention_fetch_failed"
+            error = fetch_result.get("error") or "mention_fetch_failed"
+            result["reason"] = error
+            self._state["last_fetch_error"] = str(error)[:500]
+            if self._is_credit_error(error):
+                self._state["fetch_backoff_until"] = (
+                    now + timedelta(seconds=self.config.credit_backoff_seconds)
+                ).isoformat()
             self._save_state()
             return result
+
+        self._state["last_fetch_error"] = None
+        self._state["fetch_backoff_until"] = None
 
         mentions = fetch_result.get("mentions") or []
         mentions = [item for item in mentions if isinstance(item, dict)]
@@ -415,10 +472,13 @@ class LiveXConversationAgent:
             "enabled": self.config.enabled,
             "approved": self.config.ai_reply_approved,
             "poll_seconds": self.config.poll_seconds,
+            "effective_poll_seconds": self.poll_interval_seconds(),
             "max_replies_per_day": self.config.max_replies_per_day,
             "replies_today": int(self._state.get("replies_today") or 0),
             "pending": len(self._state.get("pending_mentions", [])),
             "processed": len(self._state.get("processed_ids", [])),
             "last_poll_at": self._state.get("last_poll_at"),
             "last_reply_at": self._state.get("last_reply_at"),
+            "fetch_backoff_until": self._state.get("fetch_backoff_until"),
+            "last_fetch_error": self._state.get("last_fetch_error"),
         }

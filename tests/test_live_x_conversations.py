@@ -1,5 +1,5 @@
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from papito_core.engagement.live_x_conversations import (
@@ -12,13 +12,16 @@ class FakeXClient:
     user_id = "papito-user"
     username = "PapitoMamito_ai"
 
-    def __init__(self, mentions=None):
+    def __init__(self, mentions=None, fetch_error=None):
         self.mentions = list(mentions or [])
+        self.fetch_error = fetch_error
         self.fetch_calls = 0
         self.replies = []
 
     def fetch_mentions(self, since_id=None, limit=50):
         self.fetch_calls += 1
+        if self.fetch_error:
+            return {"success": False, "mentions": [], "error": self.fetch_error}
         fresh = [
             mention
             for mention in self.mentions
@@ -42,6 +45,8 @@ def config(tmp_path, **overrides):
         "enabled": True,
         "ai_reply_approved": True,
         "poll_seconds": 60,
+        "monitor_only_poll_seconds": 21600,
+        "credit_backoff_seconds": 86400,
         "max_replies_per_day": 12,
         "max_replies_per_cycle": 3,
         "state_file": str(tmp_path / "x-live.json"),
@@ -112,6 +117,66 @@ def test_monitoring_can_be_disabled_independently(tmp_path):
     assert result["reason"] == "x_monitoring_disabled"
     assert client.fetch_calls == 0
     assert client.replies == []
+
+
+def test_monitor_only_mode_uses_low_cost_polling_cadence(tmp_path):
+    current = [
+        datetime(2026, 7, 25, 12, 0, tzinfo=ZoneInfo("Europe/Amsterdam"))
+    ]
+    client = FakeXClient()
+    agent = LiveXConversationAgent(
+        client=client,
+        reply_builder=lambda item, history: "This must never be sent.",
+        sanitizer=sanitize,
+        config=config(tmp_path, enabled=False, ai_reply_approved=False),
+        now_provider=lambda: current[0],
+    )
+
+    asyncio.run(agent.process(force=True))
+    current[0] += timedelta(hours=1)
+    early = asyncio.run(agent.process())
+    current[0] += timedelta(hours=5)
+    due = asyncio.run(agent.process())
+
+    assert early["reason"] == "poll_not_due"
+    assert due["reason"] == "live_engagement_disabled"
+    assert client.fetch_calls == 2
+    assert agent.status()["effective_poll_seconds"] == 21600
+
+
+def test_credit_error_opens_persisted_circuit_breaker(tmp_path):
+    current = [
+        datetime(2026, 7, 25, 12, 0, tzinfo=ZoneInfo("Europe/Amsterdam"))
+    ]
+    client = FakeXClient(fetch_error="402 Payment Required: credits depleted")
+    agent = LiveXConversationAgent(
+        client=client,
+        reply_builder=lambda item, history: "This must never be sent.",
+        sanitizer=sanitize,
+        config=config(tmp_path),
+        now_provider=lambda: current[0],
+    )
+
+    first = asyncio.run(agent.process(force=True))
+    current[0] += timedelta(hours=1)
+    blocked = asyncio.run(agent.process(force=True))
+
+    assert "credits depleted" in first["reason"]
+    assert blocked["reason"] == "x_credit_backoff_active"
+    assert client.fetch_calls == 1
+    assert agent.status()["fetch_backoff_until"] is not None
+
+    restarted = LiveXConversationAgent(
+        client=client,
+        reply_builder=lambda item, history: "This must never be sent.",
+        sanitizer=sanitize,
+        config=config(tmp_path),
+        now_provider=lambda: current[0],
+    )
+    persisted = asyncio.run(restarted.process(force=True))
+
+    assert persisted["reason"] == "x_credit_backoff_active"
+    assert client.fetch_calls == 1
 
 
 def test_live_reply_is_persisted_and_not_repeated_after_restart(tmp_path):
