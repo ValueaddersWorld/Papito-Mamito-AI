@@ -154,6 +154,8 @@ PAPITO_X_POLL_SECONDS=180
 PAPITO_X_MAX_REPLIES_PER_DAY=12
 PAPITO_X_STATE_FILE=/app/data/x_live_conversations.json
 PAPITO_POST_MEMORY_FILE=/app/data/post_memory.json
+PAPITO_X_POSTING_ENABLED=true
+PAPITO_X_POSTING_RESUME_AT=2026-09-19
 ```
 
 ## Verifying Papito is Running

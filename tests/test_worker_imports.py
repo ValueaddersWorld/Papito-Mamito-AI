@@ -20,11 +20,20 @@ class NoWebDependencies(importlib.abc.MetaPathFinder):
 
 sys.meta_path.insert(0, NoWebDependencies())
 from papito_core.voice_quality import (
-    assess_x_voice, choose_voice_shape, format_x_voice_direction, render_x_fallback,
+    assess_artist_voice, assess_x_voice, choose_voice_shape, format_x_voice_direction,
+    render_x_fallback,
 )
+from papito_core.artist_voice import choose_artist_post_mode, render_artist_fallback
 shape, allow_question = choose_voice_shape([])
 assert format_x_voice_direction(shape, allow_question)
 assert assess_x_voice(render_x_fallback({'subject': 'clean wealth'})).passed
+artist_post = render_artist_fallback({
+    'mode': 'studio_note',
+    'track': 'DELAYED GRATIFICATION',
+    'craft': 'restraint in the arrangement embodies patience',
+})
+assert choose_artist_post_mode('morning', [])
+assert assess_artist_voice(artist_post, music_post=True).passed
 assert 'papito_core.intelligence' not in sys.modules
 assert 'fastapi' not in sys.modules
 """

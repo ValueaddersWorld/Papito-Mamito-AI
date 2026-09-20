@@ -12,6 +12,7 @@ from papito_core.intelligence.content_generator import (
 )
 from papito_core.voice_quality import (
     SUBJECT_FALLBACKS,
+    assess_artist_voice,
     assess_x_voice,
     choose_voice_shape,
     format_x_voice_direction,
@@ -154,6 +155,15 @@ def test_voice_editor_accepts_spare_memorable_wisdom():
 
     assert assessment.passed is True
     assert assessment.issues == ()
+
+
+def test_music_post_requires_a_concrete_artist_trace():
+    candidate = "Patience protects a longer future. The right season cannot be rushed."
+
+    assessment = assess_artist_voice(candidate, music_post=True, track="DELAYED GRATIFICATION")
+
+    assert assessment.passed is False
+    assert "no concrete artist" in assessment.feedback()
 
 
 def test_question_heavy_history_forces_a_statement_shape():

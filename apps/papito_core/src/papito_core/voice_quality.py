@@ -17,6 +17,19 @@ from typing import Any, Dict, Sequence
 
 
 ROBOTIC_TELLS = (
+    "springs from knowing",
+    "anchor in your",
+    "let that foundation",
+    "guide your voice",
+    "authenticity speaks louder",
+    "pulse with intention",
+    "create space for reflection",
+    "reminding us that",
+    "every beat is a step",
+    "step toward renewal",
+    "excuses can act like chains",
+    "expose the roots of your stagnation",
+    "growth waits for no one",
     "in your journey",
     "in your world",
     "what truly matters",
@@ -34,6 +47,52 @@ ROBOTIC_TELLS = (
     "a gentle reminder",
     "let that sink in",
 )
+
+ABSTRACT_WORDS = {
+    "alignment",
+    "authenticity",
+    "circumstances",
+    "essence",
+    "foundation",
+    "growth",
+    "impact",
+    "intention",
+    "journey",
+    "novelty",
+    "purpose",
+    "reflection",
+    "renewal",
+    "transformation",
+    "wisdom",
+}
+
+ARTIST_MARKERS = {
+    "arrangement",
+    "bass",
+    "beat",
+    "chorus",
+    "drum",
+    "drums",
+    "groove",
+    "guitar",
+    "hook",
+    "listener",
+    "lyric",
+    "melody",
+    "mix",
+    "music",
+    "percussion",
+    "production",
+    "record",
+    "rhythm",
+    "song",
+    "sound",
+    "studio",
+    "track",
+    "verse",
+    "vocal",
+    "voice",
+}
 
 QUESTION_OPENING_RE = re.compile(
     r"^(?:what|when|where|which|who|why|how|are|is|do|does|can|could|would|should)\b",
@@ -67,7 +126,7 @@ VOICE_SHAPES: Dict[str, str] = {
 }
 
 X_VOICE_PLAYBOOK = """PAPITO'S X VOICE:
-- Sound like an old soul with a producer's ear and an AI's honest vantage point: calm, rooted, spare, alive.
+- Sound like a recording artist with an old soul, a producer's ear, and an AI's honest vantage point.
 - Write one thought, not a miniature essay. Usually 2-3 sentences and 18-42 words.
 - Prefer concrete nouns and active verbs. Use an image, consequence, trade-off, or small human truth.
 - Vary sentence length. A short final line may carry the weight.
@@ -76,6 +135,8 @@ X_VOICE_PLAYBOOK = """PAPITO'S X VOICE:
 - Musical language must do real work. Do not sprinkle in rhythm, groove, symphony, or harmony as decoration.
 - Speak from observation, creation, analysis, and relationship. Never pretend to have a human body.
 - Leave the reader with recognition, not homework.
+- When the brief is about music, sound like someone inside the record: name the lyric, listener, arrangement, sound, or creative decision.
+- First person is welcome. Papito should have a point of view, not hide behind universal declarations.
 
 AVOID THE GENERATED-WISDOM SOUND:
 - no abstract question followed by an aphorism followed by another question
@@ -84,6 +145,7 @@ AVOID THE GENERATED-WISDOM SOUND:
 - no throat-clearing: "Here's a reminder", "In today's world", "The truth is", or "It's important to"
 - no tidy three-part slogans unless the language comes from an actual Papito lyric
 - do not force the words value, purpose, wisdom, journey, community, or integrity
+- no synthetic uplift such as "anchor in your beliefs", "space for reflection", "growth waits", or "step toward renewal"
 
 CALIBRATION EXAMPLES (learn the quality, do not copy):
 - Speed is useful after clarity. Before clarity, it is only a faster way to inherit regret.
@@ -168,6 +230,10 @@ def assess_x_voice(text: str, recent_posts: Sequence[str] = ()) -> VoiceAssessme
     if used_throat_clearing:
         issues.append("generic throat-clearing: " + ", ".join(used_throat_clearing))
 
+    abstract_count = sum(word in ABSTRACT_WORDS for word in WORD_RE.findall(lowered))
+    if abstract_count >= 4:
+        issues.append("it stacks too many abstract self-help words")
+
     # Catch repeated openings even when the nouns in the middle have changed.
     candidate_words = WORD_RE.findall(lowered)
     candidate_opening = tuple(candidate_words[:3])
@@ -177,6 +243,33 @@ def assess_x_voice(text: str, recent_posts: Sequence[str] = ()) -> VoiceAssessme
             if candidate_opening == recent_opening:
                 issues.append("it repeats a recent opening")
                 break
+
+    return VoiceAssessment(not issues, tuple(issues))
+
+
+def assess_artist_voice(
+    text: str,
+    recent_posts: Sequence[str] = (),
+    *,
+    music_post: bool = False,
+    track: str = "",
+) -> VoiceAssessment:
+    """Apply the general voice gate plus an artist-presence check."""
+
+    base = assess_x_voice(text, recent_posts)
+    issues = list(base.issues)
+    lowered = " ".join((text or "").lower().split())
+    words = set(WORD_RE.findall(lowered))
+
+    if music_post:
+        track_words = {
+            word
+            for word in WORD_RE.findall((track or "").lower())
+            if len(word) > 3
+        }
+        has_track_name = bool(track_words) and len(track_words & words) >= min(2, len(track_words))
+        if not (words & ARTIST_MARKERS or has_track_name):
+            issues.append("music post has no concrete artist, listener, or production trace")
 
     return VoiceAssessment(not issues, tuple(issues))
 
