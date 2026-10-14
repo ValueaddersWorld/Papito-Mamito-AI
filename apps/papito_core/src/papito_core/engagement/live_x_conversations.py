@@ -443,7 +443,18 @@ class LiveXConversationAgent:
             reply_result = self.client.reply_to_tweet(
                 self._mention_id(mention),
                 reply_text,
+                context={
+                    "user_name": mention.get("author_username") or mention.get("author_name"),
+                    "user_id": mention.get("author_id"),
+                    "their_message": mention.get("text"),
+                    "original_content": mention.get("text"),
+                    "goal": "Reply to a direct mention",
+                },
             )
+            if reply_result.get("skipped"):
+                self._mark_processed(mention)
+                result["skipped"] += 1
+                continue
             if not reply_result.get("success"):
                 logger.warning(
                     "Could not reply to X mention %s: %s",

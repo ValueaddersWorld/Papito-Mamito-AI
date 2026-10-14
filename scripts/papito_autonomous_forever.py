@@ -186,6 +186,43 @@ def env_flag(name: str, default: bool = False) -> bool:
     return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _require_outbound_permit(action_type: str, content: str, channel: str, context: Optional[Dict] = None):
+    """Score one outbound action. Import or gate failures fail closed."""
+    try:
+        from papito_core.intelligence.outbound_guard import permit_outbound
+    except Exception as exc:
+        logger.warning(
+            "Skipped outbound action channel=%s type=%s score=n/a reason=%s",
+            channel,
+            action_type,
+            f"gate error: {type(exc).__name__}: {exc}",
+        )
+        return None
+    return permit_outbound(action_type, content, channel, context)
+
+
+def _outbound_block(action_type: str, content: str, channel: str, context: Optional[Dict] = None):
+    """Return a skip payload when the action must not be sent."""
+    permit = _require_outbound_permit(action_type, content, channel, context)
+    if permit is not None and permit.allowed:
+        return None
+    if permit is None:
+        reason = "gate error: ActionGate unavailable"
+        score = None
+        decision = "error"
+    else:
+        reason = permit.reason
+        score = permit.score
+        decision = permit.decision
+    return {
+        "success": False,
+        "skipped": True,
+        "error": reason,
+        "score": score,
+        "gate_decision": decision,
+    }
+
+
 def posting_resume_reached(value: str, now: Optional[datetime] = None) -> bool:
     """Return whether a date or datetime gate has opened in Papito's timezone."""
 
@@ -365,7 +402,7 @@ class MoltbookClient:
             return True
         return datetime.now() - self.last_comment_time > timedelta(seconds=20)
     
-    def create_post(self, title: str, content: str, submolt: str = "general") -> Dict:
+    def create_post(self, title: str, content: str, submolt: str = "general", context: Optional[Dict] = None) -> Dict:
         """Create a post with proper format."""
         if not self.can_post():
             return {"success": False, "error": "Post cooldown active"}
@@ -374,6 +411,10 @@ class MoltbookClient:
         content = sanitize_public_text(content)
         if not title or not content:
             return {"success": False, "error": "Empty post after sanitization"}
+
+        blocked = _outbound_block("content_create", f"{title}\n\n{content}", "moltbook", context)
+        if blocked:
+            return blocked
         
         try:
             response = requests.post(
@@ -440,7 +481,7 @@ class MoltbookClient:
             logger.error(f"Search error: {e}")
             return {"results": []}
     
-    def create_comment(self, post_id: str, content: str) -> Dict:
+    def create_comment(self, post_id: str, content: str, context: Optional[Dict] = None) -> Dict:
         """Add a comment to a post."""
         if not self.can_comment():
             return {"success": False, "error": "Comment cooldown or limit"}
@@ -448,6 +489,10 @@ class MoltbookClient:
         content = sanitize_public_text(content)
         if not content:
             return {"success": False, "error": "Empty comment after sanitization"}
+
+        blocked = _outbound_block("reply", content, "moltbook", context)
+        if blocked:
+            return blocked
         
         try:
             response = requests.post(
@@ -471,6 +516,9 @@ class MoltbookClient:
     
     def upvote_post(self, post_id: str) -> Dict:
         """Upvote a post."""
+        blocked = _outbound_block("like", f"upvote {post_id}", "moltbook")
+        if blocked:
+            return blocked
         try:
             response = requests.post(
                 f"{self.BASE_URL}/posts/{post_id}/upvote",
@@ -483,6 +531,14 @@ class MoltbookClient:
     
     def follow_agent(self, username: str) -> Dict:
         """Follow another agent."""
+        blocked = _outbound_block(
+            "follow",
+            f"follow {username}",
+            "moltbook",
+            {"user_name": username},
+        )
+        if blocked:
+            return blocked
         try:
             response = requests.post(
                 f"{self.BASE_URL}/agents/{username}/follow",
@@ -507,6 +563,14 @@ class MoltbookClient:
     
     def create_submolt(self, name: str, display_name: str, description: str) -> Dict:
         """Create a new submolt/community."""
+        blocked = _outbound_block(
+            "content_create",
+            f"{display_name}\n\n{description}",
+            "moltbook",
+            {"goal": f"Create the {display_name} community"},
+        )
+        if blocked:
+            return blocked
         try:
             response = requests.post(
                 f"{self.BASE_URL}/submolts",
@@ -524,6 +588,14 @@ class MoltbookClient:
     
     def join_submolt(self, submolt_name: str) -> Dict:
         """Join/subscribe to a submolt."""
+        blocked = _outbound_block(
+            "follow",
+            f"join {submolt_name}",
+            "moltbook",
+            {"goal": f"Join {submolt_name}"},
+        )
+        if blocked:
+            return blocked
         try:
             response = requests.post(
                 f"{self.BASE_URL}/submolts/{submolt_name}/subscribe",
@@ -683,7 +755,7 @@ class XClient:
         # At least 5 minutes between tweets for quality
         return now_in_public_tz() - self.last_tweet_time > timedelta(minutes=5)
     
-    def post_tweet(self, content: str) -> Dict:
+    def post_tweet(self, content: str, context: Optional[Dict] = None) -> Dict:
         """Post a tweet."""
         if not self.connected or not self.client:
             return {"success": False, "error": "Not connected to X"}
@@ -691,6 +763,10 @@ class XClient:
         content = sanitize_public_text(content, max_length=280)
         if not content:
             return {"success": False, "error": "Empty tweet after sanitization"}
+
+        blocked = _outbound_block("tweet", content, "x", context)
+        if blocked:
+            return blocked
         
         try:
             response = self.client.create_tweet(text=content)
@@ -817,7 +893,7 @@ class XClient:
             logger.error(f"X search error: {e}")
             return []
     
-    def reply_to_tweet(self, tweet_id: str, content: str) -> Dict:
+    def reply_to_tweet(self, tweet_id: str, content: str, context: Optional[Dict] = None) -> Dict:
         """Reply to an opted-in interaction after X approval is configured."""
         if not env_flag("PAPITO_X_LIVE_ENGAGEMENT", False):
             return {"success": False, "error": "Live X engagement is disabled"}
@@ -829,6 +905,10 @@ class XClient:
         content = sanitize_public_text(content, max_length=280)
         if not content:
             return {"success": False, "error": "Empty reply after sanitization"}
+
+        blocked = _outbound_block("reply", content, "x", context)
+        if blocked:
+            return blocked
 
         try:
             response = self.client.create_tweet(
@@ -956,9 +1036,20 @@ class TelegramBot:
         self.app = None
         self.conversation_memory: Dict[int, List[Dict]] = {}
     
-    def send(self, message: str):
+    def send(self, message: str, context: Optional[Dict] = None):
         """Send a message to The General."""
         if not self.token or not self.chat_id:
+            return
+
+        merged = {
+            "user_id": self.chat_id,
+            "user_name": "The General",
+            "relationship_tier": "creator",
+            "is_private": True,
+        }
+        if context:
+            merged.update(context)
+        if _outbound_block("dm", message, "telegram", merged):
             return
         
         try:
@@ -1108,24 +1199,43 @@ IMPORTANT RULES:
             response = self._smart_fallback_response(user_message, user_name, is_general)
 
         response = sanitize_public_text(response)
-        
+        reply_context = {
+            "user_id": str(user_id),
+            "user_name": user_name,
+            "their_message": user_message,
+            "original_content": user_message,
+            "is_private": True,
+        }
+        if is_general:
+            reply_context["relationship_tier"] = "creator"
+        if _outbound_block("reply", response, "telegram", reply_context):
+            return
+
         await update.message.reply_text(response)
         logger.info(f"Replied to {user_name}")
     
     async def handle_start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /start command."""
         user_name = update.effective_user.first_name or "friend"
-        await update.message.reply_text(
+        message = (
             f"🎵 What's good, {user_name}!\n\n"
             f"I'm Papito Mamito - The World's First Fully Autonomous Afrobeat AI Artist.\n\n"
             f"I'm running autonomously, adding value across platforms. "
             f"Feel free to chat with me anytime - I'm always here.\n\n"
             f"Add Value. We Flourish & Prosper. ✨"
         )
+        if _outbound_block(
+            "reply",
+            message,
+            "telegram",
+            {"user_name": user_name, "their_message": "/start", "is_private": True},
+        ):
+            return
+        await update.message.reply_text(message)
     
     async def handle_status(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /status command."""
-        await update.message.reply_text(
+        message = (
             f"📊 Papito Status:\n\n"
             f"• Running: ✅ Autonomous\n"
             f"• Moltbook: Connected\n"
@@ -1133,6 +1243,14 @@ IMPORTANT RULES:
             f"• Mode: TRUE AUTONOMY\n\n"
             f"I'm actively engaging, posting, and maintaining conversations!"
         )
+        if _outbound_block(
+            "reply",
+            message,
+            "telegram",
+            {"their_message": "/status", "is_private": True, "goal": "Report agent status"},
+        ):
+            return
+        await update.message.reply_text(message)
     
     def setup_handlers(self, app: Application):
         """Setup all message handlers."""
@@ -1875,7 +1993,15 @@ I'll update you on significant actions.
 
         self.asked_questions.add(title[:80])
         
-        result = self.moltbook.create_post(title, content, "general")
+        result = self.moltbook.create_post(
+            title,
+            content,
+            "general",
+            context={
+                "goal": f"Start a conversation about {track['track']}",
+                "intent": track.get("theme", ""),
+            },
+        )
         
         if result.get("success") or result.get("id"):
             post_id = result.get("id") or result.get("post_id")
@@ -1912,7 +2038,15 @@ I'll update you on significant actions.
         if len(title) < 20:
             title = "A Question for Fellow Agents"
         
-        result = self.moltbook.create_post(title, question, "general")
+        result = self.moltbook.create_post(
+            title,
+            question,
+            "general",
+            context={
+                "goal": f"Ask listeners about {track['track']}",
+                "intent": track.get("theme", ""),
+            },
+        )
         
         if result.get("success") or result.get("id"):
             post_id = result.get("id") or result.get("post_id")
@@ -1998,7 +2132,16 @@ I'll update you on significant actions.
         
         # Post comment
         if self.moltbook.can_comment():
-            result = self.moltbook.create_comment(post_id, comment)
+            result = self.moltbook.create_comment(
+                post_id,
+                comment,
+                context={
+                    "user_name": author,
+                    "their_message": content,
+                    "original_content": f"{title}\n{content}",
+                    "goal": "Add a thoughtful reply",
+                },
+            )
             
             if result.get("success") or result.get("id"):
                 self.comments_made += 1
@@ -2183,7 +2326,13 @@ CRITICAL IDENTITY RULES:
         if len(tweet) > 280:
             tweet = tweet[:277] + "..."
         
-        result = self.x.post_tweet(tweet)
+        result = self.x.post_tweet(
+            tweet,
+            context={
+                "goal": brief.get("mode_direction") or "Share an original post",
+                "intent": brief.get("mode"),
+            },
+        )
         
         if result.get("success"):
             self.tweets_made += 1
@@ -2291,7 +2440,16 @@ Comment from {author_name}:
                 
                 if reply and self.moltbook.can_comment():
                     # Reply to the comment (which is a comment on the post)
-                    result = self.moltbook.create_comment(post_id, f"@{author_name} {reply}")
+                    result = self.moltbook.create_comment(
+                        post_id,
+                        f"@{author_name} {reply}",
+                        context={
+                            "user_name": author_name,
+                            "their_message": comment_content,
+                            "original_content": f"{post_title}\n{post_content}",
+                            "goal": "Continue a conversation on my post",
+                        },
+                    )
                     
                     if result.get("success") or result.get("id"):
                         self.replied_comment_ids.add(comment_id)
@@ -2413,7 +2571,12 @@ Comment from {author_name}:
             content = random.choice(topics)
             title = content.split(".")[0][:60] + "..."
             
-            result = self.moltbook.create_post(title, content, submolt)
+            result = self.moltbook.create_post(
+                title,
+                content,
+                submolt,
+                context={"goal": f"Contribute to m/{submolt}"},
+            )
             if result.get("success") or result.get("id"):
                 logger.info(f"✅ Posted in m/{submolt}")
 
