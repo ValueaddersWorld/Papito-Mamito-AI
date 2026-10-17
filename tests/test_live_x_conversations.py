@@ -29,7 +29,7 @@ class FakeXClient:
         ]
         return {"success": True, "mentions": fresh[:limit]}
 
-    def reply_to_tweet(self, tweet_id, content):
+    def reply_to_tweet(self, tweet_id, content, context=None):
         self.replies.append((str(tweet_id), content))
         return {"success": True, "tweet_id": f"reply-{tweet_id}"}
 
@@ -234,6 +234,36 @@ def test_conversation_memory_reaches_the_next_reply(tmp_path):
     assert len(histories[1]) == 2
     assert histories[1][0]["role"] == "user"
     assert histories[1][1]["role"] == "papito"
+
+
+def test_value_gate_skip_is_not_retried(tmp_path):
+    class SkippingClient(FakeXClient):
+        def reply_to_tweet(self, tweet_id, content, context=None):
+            self.replies.append((str(tweet_id), content, context))
+            return {
+                "success": False,
+                "skipped": True,
+                "error": "Value score 40.0 below threshold",
+                "score": 40.0,
+            }
+
+    client = SkippingClient([mention()])
+    agent = LiveXConversationAgent(
+        client=client,
+        reply_builder=lambda item, history: "A reply that does not clear the gate.",
+        sanitizer=sanitize,
+        config=config(tmp_path),
+    )
+
+    first = asyncio.run(agent.process(force=True))
+    second = asyncio.run(agent.process(force=True))
+
+    assert first["replied"] == 0
+    assert first["skipped"] == 1
+    assert second["replied"] == 0
+    assert len(client.replies) == 1
+    assert client.replies[0][2]["their_message"] == mention()["text"]
+    assert client.replies[0][2]["user_name"] == "listener"
 
 
 def test_opt_out_is_honored_without_reply(tmp_path):
